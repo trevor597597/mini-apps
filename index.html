@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>千軍破蒼冥的小工具</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 30%, #eff6ff 70%, #fef2f2 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+  }
+  .container { max-width: 420px; width: 100%; }
+
+  .header { text-align: center; margin-bottom: 2rem; }
+  .header .avatar { font-size: 3rem; margin-bottom: 0.5rem; }
+  .header h1 { font-size: 1.6rem; font-weight: 900; color: #1e293b; }
+  .header p { font-size: 0.85rem; color: #94a3b8; margin-top: 0.3rem; }
+
+  .app-card {
+    background: white; border-radius: 20px; padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 1rem;
+    text-decoration: none; color: inherit;
+    transition: all 0.2s;
+    border: 1px solid rgba(0,0,0,.04);
+  }
+  .app-card:active { transform: scale(0.98); }
+
+  .app-card .icon {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; flex-shrink: 0;
+  }
+  .app-card .icon.green { background: #dcfce7; }
+  .app-card .icon.blue { background: #dbeafe; }
+
+  .app-card .info { flex: 1; }
+  .app-card .info h2 { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+  .app-card .info p { font-size: 0.78rem; color: #94a3b8; margin-top: 0.15rem; line-height: 1.4; }
+  .app-card .arrow { font-size: 1.2rem; color: #cbd5e1; }
+
+  .footer { text-align: center; margin-top: 2rem; font-size: 0.72rem; color: #cbd5e1; }
+
+  @media (max-width: 380px) {
+    .app-card { padding: 1.2rem; gap: 0.75rem; }
+    .app-card .icon { width: 48px; height: 48px; font-size: 1.5rem; }
+    .app-card .info h2 { font-size: 0.95rem; }
+    .header h1 { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="avatar">🛠️</div>
+    <h1>千軍破蒼冥的小工具</h1>
+    <p>點擊圖標進入對應工具</p>
+  </div>
+
+  <a class="app-card" href="慢碳早餐規劃器.html">
+    <div class="icon green">🥗</div>
+    <div class="info">
+      <h2>慢碳早餐規劃器</h2>
+      <p>食材庫管理 · N天方案生成 · 採購清單<br>目標熱量 · 方案儲存 · 特有營養標籤</p>
+    </div>
+    <span class="arrow">›</span>
+  </a>
+
+  <a class="app-card" href="學習導航儀.html">
+    <div class="icon blue">📘</div>
+    <div class="info">
+      <h2>學習導航儀</h2>
+      <p>學習時長追蹤 · 課程完成度 · 任務管理<br>效率分析 · 成就徽章 · 數據備份導入</p>
+    </div>
+    <span class="arrow">›</span>
+  </a>
+
+  <div class="footer">
+    點擊上方卡片即可使用 · 數據自動保存在手機本地
+  </div>
+</div>
+</body>
+</html>
