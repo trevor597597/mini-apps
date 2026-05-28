@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>慢碳早餐規劃器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green-50: #f0fdf4; --green-100: #dcfce7; --green-200: #bbf7d0;
+    --green-300: #86efac; --green-400: #4ade80; --green-500: #22c55e;
+    --green-600: #16a34a; --green-700: #15803d; --green-800: #166534; --green-900: #14532d;
+    --blue-50: #eff6ff; --blue-100: #dbeafe; --blue-500: #3b82f6; --blue-600: #2563eb;
+    --red-400: #f87171; --red-500: #ef4444; --red-600: #dc2626;
+    --orange-400: #fb923c; --orange-500: #f97316; --orange-600: #ea580c;
+    --card-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --card-shadow-lg: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #fef2f2 100%);
+    min-height: 100vh; color: #1a1a2e; padding: 2rem 1rem;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 2.5rem; }
+  .header::after { content: '🥗'; font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+  .header h1 {
+    font-size: 2.2rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--green-700), var(--green-500));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; letter-spacing: -0.02em;
+  }
+  .header p { color: #6b7280; font-size: 1rem; margin-top: 0.4rem; font-weight: 300; }
+
+  .ingredients-section { margin-bottom: 2rem; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.8rem;
+  }
+  .section-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--green-800); }
+  .section-tools { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .ingredient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.65rem; }
+
+  .ingredient-card {
+    background: white; border-radius: 16px; padding: 0.85rem 0.8rem 0.75rem;
+    box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,.04);
+    transition: all 0.2s; cursor: default; position: relative;
+  }
+  .ingredient-card:hover { transform: translateY(-2px); box-shadow: var(--card-shadow-lg); border-color: var(--green-200); }
+  .ingredient-card .emoji { font-size: 1.4rem; display: block; margin-bottom: 0.1rem; }
+  .ingredient-card .name { font-weight: 700; font-size: 0.9rem; color: #1f2937; }
+  .ingredient-card .meta { font-size: 0.72rem; color: #9ca3af; margin-top: 0.1rem; line-height: 1.35; }
+  .ingredient-card .meta .kcal-unit { color: var(--orange-500); font-weight: 600; }
+  .ingredient-card .meta-sub { font-size: 0.62rem; color: #d1d5db; }
+
+  .highlight-bar { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.3rem; padding-top: 0.25rem; border-top: 1px solid #f3f4f6; }
+  .highlight-pill {
+    display: inline-flex; align-items: center; gap: 0.15rem;
+    font-size: 0.62rem; padding: 0.05rem 0.4rem 0.05rem 0.3rem;
+    border-radius: 999px; font-weight: 500;
+    background: #f0f9ff; color: #0369a1;
+  }
+
+  .ingredient-card .tag { display: inline-block; font-size: 0.58rem; padding: 0.05rem 0.35rem; border-radius: 999px; margin-top: 0.3rem; font-weight: 500; }
+  .tag-root { background: #fef3c7; color: #92400e; }
+  .tag-grain { background: #dbeafe; color: #1e40af; }
+  .tag-protein { background: #fce7f3; color: #9d174d; }
+
+  .card-actions { position: absolute; top: 5px; right: 5px; display: none; gap: 3px; }
+  .ingredient-card:hover .card-actions { display: flex; }
+  .card-action-btn { width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; opacity: 0.65; }
+  .card-action-btn:hover { opacity: 1; }
+  .card-edit-btn { background: #dbeafe; color: #1d4ed8; }
+  .card-edit-btn:hover { background: #3b82f6; color: white; }
+  .card-del-btn { background: #fee2e2; color: var(--red-500); }
+  .card-del-btn:hover { background: var(--red-500); color: white; }
+
+  .btn { padding: 0.45rem 1.1rem; border: none; border-radius: 10px; font-size: 0.82rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.3rem; }
+  .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.75rem; }
+  .btn-primary { background: linear-gradient(135deg, var(--green-600), var(--green-500)); color: white; }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-outline { background: transparent; border: 2px solid #e5e7eb; color: #6b7280; }
+  .btn-outline:hover { border-color: #d1d5db; background: #f9fafb; }
+  .btn-danger { background: #fee2e2; color: var(--red-600); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: var(--red-500); color: white; }
+  .btn-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .btn-warning:hover { background: #f59e0b; color: white; }
+  .btn-blue { background: var(--blue-100); color: var(--blue-600); border: 1px solid #bfdbfe; }
+  .btn-blue:hover { background: var(--blue-500); color: white; }
+
+  .planner-card { background: white; border-radius: 24px; padding: 1.5rem 2rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.08); border: 1px solid rgba(34,197,94,.12); margin-bottom: 2rem; }
+  .planner-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.8rem; }
+  .planner-header h2 { font-size: 1.15rem; font-weight: 700; color: #1f2937; }
+
+  .planner-options { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; margin-bottom: 1.2rem; padding: 0.8rem 1rem; background: var(--green-50); border-radius: 12px; align-items: center; }
+
+  .option-group { display: flex; align-items: center; gap: 0.4rem; }
+  .option-group label { font-size: 0.82rem; color: #4b5563; font-weight: 500; white-space: nowrap; }
+  .option-group select, .option-group input { padding: 0.35rem 0.5rem; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 0.82rem; font-family: inherit; background: white; outline: none; }
+  .option-group input:focus, .option-group select:focus { border-color: var(--green-500); box-shadow: 0 0 0 3px rgba(34,197,94,.12); }
+  .option-group input[type=number] { width: 60px; text-align: center; }
+  .option-group .toggle-input { display: flex; align-items: center; gap: 0.3rem; }
+
+  /* Results */
+  .results { display: none; }
+  .results.visible { display: block; }
+
+  .results-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem;
+  }
+  .results-toolbar .left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .results-toolbar .left h2 { font-size: 1.1rem; font-weight: 700; color: #1f2937; }
+  .results-toolbar .right { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .stats { display: flex; gap: 0.4rem; font-size: 0.82rem; flex-wrap: wrap; }
+  .stat-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.65rem; border-radius: 999px; font-weight: 600; font-size: 0.78rem; }
+  .stat-badge.green { background: var(--green-100); color: var(--green-800); }
+  .stat-badge.orange { background: #ffedd5; color: #9a3412; }
+  .stat-badge.pink { background: #fce7f3; color: #9d174d; }
+  .stat-badge.blue { background: var(--blue-100); color: var(--blue-600); }
+
+  .meal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+
+  .meal-card { background: white; border-radius: 16px; padding: 1rem 1.1rem; box-shadow: var(--card-shadow); border: 1px solid #f3f4f6; position: relative; overflow: hidden; }
+  .meal-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--green-400), var(--green-300)); }
+  .meal-card .top-row { display: flex; justify-content: space-between; align-items: center; }
+  .meal-card .day-label { font-size: 0.72rem; font-weight: 600; color: var(--green-600); letter-spacing: 0.03em; }
+  .meal-card .swap-btn { font-size: 0.65rem; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid #e5e7eb; background: transparent; color: #9ca3af; cursor: pointer; transition: all 0.15s; }
+  .meal-card .swap-btn:hover { border-color: var(--green-400); color: var(--green-600); background: var(--green-50); }
+  .meal-card .meal-items { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
+  .meal-item { display: inline-flex; align-items: center; gap: 0.2rem; background: #f9fafb; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.8rem; font-weight: 500; }
+  .meal-item .qty { color: var(--green-600); font-weight: 700; font-size: 0.75rem; }
+  .meal-item .kcal { color: #9ca3af; font-size: 0.7rem; font-weight: 400; }
+  .meal-card .meal-cal { margin-top: 0.3rem; padding-top: 0.3rem; border-top: 1px dashed #e5e7eb; font-size: 0.8rem; color: #6b7280; display: flex; justify-content: space-between; }
+  .meal-card .meal-cal strong { color: #374151; }
+
+  .shopping-section { background: linear-gradient(135deg, #fefce8, #fffbeb); border-radius: 18px; padding: 1.2rem 1.5rem; border: 1px solid #fde68a; }
+  .shopping-section h3 { font-size: 1rem; font-weight: 700; color: #92400e; margin-bottom: 0.8rem; }
+  .shopping-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.4rem 1rem; }
+  .shopping-item { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0.6rem; background: white; border-radius: 8px; font-size: 0.82rem; }
+  .shopping-item .item-name { font-weight: 500; color: #1f2937; }
+  .shopping-item .item-qty { font-weight: 700; color: var(--orange-600); background: #fef3c7; padding: 0.05rem 0.5rem; border-radius: 6px; font-size: 0.78rem; }
+  .shopping-item .item-unit { font-weight: 400; color: #9ca3af; font-size: 0.72rem; margin-left: 0.1rem; }
+
+  .empty-state { text-align: center; padding: 2.5rem 2rem; color: #9ca3af; }
+  .empty-state .icon { font-size: 2.8rem; margin-bottom: 0.8rem; }
+  .empty-state p { font-size: 0.9rem; }
+
+  .footer { text-align: center; margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid rgba(0,0,0,.06); color: #9ca3af; font-size: 0.78rem; font-weight: 300; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.45); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 20px; max-width: 560px; width: 100%; padding: 1.5rem 1.8rem 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.15); animation: modalIn 0.2s ease; }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h2 { font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+  .modal p { color: #6b7280; font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 0.6rem; }
+  .modal-actions .btn { flex: 1; justify-content: center; padding: 0.55rem; min-height: 42px; font-size: 0.85rem; }
+  .modal input[type=text], .modal input[type=number] { width: 100%; padding: 0.5rem 0.7rem; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 0.9rem; font-family: inherit; outline: none; margin-bottom: 0.8rem; }
+  .modal input:focus { border-color: var(--green-500); box-shadow: 0 0 0 3px rgba(34,197,94,.12); }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1f2937; color: white; padding: 0.6rem 1.3rem; border-radius: 12px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 8px 20px rgba(0,0,0,.15); z-index: 2000; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* Saved plans dropdown */
+  .saved-plans-bar {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 0.8rem; background: var(--blue-50);
+    border-radius: 10px; margin-bottom: 0.8rem;
+    flex-wrap: wrap; font-size: 0.8rem;
+  }
+  .saved-plans-bar select {
+    padding: 0.25rem 0.4rem; border: 1px solid #bfdbfe;
+    border-radius: 6px; font-size: 0.78rem; font-family: inherit;
+    background: white; outline: none; min-width: 100px;
+  }
+
+  /* Guide tooltip */
+  .guide-tip {
+    background: white; border-radius: 14px; padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem; border: 1px solid var(--green-200);
+    box-shadow: 0 2px 10px rgba(34,197,94,.08);
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    position: relative;
+  }
+  .guide-tip .close-guide {
+    position: absolute; top: 8px; right: 10px;
+    background: none; border: none; font-size: 0.9rem;
+    cursor: pointer; color: #9ca3af;
+  }
+  .guide-tip .icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .guide-tip .text { font-size: 0.82rem; color: #374151; line-height: 1.6; }
+  .guide-tip .text strong { color: var(--green-700); }
+
+  /* ===== MOBILE ===== */
+  @media (hover: none) and (pointer: coarse) {
+    .card-actions { display: flex; gap: 4px; }
+    .card-action-btn { width: 28px; height: 28px; opacity: 0.5; font-size: 0.75rem; }
+    .card-action-btn:active { opacity: 1; }
+  }
+  @media (max-width: 768px) { .planner-card { padding: 1.2rem 1.2rem; } }
+  @media (max-width: 640px) {
+    body { padding: 0.6rem 0.4rem; }
+    .header::after { font-size: 2rem; margin-bottom: 0.3rem; }
+    .header h1 { font-size: 1.5rem; }
+    .header p { font-size: 0.78rem; }
+    .ingredient-grid { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+    .ingredient-card { padding: 0.65rem 0.6rem 0.6rem; }
+    .ingredient-card .emoji { font-size: 1.2rem; }
+    .ingredient-card .name { font-size: 0.8rem; }
+    .ingredient-card .meta { font-size: 0.65rem; }
+    .highlight-bar { gap: 0.15rem; }
+    .highlight-pill { font-size: 0.55rem; padding: 0.02rem 0.3rem 0.02rem 0.25rem; }
+    .card-actions { display: flex; gap: 4px; top: 4px; right: 4px; }
+    .card-action-btn { width: 28px; height: 28px; opacity: 0.5; font-size: 0.75rem; }
+    .card-action-btn:active { opacity: 1; }
+    .section-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+    .section-tools { width: 100%; display: flex; gap: 0.3rem; }
+    .section-tools .btn { flex: 1; justify-content: center; font-size: 0.78rem; padding: 0.5rem 0.4rem; min-height: 40px; }
+    .planner-card { padding: 1rem 0.8rem; border-radius: 18px; }
+    .planner-header h2 { font-size: 1rem; }
+    .planner-options { padding: 0.6rem 0.7rem; gap: 0.4rem; }
+    .option-group label { font-size: 0.75rem; }
+    .option-group select, .option-group input { font-size: 0.75rem; padding: 0.3rem 0.4rem; min-height: 36px; }
+    .option-group input[type=number] { width: 50px; }
+    .results-toolbar { flex-direction: column; align-items: flex-start; }
+    .results-toolbar .right { width: 100%; }
+    .results-toolbar .right .btn { flex: 1; justify-content: center; font-size: 0.72rem; padding: 0.4rem 0.5rem; }
+    .stats { gap: 0.3rem; }
+    .stat-badge { font-size: 0.7rem; padding: 0.15rem 0.45rem; }
+    .meal-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+    .meal-card { padding: 0.8rem 0.9rem; }
+    .meal-card .day-label { font-size: 0.65rem; }
+    .meal-item { font-size: 0.75rem; padding: 0.15rem 0.4rem; }
+    .meal-card .meal-cal { font-size: 0.75rem; }
+    .shopping-section { padding: 0.8rem 1rem; border-radius: 14px; }
+    .shopping-section h3 { font-size: 0.9rem; }
+    .shopping-grid { grid-template-columns: 1fr 1fr; gap: 0.3rem; }
+    .shopping-item { font-size: 0.75rem; padding: 0.25rem 0.45rem; }
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal { margin: 0; border-radius: 20px 20px 0 0; max-width: 100%; padding: 1.2rem 1rem 1.5rem; animation: modalSlideUp 0.25s ease; }
+    @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .guide-tip { padding: 0.8rem 1rem; gap: 0.5rem; }
+    .guide-tip .text { font-size: 0.75rem; }
+    .saved-plans-bar { font-size: 0.72rem; padding: 0.35rem 0.6rem; }
+    .saved-plans-bar select { font-size: 0.72rem; min-width: 80px; }
+    .footer { font-size: 0.7rem; }
+  }
+  @media (max-width: 380px) {
+    .ingredient-grid { grid-template-columns: 1fr; }
+    .shopping-grid { grid-template-columns: 1fr; }
+    .option-group { min-width: 100%; }
+    .header h1 { font-size: 1.2rem; }
+    .section-tools { flex-direction: column; }
+    .section-tools .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <h1>慢碳早餐規劃器</h1>
+    <p>根莖類 · 穀物類 · 蛋白質 — 科學搭配，一鍵生成</p>
+  </header>
+
+  <!-- Guide -->
+  <div class="guide-tip" id="guideTip">
+    <button class="close-guide" onclick="dismissGuide()">✕</button>
+    <div class="icon">💡</div>
+    <div class="text">
+      <strong>快速上手：</strong>
+      食材卡上的 <strong>✏️</strong> 可編輯、<strong>✕</strong> 可刪除。
+      點「<strong>＋ 新增食材</strong>」加入自己的食材。
+      設定天數和目標熱量，點「<strong>生成方案</strong>」。
+      每張方案卡片上的 <strong>🔄</strong> 可單獨更換當天食材。
+    </div>
+  </div>
+
+  <!-- Ingredients -->
+  <section class="ingredients-section">
+    <div class="section-header">
+      <h2>🥔 食材庫 <span id="ingredientCount" style="font-size:0.85rem;font-weight:400;color:#9ca3af;"></span></h2>
+      <div class="section-tools">
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">＋ 新增</button>
+        <button class="btn btn-warning btn-sm" onclick="resetDefaults()">↺ 默認</button>
+      </div>
+    </div>
+    <div class="ingredient-grid" id="ingredientGrid"></div>
+  </section>
+
+  <!-- Planner -->
+  <div class="planner-card">
+    <div class="planner-header">
+      <h2>📋 早餐規劃</h2>
+      <div class="stats" style="gap:0.3rem;">
+        <button class="btn btn-sm btn-outline" onclick="document.getElementById('daysInput').value=Math.max(1,+document.getElementById('daysInput').value-1);generatePlan()">－</button>
+        <input type="number" id="daysInput" value="7" min="1" max="30" style="width:50px;padding:0.35rem 0.4rem;border:1.5px solid #e5e7eb;border-radius:8px;font-size:1rem;font-weight:700;text-align:center;font-family:inherit;outline:none;">
+        <button class="btn btn-sm btn-outline" onclick="document.getElementById('daysInput').value=Math.min(30,+document.getElementById('daysInput').value+1);generatePlan()">＋</button>
+        <button class="btn btn-primary" onclick="generatePlan()" style="margin-left:0.3rem;">生成</button>
+      </div>
+    </div>
+
+    <div class="planner-options">
+      <div class="option-group">
+        <label>🥚 蛋：</label>
+        <select id="eggCount">
+          <option value="1">1 顆</option>
+          <option value="2" selected>2 顆</option>
+          <option value="3">3 顆</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>🔄 模式：</label>
+        <select id="mixMode">
+          <option value="varied">多元輪換</option>
+          <option value="repeat">隨機</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <div class="toggle-input">
+          <input type="checkbox" id="calTargetToggle" onchange="toggleCalTarget()">
+          <label for="calTargetToggle">🎯 目標熱量</label>
+        </div>
+        <input type="number" id="calTarget" value="350" min="100" max="800" disabled style="width:55px;">
+        <span style="font-size:0.75rem;color:#9ca3af;">大卡/餐</span>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <!-- Saved plans -->
+      <div class="saved-plans-bar" id="savedPlansBar" style="display:none;">
+        <span>📂</span>
+        <select id="savedPlansSelect" onchange="loadSavedPlan(this.value)">
+          <option value="">已儲存的方案...</option>
+        </select>
+        <button class="btn btn-sm btn-danger" onclick="deleteSavedPlan()" style="font-size:0.7rem;padding:0.15rem 0.5rem;">🗑️</button>
+      </div>
+
+      <div class="results-toolbar">
+        <div class="left">
+          <h2>📅 早餐方案</h2>
+          <div class="stats">
+            <span class="stat-badge green" id="totalDaysBadge">📆 0 天</span>
+            <span class="stat-badge orange" id="totalCalBadge">🔥 0 大卡</span>
+            <span class="stat-badge pink" id="totalEggBadge">🥚 0 顆蛋</span>
+            <span class="stat-badge blue" id="targetBadge" style="display:none;">🎯 0 大卡/餐</span>
+          </div>
+        </div>
+        <div class="right">
+          <button class="btn btn-sm btn-outline" onclick="savePlan()">💾 儲存</button>
+          <button class="btn btn-sm btn-outline" onclick="exportPlan()">📋 複製</button>
+        </div>
+      </div>
+
+      <div class="meal-grid" id="mealGrid"></div>
+
+      <div class="shopping-section">
+        <h3>🛒 採購清單</h3>
+        <div class="shopping-grid" id="shoppingGrid"></div>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="icon">🥣</div>
+      <p>設定天數和目標熱量，點擊「生成方案」<br>自動為您搭配每日慢碳早餐</p>
+    </div>
+  </div>
+
+  <div class="footer">熱量數據參考《中國食物成分表》· 食材庫可自由增刪改</div>
+</div>
+
+<!-- Name Modal -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal" style="max-width:380px;">
+    <h2>💾 儲存方案</h2>
+    <p>為此方案取一個名稱：</p>
+    <input type="text" id="planNameInput" placeholder="例如：一週減脂早餐" maxlength="30">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeNameModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmSavePlan()">確認儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal" style="max-width:480px;">
+    <h2>📋 方案已複製</h2>
+    <textarea id="exportText" readonly style="width:100%;min-height:200px;padding:0.6rem;border:1px solid #e5e7eb;border-radius:10px;font-size:0.8rem;font-family:inherit;resize:vertical;background:#f9fafb;outline:none;"></textarea>
+    <p style="font-size:0.75rem;color:#9ca3af;margin-top:0.3rem;">已複製到剪貼簿，可直接貼到記事本或微信</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeExportModal()">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="modal-overlay" id="delModal">
+  <div class="modal" style="max-width:380px;">
+    <h2>🗑️ 刪除食材</h2>
+    <p id="delConfirmText"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDelModal()">取消</button>
+      <button class="btn btn-danger" id="delConfirmBtn" onclick="">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const DEFAULT_INGREDIENTS = [
+  { id: 'sweet-potato',  name: '紅薯',   emoji: '🍠', category: 'root',  time: '15-20min', unit: '顆',   note: '經典首選，無需去皮',           kcalPer100g: 86,  gramPerUnit: 186,
+    highlights: [{ icon: '👁️', text: 'β-胡蘿蔔素（維生素A）' }, { icon: '🍊', text: '維生素C' }, { icon: '💪', text: '鉀' }] },
+  { id: 'purple-potato', name: '紫薯',   emoji: '🟣', category: 'root',  time: '15-20min', unit: '顆',   note: '抗氧化，口感綿密',           kcalPer100g: 82,  gramPerUnit: 159,
+    highlights: [{ icon: '🟣', text: '花青素（抗氧化）' }, { icon: '🍊', text: '維生素C' }, { icon: '🧪', text: '硒' }] },
+  { id: 'yam',           name: '鐵棍山藥', emoji: '🥖', category: 'root',  time: '15-20min', unit: '150g', note: '健脾養胃，略有黏液',         kcalPer100g: 57,  gramPerUnit: 150,
+    highlights: [{ icon: '🫧', text: '黏液蛋白（護胃）' }, { icon: '🧬', text: '澱粉酶（助消化）' }, { icon: '💪', text: '鉀' }] },
+  { id: 'potato',        name: '土豆',   emoji: '🥔', category: 'root',  time: '20min',    unit: '顆',   note: '冷卻後含抗性澱粉，更利減脂', kcalPer100g: 77,  gramPerUnit: 234,
+    highlights: [{ icon: '🍊', text: '維生素C' }, { icon: '💪', text: '鉀' }, { icon: '🧬', text: '維生素B6' }] },
+  { id: 'taro',          name: '芋頭',   emoji: '🧇', category: 'root',  time: '20min',    unit: '顆',   note: '口感軟糯，膳食纖維豐富',     kcalPer100g: 58,  gramPerUnit: 259,
+    highlights: [{ icon: '🦷', text: '氟（護齒）' }, { icon: '💪', text: '鉀' }, { icon: '🌿', text: '膳食纖維' }] },
+  { id: 'carrot',        name: '胡蘿蔔',  emoji: '🥕', category: 'root',  time: '15min',    unit: '根',   note: '極低卡，清甜耐嚼',           kcalPer100g: 41,  gramPerUnit: 122,
+    highlights: [{ icon: '🥕', text: 'β-胡蘿蔔素（維生素A）' }, { icon: '👁️', text: '護眼明目' }, { icon: '🌿', text: '膳食纖維' }] },
+  { id: 'corn',          name: '甜玉米',  emoji: '🌽', category: 'grain', time: '10-15min', unit: '根',   note: '最方便，1根吃飽',           kcalPer100g: 96,  gramPerUnit: 229,
+    highlights: [{ icon: '👁️', text: '葉黃素（護眼）' }, { icon: '🧬', text: '維生素B群' }, { icon: '🌿', text: '膳食纖維' }] },
+  { id: 'pumpkin',       name: '老南瓜',  emoji: '🎃', category: 'grain', time: '15-20min', unit: '250g', note: '超低卡，天然甜味',           kcalPer100g: 52,  gramPerUnit: 250,
+    highlights: [{ icon: '👁️', text: 'β-胡蘿蔔素' }, { icon: '🧈', text: '維生素E' }, { icon: '🛡️', text: '鋅' }] },
+  { id: 'egg',           name: '雞蛋',   emoji: '🥚', category: 'protein',time: '8-10min',  unit: '顆',   note: '純蛋白質，2顆約140大卡',     kcalPer100g: 143, gramPerUnit: 50,
+    highlights: [{ icon: '🧠', text: '卵磷脂（健腦）' }, { icon: '☀️', text: '維生素D' }, { icon: '🧬', text: '維生素B12' }, { icon: '🧠', text: '膽鹼（記憶力）' }] },
+];
+
+const CATEGORY_LABELS = {
+  root:    { tag: 'tag-root',    tagText: '根莖' },
+  grain:   { tag: 'tag-grain',   tagText: '穀物' },
+  protein: { tag: 'tag-protein', tagText: '蛋白質' },
+};
+const STORAGE_KEY = 'breakfast_ingredients_v4';
+const PLANS_KEY = 'saved_plans_list';
+const PLAN_PREFIX = 'saved_plan_';
+const GUIDE_KEY = 'guide_dismissed';
+
+// ============================================================
+// HELPERS
+// ============================================================
+function calcKcal(ing) { return Math.round(ing.kcalPer100g * ing.gramPerUnit / 100); }
+function kcalDisplay(ing) { return `${calcKcal(ing)}大卡/${ing.unit}`; }
+
+function parseHighlights(text) {
+  return text.split('\n').map(l => l.trim()).filter(l => l).map(l => {
+    const m = l.match(/^([\u{1F000}-\u{1FFFF}]|[\u2600-\u27BF]|[\u{2700}-\u{27BF}]|[🫧🛡️💪🧪👁️🧬🧠☀️])/u);
+    return m ? { icon: m[1], text: l.slice(m[1].length).trim() } : { icon: '🏷️', text: l };
+  });
+}
+function highlightsToString(h) { return h && Array.isArray(h) && h.length ? h.map(x => `${x.icon} ${x.text}`).join('\n') : ''; }
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function loadIngredients() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p) && p.length > 0) return p; } catch(e) {} }
+  saveIngredients(DEFAULT_INGREDIENTS.map(i => ({...i, highlights: [...i.highlights]})));
+  return DEFAULT_INGREDIENTS.map(i => ({...i, highlights: [...i.highlights]}));
+}
+function saveIngredients(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+let INGREDIENTS = loadIngredients();
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderIngredients() {
+  const grid = document.getElementById('ingredientGrid');
+  grid.innerHTML = '';
+  document.getElementById('ingredientCount').textContent = `（共 ${INGREDIENTS.length} 種）`;
+  const order = ['root', 'grain', 'protein'];
+  const grouped = {};
+  order.forEach(c => grouped[c] = INGREDIENTS.filter(i => i.category === c));
+
+  order.forEach(cat => {
+    const items = grouped[cat];
+    if (!items.length) return;
+    items.forEach(ing => {
+      const ci = CATEGORY_LABELS[cat];
+      const isEgg = ing.id === 'egg';
+      let hl = '';
+      if (ing.highlights && ing.highlights.length)
+        hl = '<div class="highlight-bar">' + ing.highlights.map(h => `<span class="highlight-pill">${h.icon} ${h.text}</span>`).join('') + '</div>';
+      const card = document.createElement('div');
+      card.className = 'ingredient-card';
+      card.innerHTML = `<div class="card-actions"><button class="card-action-btn card-edit-btn" onclick="event.stopPropagation();openEditModal('${ing.id}')">✏️</button>${isEgg?'':`<button class="card-action-btn card-del-btn" onclick="event.stopPropagation();confirmDelete('${ing.id}')">✕</button>`}</div><span class="emoji">${ing.emoji}</span><div class="name">${ing.name}</div><div class="meta">⏱ ${ing.time} · <span class="kcal-unit">${kcalDisplay(ing)}</span></div><div class="meta-sub">${ing.kcalPer100g}大卡/100g · ~${ing.gramPerUnit}g/${ing.unit}</div>${hl}<span class="tag ${ci.tag}">${ci.tagText}</span>`;
+      grid.appendChild(card);
+    });
+  });
+}
+
+function getIngredient(id) { return INGREDIENTS.find(i => i.id === id); }
+
+function shuffle(arr) { const a = [...arr]; for (let i = a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// ============================================================
+// GUIDE
+// ============================================================
+function dismissGuide() {
+  document.getElementById('guideTip').style.display = 'none';
+  localStorage.setItem(GUIDE_KEY, '1');
+}
+
+// ============================================================
+// CAL TARGET
+// ============================================================
+function toggleCalTarget() {
+  const enabled = document.getElementById('calTargetToggle').checked;
+  document.getElementById('calTarget').disabled = !enabled;
+  if (enabled) generatePlan();
+}
+
+// ============================================================
+// MODAL (Add/Edit)
+// ============================================================
+let editingId = null;
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = '🥬 新增食材';
+  document.getElementById('formConfirmBtn').textContent = '確認新增';
+  // Reset form...
+  setFormValues('🥦', '', 'root', '15min', '86', '200', '份', '', '', '');
+  document.getElementById('formModal').classList.add('open');
+  setTimeout(() => document.getElementById('fName').focus(), 300);
+}
+function openEditModal(id) {
+  const ing = getIngredient(id); if (!ing) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = `✏️ 編輯食材 — ${ing.name}`;
+  document.getElementById('formConfirmBtn').textContent = '確認修改';
+  setFormValues(ing.emoji, ing.name, ing.category, ing.time, ing.kcalPer100g, ing.gramPerUnit, ing.unit, ing.id, highlightsToString(ing.highlights), ing.note);
+  document.getElementById('fId').readOnly = true; document.getElementById('fId').style.background = '#f3f4f6';
+  document.getElementById('formModal').classList.add('open');
+  setTimeout(() => document.getElementById('fName').focus(), 300);
+}
+function closeFormModal() {
+  document.getElementById('formModal').classList.remove('open');
+  editingId = null;
+  document.getElementById('fId').readOnly = false; document.getElementById('fId').style.background = '';
+}
+
+function setFormValues(e,n,c,t,k,g,u,id,h,note) {
+  document.getElementById('fEmoji').value=e||'🥦'; document.getElementById('fName').value=n||'';
+  document.getElementById('fCategory').value=c||'root'; document.getElementById('fTime').value=t||'15min';
+  document.getElementById('fKcal100').value=k||''; document.getElementById('fGramUnit').value=g||'';
+  document.getElementById('fUnit').value=u||'份'; document.getElementById('fId').value=id||'';
+  document.getElementById('fHighlights').value=h||''; document.getElementById('fNote').value=note||'';
+}
+
+function confirmForm() {
+  const name = document.getElementById('fName').value.trim();
+  const emoji = document.getElementById('fEmoji').value.trim()||'🥦';
+  const category = document.getElementById('fCategory').value;
+  const time = document.getElementById('fTime').value.trim()||'15min';
+  const kcal100 = parseFloat(document.getElementById('fKcal100').value);
+  const gramUnit = parseFloat(document.getElementById('fGramUnit').value);
+  const unit = document.getElementById('fUnit').value.trim()||'份';
+  const id = document.getElementById('fId').value.trim();
+  const highlights = parseHighlights(document.getElementById('fHighlights').value);
+  const note = document.getElementById('fNote').value.trim()||'';
+  if (!name) { showToast('請輸入食材名稱'); return; }
+  if (!kcal100||kcal100<1) { showToast('請輸入熱量'); return; }
+  if (!gramUnit||gramUnit<1) { showToast('請輸入每份重量'); return; }
+
+  if (editingId) {
+    const ing = getIngredient(editingId); if (!ing) return;
+    Object.assign(ing, {name,emoji,category,time,kcalPer100g: kcal100,gramPerUnit: gramUnit,unit,highlights,note});
+    saveIngredients(INGREDIENTS); renderIngredients(); closeFormModal(); showToast(`✅ 已更新「${name}」`);
+  } else {
+    let fid = id;
+    if (!fid) { fid = name.toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-'); let s=''; while(INGREDIENTS.some(i=>i.id===fid+s)) s=s?String(parseInt(s||'0')+1):'2'; fid=fid+s; }
+    if (INGREDIENTS.some(i=>i.id===fid)) { showToast('食材 ID 已存在'); return; }
+    INGREDIENTS.push({id:fid,name,emoji,category,time,unit,note,kcalPer100g:kcal100,gramPerUnit:gramUnit,highlights});
+    saveIngredients(INGREDIENTS); renderIngredients(); closeFormModal(); showToast(`✅ 已新增「${name}」`);
+  }
+}
+
+// ============================================================
+// DELETE
+// ============================================================
+let pendingDeleteId = null;
+function confirmDelete(id) {
+  const ing = getIngredient(id); if (!ing) return;
+  if (id==='egg') { showToast('雞蛋為核心食材，無法刪除'); return; }
+  pendingDeleteId = id;
+  document.getElementById('delConfirmText').textContent = `確定刪除「${ing.emoji} ${ing.name}」？方案將不再使用它。`;
+  document.getElementById('delModal').classList.add('open');
+  document.getElementById('delConfirmBtn').onclick = executeDelete;
+}
+function closeDelModal() { document.getElementById('delModal').classList.remove('open'); pendingDeleteId = null; }
+function executeDelete() {
+  if (!pendingDeleteId) return;
+  const ing = getIngredient(pendingDeleteId);
+  INGREDIENTS = INGREDIENTS.filter(i=>i.id!==pendingDeleteId);
+  saveIngredients(INGREDIENTS); renderIngredients(); closeDelModal(); showToast(`🗑️ 已刪除「${ing.name}」`);
+  pendingDeleteId = null;
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function resetDefaults() {
+  const isD = INGREDIENTS.length===DEFAULT_INGREDIENTS.length && INGREDIENTS.every((a,i)=>a.id===DEFAULT_INGREDIENTS[i]?.id);
+  if (isD) { showToast('已是默認食材庫'); return; }
+  if (confirm('恢復將丟失所有自定義食材，確定？')) {
+    INGREDIENTS = DEFAULT_INGREDIENTS.map(i=>({...i,highlights:[...i.highlights]}));
+    saveIngredients(INGREDIENTS); renderIngredients(); showToast('↺ 已恢復默認');
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// PLAN GENERATION (meals array is global for swap feature)
+// ============================================================
+let currentMeals = [];
+let currentDays = 0;
+let currentEggs = 0;
+
+function generatePlan() {
+  let days = parseInt(document.getElementById('daysInput').value)||7;
+  if (days<1) days=1; if (days>30) days=30;
+  document.getElementById('daysInput').value = days;
+
+  const mode = document.getElementById('mixMode').value;
+  const useTarget = document.getElementById('calTargetToggle').checked;
+  const targetCal = useTarget ? parseInt(document.getElementById('calTarget').value)||350 : 0;
+
+  const carbs = INGREDIENTS.filter(i=>i.category==='root'||i.category==='grain');
+  if (!carbs.length) { alert('主食食材為空，請先新增'); return; }
+
+  const meals = [];
+  const carbUsage = {};
+  carbs.forEach(c=>carbUsage[c.id]=0);
+  const egg = getIngredient('egg');
+  const eggKcal = egg ? calcKcal(egg) : 70;
+
+  for (let d=0; d<days; d++) {
+    let sortedCarbs;
+    if (mode==='varied') {
+      const min=Math.min(...carbs.map(c=>carbUsage[c.id]));
+      sortedCarbs = shuffle(carbs.filter(c=>carbUsage[c.id]===min));
+    } else sortedCarbs = shuffle(carbs);
+
+    const carb = sortedCarbs[0];
+    carbUsage[carb.id] = (carbUsage[carb.id]||0)+1;
+
+    let eggs = currentEggs || 2;
+    if (useTarget && targetCal>0) {
+      const carbKcal = calcKcal(carb);
+      // Try 1,2,3 eggs, pick closest to target
+      let bestEggs = 1, bestDiff = Infinity;
+      for (let e=1; e<=3; e++) {
+        const diff = Math.abs(carbKcal + eggKcal*e - targetCal);
+        if (diff < bestDiff) { bestDiff = diff; bestEggs = e; }
+      }
+      eggs = bestEggs;
+    }
+
+    meals.push({ day: d+1, carb, eggs });
+  }
+
+  currentMeals = meals;
+  currentDays = days;
+  currentEggs = currentEggs || 2;
+  renderResults(meals, days, useTarget, targetCal);
+}
+
+function swapMeal(index) {
+  const carbs = INGREDIENTS.filter(i=>i.category==='root'||i.category==='grain');
+  if (carbs.length<2) { showToast('至少需2種主食才能替換'); return; }
+
+  const current = currentMeals[index];
+  const others = carbs.filter(c=>c.id!==current.carb.id);
+  if (!others.length) { showToast('沒有其他可替換的食材'); return; }
+
+  const newCarb = others[Math.floor(Math.random()*others.length)];
+  currentMeals[index].carb = newCarb;
+
+  // Recalculate eggs if target mode
+  const useTarget = document.getElementById('calTargetToggle').checked;
+  const targetCal = useTarget ? parseInt(document.getElementById('calTarget').value)||350 : 0;
+  const egg = getIngredient('egg');
+  const eggKcal = egg ? calcKcal(egg) : 70;
+
+  if (useTarget && targetCal>0) {
+    const carbKcal = calcKcal(newCarb);
+    let bestEggs = 1, bestDiff = Infinity;
+    for (let e=1; e<=3; e++) {
+      const diff = Math.abs(carbKcal + eggKcal*e - targetCal);
+      if (diff < bestDiff) { bestDiff = diff; bestEggs = e; }
+    }
+    currentMeals[index].eggs = bestEggs;
+  }
+
+  renderResults(currentMeals, currentDays, useTarget, targetCal);
+  showToast(`🔄 已更換第 ${index+1} 天食材`);
+}
+
+function renderResults(meals, days, useTarget, targetCal) {
+  const results = document.getElementById('results');
+  const empty = document.getElementById('emptyState');
+  const mealGrid = document.getElementById('mealGrid');
+  const shoppingGrid = document.getElementById('shoppingGrid');
+
+  const egg = getIngredient('egg');
+  const eggKcal = egg ? calcKcal(egg) : 70;
+  let totalCal = 0;
+  const totalEggs = meals.reduce((s,m)=>s+m.eggs,0);
+
+  document.getElementById('totalDaysBadge').textContent = `📆 ${days} 天`;
+  document.getElementById('totalCalBadge').textContent = `🔥 ${totalCal} 大卡`;
+  document.getElementById('totalEggBadge').textContent = `🥚 ${totalEggs} 顆蛋`;
+
+  // Target badge
+  const tb = document.getElementById('targetBadge');
+  if (useTarget && targetCal>0) {
+    tb.textContent = `🎯 ${targetCal} 大卡/餐`;
+    tb.style.display = '';
+  } else tb.style.display = 'none';
+
+  mealGrid.innerHTML = '';
+  meals.forEach((m, idx) => {
+    const carb = m.carb;
+    const carbKcal = calcKcal(carb);
+    const mealCal = carbKcal + eggKcal * m.eggs;
+
+    const card = document.createElement('div');
+    card.className = 'meal-card';
+    card.innerHTML = `<div class="top-row"><span class="day-label">第 ${m.day} 天</span><button class="swap-btn" onclick="swapMeal(${idx})">🔄 換一個</button></div><div class="meal-items"><span class="meal-item"><span>${carb.emoji}</span> ${carb.name} <span class="qty">×1</span> <span class="kcal">${carbKcal}大卡</span></span><span class="meal-item">🥚 雞蛋 <span class="qty">×${m.eggs}</span> <span class="kcal">${eggKcal*m.eggs}大卡</span></span></div><div class="meal-cal"><span>🔥 <strong>${mealCal}</strong> 大卡</span><span>⏱ ${carb.time} + ${m.eggs>2?'10-12':'8-10'}min</span></div>`;
+    mealGrid.appendChild(card);
+  });
+
+  // Recalc total after rendering
+  totalCal = meals.reduce((s,m)=>s+(calcKcal(m.carb)+eggKcal*m.eggs),0);
+  document.getElementById('totalCalBadge').textContent = `🔥 ${totalCal} 大卡`;
+
+  // Shopping list
+  const shopping = {};
+  meals.forEach(m => { shopping[m.carb.id]=(shopping[m.carb.id]||0)+1; shopping['egg']=(shopping['egg']||0)+m.eggs; });
+  shoppingGrid.innerHTML = '';
+  Object.entries(shopping).sort(([a],[b])=>{
+    if (a==='egg') return 1; if (b==='egg') return -1;
+    const ia=getIngredient(a), ib=getIngredient(b);
+    return (ia?['root','grain'].indexOf(ia.category):0)-(ib?['root','grain'].indexOf(ib.category):0) || a.localeCompare(b);
+  }).forEach(([id,qty])=>{
+    const ing=getIngredient(id); if (!ing) return;
+    const item = document.createElement('div');
+    item.className = 'shopping-item';
+    item.innerHTML = `<span class="item-name">${ing.emoji} ${ing.name}</span><span><span class="item-qty">${qty}</span><span class="item-unit">${ing.unit}</span></span>`;
+    shoppingGrid.appendChild(item);
+  });
+
+  results.classList.add('visible');
+  empty.style.display = 'none';
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportPlan() {
+  if (!currentMeals.length) { showToast('請先生成方案'); return; }
+  const egg = getIngredient('egg');
+  const eggKcal = egg ? calcKcal(egg) : 70;
+
+  let text = `🥗 慢碳早餐方案\n${'─'.repeat(30)}\n\n`;
+  currentMeals.forEach(m => {
+    const carb = m.carb;
+    const mealCal = calcKcal(carb) + eggKcal*m.eggs;
+    text += `【第 ${m.day} 天】${carb.emoji} ${carb.name} ×1 + 🥚×${m.eggs} = 🔥${mealCal}大卡\n`;
+  });
+
+  text += `\n${'─'.repeat(30)}\n🛒 採購清單\n`;
+  const shopping = {};
+  currentMeals.forEach(m => { shopping[m.carb.id]=(shopping[m.carb.id]||0)+1; shopping['egg']=(shopping['egg']||0)+m.eggs; });
+  Object.entries(shopping).forEach(([id,qty])=>{
+    const ing = getIngredient(id); if (!ing) return;
+    text += `${ing.emoji} ${ing.name}: ${qty}${ing.unit}\n`;
+  });
+
+  const totalCal = currentMeals.reduce((s,m)=>s+(calcKcal(m.carb)+eggKcal*m.eggs),0);
+  text += `\n${'─'.repeat(30)}\n📆 ${currentDays}天 · 🔥${totalCal}大卡`;
+
+  navigator.clipboard.writeText(text).then(()=>{
+    document.getElementById('exportText').value = text;
+    document.getElementById('exportModal').classList.add('open');
+  }).catch(()=>{
+    document.getElementById('exportText').value = text;
+    document.getElementById('exportModal').classList.add('open');
+  });
+}
+function closeExportModal() { document.getElementById('exportModal').classList.remove('open'); }
+
+// ============================================================
+// SAVE / LOAD PLANS
+// ============================================================
+function savePlan() {
+  if (!currentMeals.length) { showToast('請先生成方案'); return; }
+  document.getElementById('planNameInput').value = '';
+  document.getElementById('nameModal').classList.add('open');
+  setTimeout(()=>document.getElementById('planNameInput').focus(), 300);
+}
+function closeNameModal() { document.getElementById('nameModal').classList.remove('open'); }
+
+function confirmSavePlan() {
+  const name = document.getElementById('planNameInput').value.trim();
+  if (!name) { showToast('請輸入方案名稱'); return; }
+
+  // Save the plan
+  const plan = {
+    name,
+    date: new Date().toLocaleDateString('zh-Hans'),
+    meals: currentMeals.map(m => ({ carbId: m.carb.id, eggs: m.eggs })),
+    days: currentDays,
+  };
+
+  // Store in a list
+  let list = JSON.parse(localStorage.getItem(PLANS_KEY)||'[]');
+  // Remove old with same name
+  list = list.filter(p=>p!==name);
+  list.push(name);
+  if (list.length > 20) list = list.slice(-20); // cap at 20
+  localStorage.setItem(PLANS_KEY, JSON.stringify(list));
+  localStorage.setItem(PLAN_PREFIX + name, JSON.stringify(plan));
+
+  closeNameModal();
+  showToast(`💾 已儲存「${name}」`);
+  refreshSavedPlans();
+}
+
+function refreshSavedPlans() {
+  const bar = document.getElementById('savedPlansBar');
+  const sel = document.getElementById('savedPlansSelect');
+  const list = JSON.parse(localStorage.getItem(PLANS_KEY)||'[]');
+  if (!list.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  sel.innerHTML = '<option value="">已儲存的方案...</option>' + list.map(n => `<option value="${n}">${n}</option>`).join('');
+}
+
+function loadSavedPlan(name) {
+  if (!name) return;
+  const raw = localStorage.getItem(PLAN_PREFIX + name);
+  if (!raw) { showToast('方案不存在'); refreshSavedPlans(); return; }
+  const plan = JSON.parse(raw);
+
+  // Reconstruct meals
+  const meals = plan.meals.map((m, idx) => {
+    const carb = getIngredient(m.carbId);
+    if (!carb) {
+      // Fallback: pick a random carb
+      const carbs = INGREDIENTS.filter(i=>i.category==='root'||i.category==='grain');
+      return { day: idx+1, carb: carbs.length ? shuffle(carbs)[0] : null, eggs: m.eggs };
+    }
+    return { day: idx+1, carb, eggs: m.eggs };
+  }).filter(m => m.carb !== null);
+
+  if (!meals.length) { showToast('方案中的食材已被刪除'); refreshSavedPlans(); return; }
+
+  currentMeals = meals;
+  currentDays = plan.days;
+  document.getElementById('daysInput').value = plan.days;
+
+  const useTarget = document.getElementById('calTargetToggle').checked;
+  const targetCal = useTarget ? parseInt(document.getElementById('calTarget').value)||350 : 0;
+  renderResults(meals, plan.days, useTarget, targetCal);
+  showToast(`📂 已載入「${name}」`);
+}
+
+function deleteSavedPlan() {
+  const sel = document.getElementById('savedPlansSelect');
+  const name = sel.value;
+  if (!name) return;
+  if (!confirm(`刪除已儲存的方案「${name}」？`)) return;
+
+  let list = JSON.parse(localStorage.getItem(PLANS_KEY)||'[]');
+  list = list.filter(p=>p!==name);
+  localStorage.setItem(PLANS_KEY, JSON.stringify(list));
+  localStorage.removeItem(PLAN_PREFIX + name);
+  refreshSavedPlans();
+  showToast(`🗑️ 已刪除「${name}」`);
+}
+
+// ============================================================
+// MODAL CLOSE EVENTS
+// ============================================================
+document.getElementById('formModal').addEventListener('click', function(e) { if (e.target===this) closeFormModal(); });
+document.getElementById('delModal').addEventListener('click', function(e) { if (e.target===this) closeDelModal(); });
+document.getElementById('nameModal').addEventListener('click', function(e) { if (e.target===this) closeNameModal(); });
+document.getElementById('exportModal').addEventListener('click', function(e) { if (e.target===this) closeExportModal(); });
+document.addEventListener('keydown', function(e) {
+  if (e.key==='Escape') { closeFormModal(); closeDelModal(); closeNameModal(); closeExportModal(); }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Guide
+  if (!localStorage.getItem(GUIDE_KEY)) {
+    document.getElementById('guideTip').style.display = '';
+  } else document.getElementById('guideTip').style.display = 'none';
+
+  renderIngredients();
+  refreshSavedPlans();
+  generatePlan();
+});
+</script>
+</body>
+</html>
