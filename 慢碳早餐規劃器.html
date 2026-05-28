@@ -378,6 +378,63 @@
   <div class="footer">熱量數據參考《中國食物成分表》· 食材庫可自由增刪改</div>
 </div>
 
+<!-- Add / Edit Ingredient Modal -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal" style="max-width:560px;">
+    <h2 id="formTitle">🥬 新增食材 <span class="mode-tag" style="font-size:0.7rem;font-weight:600;padding:0.15rem 0.55rem;border-radius:999px;background:var(--green-100);color:var(--green-700);margin-left:0.35rem;vertical-align:middle;">新增</span></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem 1rem;">
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">😊 圖標</label>
+        <input type="text" id="fEmoji" value="🥦" maxlength="4" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">📛 名稱 *</label>
+        <input type="text" id="fName" placeholder="西蘭花" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">📂 分類 *</label>
+        <select id="fCategory" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;background:white;">
+          <option value="root">根莖類</option>
+          <option value="grain">穀物類</option>
+          <option value="protein">蛋白質類</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">⏱ 蒸製時間</label>
+        <input type="text" id="fTime" value="15min" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">🔥 熱量（大卡/100g）*</label>
+        <input type="number" id="fKcal100" value="86" min="1" step="0.1" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">⚖️ 每份重量（克）*</label>
+        <input type="number" id="fGramUnit" value="200" min="1" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">📏 單位</label>
+        <input type="text" id="fUnit" value="份" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">🔑 食材 ID</label>
+        <input type="text" id="fId" placeholder="broccoli" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;">
+      </div>
+      <div style="grid-column:1/-1;font-size:0.78rem;font-weight:700;color:var(--green-700);padding:0.3rem 0 0.1rem;border-top:1px solid #e5e7eb;">🏷️ 特有營養標籤（選填，每行一個）</div>
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:0.2rem;">
+        <textarea id="fHighlights" placeholder="🥕 β-胡蘿蔔素（維生素A）&#10;👁️ 護眼明目&#10;🌿 膳食纖維" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;min-height:60px;"></textarea>
+      </div>
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:0.2rem;">
+        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;">📝 備註</label>
+        <textarea id="fNote" placeholder="可選備註說明" style="padding:0.45rem 0.65rem;border:1.5px solid #e5e7eb;border-radius:10px;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;min-height:48px;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1rem;padding-top:0.9rem;border-top:1px solid #f3f4f6;">
+      <button class="btn btn-outline" onclick="closeFormModal()">取消</button>
+      <button class="btn btn-primary" id="formConfirmBtn" onclick="confirmForm()">確認新增</button>
+    </div>
+  </div>
+</div>
+
 <!-- Name Modal -->
 <div class="modal-overlay" id="nameModal">
   <div class="modal" style="max-width:380px;">
