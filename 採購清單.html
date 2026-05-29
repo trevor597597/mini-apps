@@ -426,6 +426,162 @@
   .upload-zone .uz-text strong { color: var(--amber-700); }
   .upload-zone .uz-hint { font-size: 0.7rem; color: var(--slate-400); margin-top: 0.3rem; }
 
+  /* Upload Tabs */
+  .upload-tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    background: var(--slate-100);
+    border-radius: 10px;
+    padding: 0.2rem;
+  }
+  .upload-tab {
+    flex: 1;
+    padding: 0.4rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: transparent;
+    color: var(--slate-500);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .upload-tab.active {
+    background: white;
+    color: var(--amber-700);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .upload-tab:hover:not(.active) { color: var(--slate-700); }
+  .upload-panel { display: block; }
+  .upload-panel.hidden { display: none; }
+
+  /* Image Import */
+  .image-upload-zone {
+    border: 2px dashed var(--warm-border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--warm-card);
+    margin-bottom: 0.8rem;
+  }
+  .image-upload-zone:hover, .image-upload-zone.dragover {
+    border-color: var(--amber-400);
+    background: var(--amber-50);
+  }
+  .image-upload-zone .uz-icon { font-size: 2rem; display: block; margin-bottom: 0.3rem; }
+  .image-upload-zone .uz-text { font-size: 0.82rem; color: var(--slate-500); }
+  .image-upload-zone .uz-hint { font-size: 0.7rem; color: var(--slate-400); margin-top: 0.2rem; }
+
+  .img-preview-wrap {
+    text-align: center;
+    margin-bottom: 0.8rem;
+  }
+  .img-preview-inner {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    border: 1px solid var(--warm-border);
+  }
+  .img-preview-remove {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--rose-500);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-decoration: underline;
+  }
+
+  /* API Key */
+  .api-key-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+    align-items: center;
+  }
+  .api-key-row input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-key-row input:focus { border-color: var(--amber-400); }
+  .api-key-row .btn { flex-shrink: 0; }
+
+  .vision-hint {
+    font-size: 0.72rem;
+    color: var(--slate-400);
+    line-height: 1.6;
+    margin-bottom: 0.6rem;
+  }
+  .vision-hint strong { color: var(--amber-600); }
+
+  .recognize-btn-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .recognize-btn-row .btn { padding: 0.5rem 1.2rem; }
+
+  /* Recognition Progress */
+  .rec-progress {
+    text-align: center;
+    padding: 1rem 0;
+    color: var(--slate-500);
+  }
+  .rec-progress .spinner {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border: 3px solid var(--warm-border);
+    border-top-color: var(--amber-500);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 0.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Recognition Result */
+  .rec-result {
+    background: var(--warm-card);
+    border: 1px solid var(--warm-border);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+    margin-bottom: 0.8rem;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .rr-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid #f5ede0;
+    font-size: 0.78rem;
+  }
+  .rr-item:last-child { border-bottom: none; }
+  .rr-item .rr-check { width: 16px; height: 16px; accent-color: var(--amber-500); flex-shrink: 0; }
+  .rr-item .rr-name { font-weight: 600; color: var(--slate-700); min-width: 60px; }
+  .rr-item .rr-detail { color: var(--slate-400); font-size: 0.7rem; flex: 1; }
+  .rr-item .rr-detail span { margin-right: 0.4rem; }
+  .rr-summary {
+    font-size: 0.75rem;
+    color: var(--amber-600);
+    font-weight: 500;
+    padding: 0.4rem 0.7rem 0.2rem;
+  }
+
   /* Toast */
   .toast {
     position: fixed;
@@ -481,6 +637,10 @@
     .form-row { flex-wrap: wrap; }
     .form-group { min-width: calc(50% - 0.3rem); }
     .upload-zone { padding: 1rem; }
+    .upload-tabs { flex-wrap: wrap; }
+    .upload-tab { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
+    .img-preview-inner { max-height: 200px; }
+    .rr-item { flex-wrap: wrap; }
   }
 
   @media (max-width: 380px) {
@@ -594,21 +754,87 @@
 <div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)closeUploadModal()">
   <div class="modal">
     <div class="modal-header">
-      <h2>📤 上傳檔案</h2>
+      <h2 id="uploadModalTitle">📤 導入數據</h2>
       <button class="modal-close" onclick="closeUploadModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="upload-zone" id="uploadZone">
-        <span class="uz-icon">📂</span>
-        <span class="uz-text">點擊或拖曳檔案至此處<br><strong>支援 .json / .csv / .xlsx</strong></span>
-        <span class="uz-hint">可同時選擇多個檔案</span>
+      <!-- Tabs -->
+      <div class="upload-tabs">
+        <button class="upload-tab active" onclick="switchUploadTab('file')">📄 檔案</button>
+        <button class="upload-tab" onclick="switchUploadTab('image')">🖼️ 圖片識別</button>
       </div>
-      <input type="file" id="fileInput" accept=".json,.csv,.xlsx" multiple style="display:none" onchange="handleFiles(this.files)">
-      <div style="font-size:0.78rem;color:var(--slate-400);line-height:1.6;">
-        <strong>📋 支援的檔案格式：</strong><br>
-        <strong>JSON</strong> — 物件陣列或含 data 字段的包裝<br>
-        <strong>CSV</strong> — 第一行為欄位名，系統自動識別中英文欄位<br>
-        <strong>Excel (.xlsx)</strong> — 同上，自動讀取第一個工作表
+
+      <!-- File Upload Panel -->
+      <div class="upload-panel" id="uploadPanelFile">
+        <div class="upload-zone" id="uploadZone">
+          <span class="uz-icon">📂</span>
+          <span class="uz-text">點擊或拖曳檔案至此處<br><strong>支援 .json / .csv / .xlsx</strong></span>
+          <span class="uz-hint">可同時選擇多個檔案</span>
+        </div>
+        <input type="file" id="fileInput" accept=".json,.csv,.xlsx" multiple style="display:none" onchange="handleFiles(this.files)">
+        <div style="font-size:0.78rem;color:var(--slate-400);line-height:1.6;">
+          <strong>📋 支援的檔案格式：</strong><br>
+          <strong>JSON</strong> — 物件陣列或含 data 字段的包裝<br>
+          <strong>CSV</strong> — 第一行為欄位名，系統自動識別中英文欄位<br>
+          <strong>Excel (.xlsx)</strong> — 同上，自動讀取第一個工作表
+        </div>
+      </div>
+
+      <!-- Image Recognition Panel -->
+      <div class="upload-panel hidden" id="uploadPanelImage">
+        <div class="vision-hint">
+          🧠 上傳購物清單、收據或菜單照片，AI 將自動識別並提取採購項目。<br>
+          <strong>需自行配置 OpenRouter API Key</strong>（免費，前往 <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--amber-600);">openrouter.ai/keys</a> 獲取）
+        </div>
+
+        <!-- API Key -->
+        <div class="api-key-row">
+          <input type="password" id="visionApiKey" placeholder="輸入 OpenRouter API Key..." style="flex:1;">
+          <button class="btn btn-outline btn-sm" onclick="saveApiKey()">💾 保存</button>
+        </div>
+        <div style="font-size:0.7rem;color:var(--slate-400);margin-bottom:0.6rem;">
+          🔑 Key 僅存在瀏覽器本地，不會上傳至其他服務器
+          <span id="apiKeyStatus" style="margin-left:0.3rem;font-weight:600;"></span>
+        </div>
+
+        <!-- Image Upload Area -->
+        <div class="image-upload-zone" id="imageUploadZone">
+          <span class="uz-icon">🖼️</span>
+          <span class="uz-text">點擊或拖曳圖片至此處<br><strong>支援 JPG / PNG / WebP</strong></span>
+          <span class="uz-hint">購物清單、收據、菜單照片均可</span>
+        </div>
+        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageFile(this.files[0])">
+
+        <!-- Image Preview -->
+        <div class="img-preview-wrap" id="imgPreviewWrap" style="display:none;">
+          <img class="img-preview-inner" id="imgPreview" alt="預覽">
+          <button class="img-preview-remove" onclick="removeImage()">✕ 移除圖片</button>
+        </div>
+
+        <!-- Context prompt -->
+        <div class="api-key-row" style="margin-bottom:0.6rem;">
+          <input type="text" id="visionContext" placeholder="可選：補充說明（如「這是全聯超市的收據」）" style="flex:1;">
+        </div>
+
+        <!-- Recognize button -->
+        <div class="recognize-btn-row">
+          <button class="btn btn-primary" id="recognizeBtn" onclick="recognizeImage()">🔍 識別圖片</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="rec-progress" id="recProgress" style="display:none;">
+          <div class="spinner"></div>
+          <div>AI 正在分析圖片，請稍候…</div>
+        </div>
+
+        <!-- Result -->
+        <div id="recResultArea" style="display:none;">
+          <div class="rec-result" id="recResultList"></div>
+          <div class="recognize-btn-row" style="justify-content:space-between;">
+            <span style="font-size:0.72rem;color:var(--slate-400);" id="recResultCount"></span>
+            <button class="btn btn-primary" onclick="importRecognizedItems()">📥 導入選中項 (0)</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1233,10 +1459,277 @@ function confirmReset() {
 }
 
 // ============================================================
+// 圖片識別（OpenRouter 多模態）
+// ============================================================
+
+const API_KEY_STORAGE = 'procurement_vision_apikey';
+let recognizedItems = [];
+let currentImageBase64 = '';
+let apiKeyLoaded = false;
+
+function loadApiKey() {
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if (key) {
+    document.getElementById('visionApiKey').value = key;
+    document.getElementById('apiKeyStatus').textContent = '✅ 已保存';
+    document.getElementById('apiKeyStatus').style.color = 'var(--emerald-500)';
+    apiKeyLoaded = true;
+  }
+}
+
+function saveApiKey() {
+  const key = document.getElementById('visionApiKey').value.trim();
+  if (!key) { showToast('❌ 請輸入 API Key'); return; }
+  localStorage.setItem(API_KEY_STORAGE, key);
+  document.getElementById('apiKeyStatus').textContent = '✅ 已保存';
+  document.getElementById('apiKeyStatus').style.color = 'var(--emerald-500)';
+  apiKeyLoaded = true;
+  showToast('💾 API Key 已保存至本地');
+}
+
+function switchUploadTab(tab) {
+  document.querySelectorAll('.upload-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'file') || (i === 1 && tab === 'image'));
+  });
+  document.getElementById('uploadPanelFile').classList.toggle('hidden', tab !== 'file');
+  document.getElementById('uploadPanelImage').classList.toggle('hidden', tab !== 'image');
+
+  if (tab === 'image') {
+    loadApiKey();
+    setupImageUploadZone();
+  }
+}
+
+function setupImageUploadZone() {
+  const zone = document.getElementById('imageUploadZone');
+  // Remove old listeners by replacing
+  const newZone = zone.cloneNode(true);
+  zone.parentNode.replaceChild(newZone, zone);
+
+  const freshZone = document.getElementById('imageUploadZone');
+  freshZone.addEventListener('click', () => document.getElementById('imageInput').click());
+  freshZone.addEventListener('dragover', e => { e.preventDefault(); freshZone.classList.add('dragover'); });
+  freshZone.addEventListener('dragleave', () => freshZone.classList.remove('dragover'));
+  freshZone.addEventListener('drop', e => {
+    e.preventDefault();
+    freshZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length && e.dataTransfer.files[0].type.startsWith('image/')) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+function handleImageFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImageBase64 = e.target.result;
+    document.getElementById('imgPreview').src = e.target.result;
+    document.getElementById('imgPreviewWrap').style.display = 'block';
+    // Hide previous results
+    document.getElementById('recResultArea').style.display = 'none';
+    recognizedItems = [];
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  currentImageBase64 = '';
+  document.getElementById('imgPreview').src = '';
+  document.getElementById('imgPreviewWrap').style.display = 'none';
+  document.getElementById('imageInput').value = '';
+  document.getElementById('recResultArea').style.display = 'none';
+  recognizedItems = [];
+}
+
+function recognizeImage() {
+  if (!currentImageBase64) { showToast('❌ 請先上傳圖片'); return; }
+
+  let apiKey = document.getElementById('visionApiKey').value.trim();
+  if (!apiKey) {
+    apiKey = localStorage.getItem(API_KEY_STORAGE);
+    if (!apiKey) { showToast('❌ 請先配置 OpenRouter API Key'); return; }
+  }
+
+  const context = document.getElementById('visionContext').value.trim();
+
+  // Show progress
+  document.getElementById('recProgress').style.display = 'block';
+  document.getElementById('recResultArea').style.display = 'none';
+  document.getElementById('recognizeBtn').disabled = true;
+  document.getElementById('recognizeBtn').textContent = '⏳ 識別中…';
+
+  // Build prompt
+  const prompt = `你是一個採購物品識別助手。請仔細分析這張圖片，識別出所有採購相關的物品。
+
+${context ? `補充信息：${context}` : ''}
+
+對每個物品，提取以下信息（盡力而為，不確定的字段留空）：
+- name: 物品名稱（必填）
+- quantity: 數量（數字，默認1）
+- unit: 單位（如 kg、個、箱、瓶）
+- category: 類別（如 食材、飲品、日用品、水果、調味料）
+- location: 地點或商店名稱（如果能從圖片推斷）
+- price: 預估單價（數字，不包含貨幣符號）
+- priority: 優先級（"high"、"medium" 或 "low"）
+
+請以 JSON 數組格式返回，嚴格按以下結構：
+[
+  {
+    "name": "雞胸肉",
+    "quantity": 2,
+    "unit": "kg",
+    "category": "食材",
+    "location": "",
+    "price": 25.5,
+    "priority": "medium"
+  }
+]
+
+只返回 JSON 數組，不要有任何其他文字說明。如果無法識別任何物品，返回空數組 []。`;
+
+  // Call OpenRouter
+  fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': '採購清單助手',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.0-flash-001',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: currentImageBase64 } }
+          ]
+        }
+      ],
+      max_tokens: 4096,
+      temperature: 0.1,
+    })
+  })
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.error?.message || `HTTP ${res.status}`); });
+    return res.json();
+  })
+  .then(data => {
+    const content = data.choices?.[0]?.message?.content || '';
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
+    if (!jsonMatch) { throw new Error('無法解析 AI 返回結果'); }
+    const items = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(items) || !items.length) {
+      showToast('❌ 未識別到任何採購項');
+      document.getElementById('recProgress').style.display = 'none';
+      document.getElementById('recognizeBtn').disabled = false;
+      document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
+      return;
+    }
+    recognizedItems = items.map((item, idx) => ({
+      id: genId(),
+      name: item.name || `項目${idx+1}`,
+      quantity: parseFloat(item.quantity) || 1,
+      unit: item.unit || '',
+      category: item.category || '',
+      location: item.location || '',
+      price: parseFloat(item.price) || 0,
+      priority: normalizePriority(item.priority || 'medium'),
+      status: 'pending',
+      _checked: true,
+    }));
+    showRecognitionResult();
+  })
+  .catch(err => {
+    showToast(`❌ 識別失敗：${err.message}`);
+    document.getElementById('recProgress').style.display = 'none';
+    document.getElementById('recognizeBtn').disabled = false;
+    document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
+  });
+}
+
+function showRecognitionResult() {
+  document.getElementById('recProgress').style.display = 'none';
+  document.getElementById('recognizeBtn').disabled = false;
+  document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
+
+  const list = document.getElementById('recResultList');
+  const pLabel = { high: '⚡高', medium: '🟡中', low: '🟢低' };
+  const pClass = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' };
+
+  list.innerHTML = `
+    <div class="rr-summary">✅ 識別到 ${recognizedItems.length} 項（可取消勾選後導入）</div>
+    ${recognizedItems.map((item, i) => `
+      <div class="rr-item" data-idx="${i}">
+        <input type="checkbox" class="rr-check" checked onchange="toggleRecItem(${i})">
+        <span class="rr-name">${escHtml(item.name)}</span>
+        <span class="rr-detail">
+          ${item.quantity}${item.unit ? ' ' + item.unit : ''}
+          ${item.price ? `× ¥${item.price} = ¥${(item.price * item.quantity).toFixed((item.price*item.quantity)%1===0?0:2)}` : ''}
+          ${item.category ? `<span class="dot"></span> ${escHtml(item.category)}` : ''}
+          ${item.location ? `<span class="dot"></span> 📍${escHtml(item.location)}` : ''}
+          <span class="priority-badge ${pClass[item.priority]||''}">${pLabel[item.priority]||''}</span>
+        </span>
+      </div>
+    `).join('')}`;
+
+  const checked = recognizedItems.filter(i => i._checked).length;
+  document.getElementById('recResultCount').textContent = `已選 ${checked}/${recognizedItems.length} 項`;
+  document.querySelector('#recResultArea .btn-primary').textContent = `📥 導入選中項 (${checked})`;
+  document.getElementById('recResultArea').style.display = 'block';
+}
+
+function toggleRecItem(idx) {
+  if (recognizedItems[idx]) {
+    recognizedItems[idx]._checked = !recognizedItems[idx]._checked;
+    const checked = recognizedItems.filter(i => i._checked).length;
+    document.getElementById('recResultCount').textContent = `已選 ${checked}/${recognizedItems.length} 項`;
+    document.querySelector('#recResultArea .btn-primary').textContent = `📥 導入選中項 (${checked})`;
+  }
+}
+
+function importRecognizedItems() {
+  const toImport = recognizedItems.filter(i => i._checked);
+  if (!toImport.length) { showToast('❌ 請至少選擇一項'); return; }
+
+  const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  for (const item of toImport) {
+    DATA.push({
+      id: genId(),
+      name: item.name,
+      category: item.category,
+      location: item.location,
+      buyer: '',
+      deadline: '',
+      quantity: item.quantity,
+      unit: item.unit,
+      price: item.price,
+      priority: item.priority,
+      status: 'pending',
+      source: `圖片識別 (${timestamp})`,
+    });
+  }
+
+  loadedFiles.push(`🖼️ 圖片識別 (${timestamp})`);
+  loadedFiles = [...new Set(loadedFiles)];
+
+  saveData();
+  saveFiles();
+  renderAll();
+  closeUploadModal();
+  showToast(`✅ 已導入 ${toImport.length} 項`);
+}
+
+// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
+  // Preload API key if exists
+  const savedKey = localStorage.getItem(API_KEY_STORAGE);
+  if (savedKey) apiKeyLoaded = true;
 });
 </script>
 </body>
