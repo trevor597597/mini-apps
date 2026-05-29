@@ -221,8 +221,11 @@
     font-weight: 600;
     color: var(--slate-700);
     transition: color 0.15s;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
   }
-  .item-info.done .item-name { text-decoration: line-through; color: var(--slate-400); }
+  .item-name:hover { color: var(--amber-700); border-bottom-color: var(--amber-300); }
+  .item-info.done .item-name { text-decoration: line-through; color: var(--slate-400); cursor: default; border-bottom: none; }
 
   .item-detail {
     font-size: 0.7rem;
@@ -257,10 +260,7 @@
     display: flex;
     gap: 0.2rem;
     flex-shrink: 0;
-    opacity: 0.3;
-    transition: opacity 0.15s;
   }
-  .item-row:hover .item-actions { opacity: 1; }
   .item-btn {
     width: 28px; height: 28px;
     border: none;
@@ -275,10 +275,6 @@
   }
   .item-btn:hover { background: var(--amber-100); }
   .item-btn-del:hover { background: #fef2f2; color: var(--rose-500); }
-
-  @media (hover: none) and (pointer: coarse) {
-    .item-actions { opacity: 1; }
-  }
 
   /* Empty state */
   .empty-state {
@@ -1067,7 +1063,7 @@ function renderItemRow(item) {
   return `<div class="item-row" data-id="${item.id}">
     <input type="checkbox" class="item-check" ${done ? 'checked' : ''} onchange="toggleStatus('${item.id}')">
     <div class="item-info ${done ? 'done' : ''}">
-      <span class="item-name">${escHtml(item.name || '')}</span>
+      <span class="item-name" onclick="openEditModal('${item.id}')" title="點擊編輯">${escHtml(item.name || '')}</span>
       <span class="item-detail">
         ${item.quantity ? item.quantity + (item.unit || '') : ''}
         ${item.price ? `× ¥${item.price}` : ''}
