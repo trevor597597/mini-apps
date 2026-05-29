@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🛒 採購清單 — 分組管理 · 多檔案導入</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --amber-50: #fffbeb;  --amber-100: #fef3c7;  --amber-200: #fde68a;
+    --amber-300: #fcd34d; --amber-400: #fbbf24;  --amber-500: #f59e0b;
+    --amber-600: #d97706; --amber-700: #b45309;  --amber-800: #92400e;
+    --amber-900: #78350f;
+    --orange-400: #fb923c; --orange-500: #f97316; --orange-600: #ea580c;
+    --rose-400: #fb7185;   --rose-500: #f43f5e;
+    --emerald-400: #34d399; --emerald-500: #10b981; --emerald-600: #059669;
+    --warm-bg: #fdf6ee;
+    --warm-card: #fff9f0;
+    --warm-border: #f0e6d4;
+    --slate-50: #f8fafc;   --slate-100: #f1f5f9;  --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;  --slate-400: #94a3b8;   --slate-500: #64748b;
+    --slate-600: #475569;  --slate-700: #334155;   --slate-800: #1e293b;
+    --card-shadow: 0 1px 3px rgba(146,64,14,.08), 0 1px 2px rgba(146,64,14,.05);
+    --card-shadow-lg: 0 4px 12px rgba(146,64,14,.1);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--warm-bg);
+    color: var(--slate-800);
+    padding: 1.5rem 1rem;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 1.5rem; }
+  .header h1 {
+    font-size: 1.8rem; font-weight: 800;
+    color: var(--amber-800);
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .header p { color: var(--amber-600); font-size: 0.85rem; margin-top: 0.2rem; font-weight: 400; }
+
+  /* Stats Bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .stat-card {
+    background: var(--warm-card);
+    border-radius: 14px;
+    padding: 0.8rem 0.6rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--warm-border);
+  }
+  .stat-card .value { font-size: 1.3rem; font-weight: 800; line-height: 1.2; }
+  .stat-card .label { font-size: 0.68rem; color: var(--amber-600); margin-top: 0.1rem; font-weight: 500; }
+  .stat-total .value { color: var(--amber-700); }
+  .stat-done .value { color: var(--emerald-500); }
+  .stat-cost .value { color: var(--orange-500); }
+  .stat-urgent .value { color: var(--rose-500); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  .controls .search-box {
+    flex: 1;
+    min-width: 180px;
+    position: relative;
+  }
+  .controls .search-box input {
+    width: 100%;
+    padding: 0.5rem 0.8rem 0.5rem 2rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--warm-card);
+    transition: border-color 0.2s;
+  }
+  .controls .search-box input:focus { border-color: var(--amber-400); box-shadow: 0 0 0 3px rgba(245,158,11,.12); }
+  .controls .search-box .search-icon { position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.85rem; pointer-events: none; }
+
+  .btn {
+    padding: 0.45rem 1rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--amber-500), var(--orange-500)); color: white; }
+  .btn-primary:hover { background: linear-gradient(135deg, var(--amber-600), var(--orange-600)); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--warm-border); color: var(--amber-700); }
+  .btn-outline:hover { border-color: var(--amber-400); color: var(--amber-800); background: var(--amber-50); }
+  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.72rem; }
+  .btn-danger { background: var(--rose-500); color: white; }
+  .btn-danger:hover { background: #e11d48; }
+
+  /* Group Sections */
+  .group-section {
+    background: var(--warm-card);
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--warm-border);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+  .group-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .group-section-header:hover { background: var(--amber-50); }
+  .group-section-header h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--amber-800);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .group-section-header .toggle-icon {
+    font-size: 0.75rem;
+    transition: transform 0.25s ease;
+    color: var(--amber-400);
+  }
+  .group-section-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .group-section-body { padding: 0 0.5rem 0.5rem; }
+  .group-section-header.collapsed + .group-section-body { display: none; }
+
+  /* Cards */
+  .group-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--warm-border);
+    overflow: hidden;
+  }
+  .group-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.8rem;
+    background: var(--amber-50);
+    border-bottom: 1px solid var(--warm-border);
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .group-card-header .gc-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--amber-800);
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .group-card-header .gc-meta {
+    font-size: 0.7rem;
+    color: var(--amber-600);
+    font-weight: 500;
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .group-card-header .gc-meta span { white-space: nowrap; }
+
+  .group-card-body { padding: 0.3rem 0; }
+
+  /* Item Row */
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid #f5ede0;
+    transition: background 0.1s;
+    min-height: 44px;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: var(--amber-50); }
+
+  .item-check {
+    width: 18px; height: 18px;
+    accent-color: var(--amber-500);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.5rem;
+  }
+  .item-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--slate-700);
+    transition: color 0.15s;
+  }
+  .item-info.done .item-name { text-decoration: line-through; color: var(--slate-400); }
+
+  .item-detail {
+    font-size: 0.7rem;
+    color: var(--slate-400);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    align-items: center;
+  }
+  .item-detail .dot {
+    display: inline-block;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--slate-300);
+  }
+
+  .priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .priority-high { background: #fef2f2; color: #dc2626; }
+  .priority-medium { background: var(--amber-100); color: var(--amber-700); }
+  .priority-low { background: #f0fdf4; color: #16a34a; }
+
+  .item-actions {
+    display: flex;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    opacity: 0.3;
+    transition: opacity 0.15s;
+  }
+  .item-row:hover .item-actions { opacity: 1; }
+  .item-btn {
+    width: 28px; height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+  }
+  .item-btn:hover { background: var(--amber-100); }
+  .item-btn-del:hover { background: #fef2f2; color: var(--rose-500); }
+
+  @media (hover: none) and (pointer: coarse) {
+    .item-actions { opacity: 1; }
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--amber-400);
+  }
+  .empty-state .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.82rem; line-height: 1.6; }
+
+  /* File List */
+  .file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem 0.2rem 0.7rem;
+    background: var(--amber-50);
+    border: 1px solid var(--warm-border);
+    border-radius: 8px;
+    font-size: 0.7rem;
+    color: var(--amber-700);
+    font-weight: 500;
+  }
+  .file-tag .file-del {
+    cursor: pointer;
+    font-size: 0.65rem;
+    color: var(--amber-400);
+    background: none;
+    border: none;
+    padding: 0.1rem;
+    line-height: 1;
+  }
+  .file-tag .file-del:hover { color: var(--rose-500); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 20px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,.15);
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 1.5rem 0.5rem;
+  }
+  .modal-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--amber-800); }
+  .modal-close {
+    width: 30px; height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: var(--slate-100);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--slate-400);
+  }
+  .modal-close:hover { background: var(--slate-200); }
+
+  .modal-body { padding: 0.8rem 1.5rem; }
+
+  .form-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .form-group {
+    flex: 1;
+    min-width: 0;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--slate-500);
+    margin-bottom: 0.2rem;
+  }
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    outline: none;
+    background: white;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--amber-400);
+    box-shadow: 0 0 0 3px rgba(245,158,11,.1);
+  }
+
+  .modal-footer {
+    padding: 0.5rem 1.5rem 1.2rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+  .modal-footer .btn { padding: 0.55rem 1.5rem; }
+
+  /* Upload Drop Zone */
+  .upload-zone {
+    border: 2px dashed var(--warm-border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--warm-card);
+    margin-bottom: 1rem;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--amber-400);
+    background: var(--amber-50);
+  }
+  .upload-zone .uz-icon { font-size: 2rem; display: block; margin-bottom: 0.3rem; }
+  .upload-zone .uz-text { font-size: 0.82rem; color: var(--slate-500); }
+  .upload-zone .uz-text strong { color: var(--amber-700); }
+  .upload-zone .uz-hint { font-size: 0.7rem; color: var(--slate-400); margin-top: 0.3rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--slate-800);
+    color: white;
+    padding: 0.6rem 1.3rem;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    z-index: 3000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--warm-border);
+    color: var(--amber-400);
+    font-size: 0.7rem;
+    font-weight: 400;
+  }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    body { padding: 1rem 0.6rem; }
+    .header h1 { font-size: 1.4rem; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+    .stat-card { padding: 0.6rem 0.4rem; }
+    .stat-card .value { font-size: 1.1rem; }
+    .controls { gap: 0.4rem; }
+    .controls .search-box { min-width: 140px; }
+    .btn { font-size: 0.72rem; padding: 0.35rem 0.8rem; }
+    .group-card-header { padding: 0.45rem 0.6rem; flex-direction: column; align-items: flex-start; }
+    .group-card-header .gc-meta { width: 100%; }
+    .item-row { padding: 0.4rem 0.6rem; flex-wrap: wrap; }
+    .item-info { width: calc(100% - 50px); }
+    .item-detail { gap: 0.15rem 0.35rem; }
+    .item-actions { opacity: 1; }
+    .modal { margin: 0.5rem; border-radius: 16px; }
+    .modal-header { padding: 1rem 1.2rem 0.3rem; }
+    .modal-body { padding: 0.5rem 1.2rem; }
+    .modal-footer { padding: 0.3rem 1.2rem 1rem; }
+    .form-row { flex-wrap: wrap; }
+    .form-group { min-width: calc(50% - 0.3rem); }
+    .upload-zone { padding: 1rem; }
+  }
+
+  @media (max-width: 380px) {
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+    .file-list { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🛒 採購清單</h1>
+    <p>多檔案導入 · 按地點 / 類別分組管理</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card stat-total"><div class="value" id="statTotal">0</div><div class="label">📦 總項目</div></div>
+    <div class="stat-card stat-done"><div class="value" id="statDone">0</div><div class="label">✅ 已完成</div></div>
+    <div class="stat-card stat-cost"><div class="value" id="statCost">¥0</div><div class="label">💰 預估總花費</div></div>
+    <div class="stat-card stat-urgent"><div class="value" id="statUrgent">0</div><div class="label">⚡ 高優先待辦</div></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="搜尋物品、類別或地點..." oninput="renderAll()">
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 新增</button>
+    <button class="btn btn-outline" onclick="openUploadModal()">📤 上傳檔案</button>
+    <button class="btn btn-outline btn-sm" onclick="loadExampleData()">📋 示例</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--rose-500);border-color:#fecaca;" onclick="confirmReset()">🔄 重置</button>
+  </div>
+
+  <!-- Uploaded File Tags -->
+  <div class="file-list" id="fileList"></div>
+
+  <!-- Grouped Sections -->
+  <div id="mainContent"></div>
+
+  <!-- Footer -->
+  <div class="footer">數據自動保存至瀏覽器本地</div>
+</div>
+
+<!-- ===== Add/Edit Modal ===== -->
+<div class="modal-overlay" id="formModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="formTitle">新增採購項</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>物品名稱 *</label>
+          <input type="text" id="fName" placeholder="如：雞胸肉">
+        </div>
+        <div class="form-group">
+          <label>數量</label>
+          <input type="number" id="fQty" value="1" min="0" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>單位</label>
+          <input type="text" id="fUnit" placeholder="kg、個、箱">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>類別</label>
+          <input type="text" id="fCategory" placeholder="如：食材、日用品">
+        </div>
+        <div class="form-group">
+          <label>地點</label>
+          <input type="text" id="fLocation" placeholder="如：超市A、市場B">
+        </div>
+        <div class="form-group">
+          <label>預估單價 (¥)</label>
+          <input type="number" id="fPrice" value="0" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>採購人</label>
+          <input type="text" id="fBuyer" placeholder="小明 或 小明,小紅">
+        </div>
+        <div class="form-group">
+          <label>截止日期</label>
+          <input type="date" id="fDeadline">
+        </div>
+        <div class="form-group">
+          <label>優先級</label>
+          <select id="fPriority">
+            <option value="medium">中</option>
+            <option value="high">高</option>
+            <option value="low">低</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmForm()">✓ 確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Upload Modal ===== -->
+<div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)closeUploadModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📤 上傳檔案</h2>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="uploadZone">
+        <span class="uz-icon">📂</span>
+        <span class="uz-text">點擊或拖曳檔案至此處<br><strong>支援 .json / .csv / .xlsx</strong></span>
+        <span class="uz-hint">可同時選擇多個檔案</span>
+      </div>
+      <input type="file" id="fileInput" accept=".json,.csv,.xlsx" multiple style="display:none" onchange="handleFiles(this.files)">
+      <div style="font-size:0.78rem;color:var(--slate-400);line-height:1.6;">
+        <strong>📋 支援的檔案格式：</strong><br>
+        <strong>JSON</strong> — 物件陣列或含 data 字段的包裝<br>
+        <strong>CSV</strong> — 第一行為欄位名，系統自動識別中英文欄位<br>
+        <strong>Excel (.xlsx)</strong> — 同上，自動讀取第一個工作表
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeUploadModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SheetJS CDN Loader (for .xlsx)
+// ============================================================
+(function loadXLSX() {
+  if (typeof XLSX !== 'undefined') return;
+  const s = document.createElement('script');
+  s.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+  s.onload = () => console.log('SheetJS loaded');
+  document.head.appendChild(s);
+})();
+
+// ============================================================
+// STORAGE
+// ============================================================
+const STORAGE_KEY = 'procurement_list_v1';
+const FILE_KEY = 'procurement_files_v1';
+
+const DEFAULT = [];
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      if (Array.isArray(d)) return d;
+    } catch(e) {}
+  }
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+}
+
+let DATA = loadData();
+
+// Track loaded files
+let loadedFiles = [];
+function loadFiles() {
+  const raw = localStorage.getItem(FILE_KEY);
+  if (raw) { try { loadedFiles = JSON.parse(raw); } catch(e) { loadedFiles = []; } }
+}
+function saveFiles() {
+  localStorage.setItem(FILE_KEY, JSON.stringify(loadedFiles));
+}
+loadFiles();
+
+// ============================================================
+// FIELD MAPPING (auto-detect Chinese/English column names)
+// ============================================================
+const FIELD_ALIASES = {
+  name: ['name', '名稱', '名称', '物品', '物品名称', '物品名稱', '商品', '商品名称', '商品名稱', '品名', '項目', '项目'],
+  category: ['category', '類別', '类别', '分类', '分類', '種類', '种类', '組別', '组别'],
+  location: ['location', '地點', '地点', '位置', '場所', '场所', '購買地點', '购买地点', '店鋪', '店铺', '商店', '超市', '賣場', '卖场', 'place', 'store'],
+  buyer: ['buyer', '採購人', '采购人', '購買人', '购买人', '負責人', '负责人', '採購員', '采购员', '購買者', '购买者'],
+  deadline: ['deadline', '截止日期', '期限', '到期日', '到期', '截止日', '效期', '日期', '購買日期', '购买日期'],
+  quantity: ['quantity', '數量', '数量', '份量', '个数', '個數', '數目', '数目', '份數', '份数', 'qty', 'count'],
+  unit: ['unit', '單位', '单位', '計量單位', '计量单位', '規格', '规格'],
+  price: ['price', '價格', '价格', '單價', '单价', '預估價格', '预估价格', '費用', '费用', '金額', '金额', '單價(元)', '单价(元)'],
+  priority: ['priority', '優先級', '优先级', '级别', '級別', '優先', '优先', '重要程度', '重要性'],
+};
+
+function guessField(header) {
+  const h = String(header).trim().toLowerCase();
+  for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+    if (aliases.some(a => a.toLowerCase() === h || a === header.trim())) return field;
+  }
+  return null;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+let editingId = null;
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function getStats() {
+  const items = getFiltered();
+  const total = items.length;
+  const done = items.filter(i => i.status === 'done').length;
+  const cost = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
+  const urgent = items.filter(i => i.status === 'pending' && i.priority === 'high').length;
+  return { total, done, cost, urgent };
+}
+
+function getFiltered() {
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  if (!q) return DATA;
+  return DATA.filter(i =>
+    (i.name || '').toLowerCase().includes(q) ||
+    (i.category || '').toLowerCase().includes(q) ||
+    (i.location || '').toLowerCase().includes(q) ||
+    (i.buyer || '').toLowerCase().includes(q)
+  );
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderStats();
+  renderFileList();
+  renderGroups();
+}
+
+function renderStats() {
+  const s = getStats();
+  document.getElementById('statTotal').textContent = s.total;
+  document.getElementById('statDone').textContent = s.done;
+  document.getElementById('statCost').textContent = `¥${s.cost.toFixed(s.cost % 1 === 0 ? 0 : 2)}`;
+  document.getElementById('statUrgent').textContent = s.urgent;
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  if (!loadedFiles.length) { el.innerHTML = ''; return; }
+  el.innerHTML = loadedFiles.map((f, i) =>
+    `<span class="file-tag">📄 ${f} <button class="file-del" onclick="removeFile(${i})">✕</button></span>`
+  ).join('');
+}
+
+function renderGroups() {
+  const container = document.getElementById('mainContent');
+  const items = getFiltered();
+  const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">📋</span>
+        <p>${query ? '沒有符合條件的採購項' : '還沒有採購項目<br>點擊「＋新增」或「📤 上傳檔案」開始吧'}</p>
+      </div>`;
+    return;
+  }
+
+  // Group by location
+  const byLocation = groupBy(items, 'location');
+  // Group by category
+  const byCategory = groupBy(items, 'category');
+
+  container.innerHTML = `
+    <div class="group-section">
+      <div class="group-section-header" onclick="toggleSection(this)">
+        <h3>📁 按地點分組</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="group-section-body">
+        ${renderCardGroup(byLocation, 'location')}
+      </div>
+    </div>
+    <div class="group-section">
+      <div class="group-section-header" onclick="toggleSection(this)">
+        <h3>📂 按類別分組</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="group-section-body">
+        ${renderCardGroup(byCategory, 'category')}
+      </div>
+    </div>
+  `;
+}
+
+function groupBy(arr, key) {
+  const map = {};
+  arr.forEach(item => {
+    const k = item[key] || '(未分類)';
+    if (!map[k]) map[k] = [];
+    map[k].push(item);
+  });
+  // Sort keys alphabetically
+  return Object.keys(map).sort().reduce((acc, k) => {
+    acc[k] = map[k];
+    return acc;
+  }, {});
+}
+
+function renderCardGroup(groups, groupKey) {
+  const groupIcon = groupKey === 'location' ? '🏪' : '📦';
+  return Object.entries(groups).map(([name, items]) => {
+    const done = items.filter(i => i.status === 'done').length;
+    const total = items.length;
+    const subtotal = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+    return `<div class="group-card">
+      <div class="group-card-header">
+        <div class="gc-name">${groupIcon} ${name}</div>
+        <div class="gc-meta">
+          <span>📦 ${total} 項</span>
+          <span>✅ ${done}/${total}</span>
+          <span>${pct}%</span>
+          <span>💰 ¥${subtotal.toFixed(subtotal % 1 === 0 ? 0 : 2)}</span>
+        </div>
+      </div>
+      <div class="group-card-body">
+        ${items.map(item => renderItemRow(item)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderItemRow(item) {
+  const pLabel = { high: '⚡高', medium: '🟡中', low: '🟢低' };
+  const pClass = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' };
+  const done = item.status === 'done';
+
+  return `<div class="item-row" data-id="${item.id}">
+    <input type="checkbox" class="item-check" ${done ? 'checked' : ''} onchange="toggleStatus('${item.id}')">
+    <div class="item-info ${done ? 'done' : ''}">
+      <span class="item-name">${escHtml(item.name || '')}</span>
+      <span class="item-detail">
+        ${item.quantity ? item.quantity + (item.unit || '') : ''}
+        ${item.price ? `× ¥${item.price}` : ''}
+        ${item.price && item.quantity ? `= ¥${((item.price||0)*(item.quantity||0)).toFixed(((item.price||0)*(item.quantity||0))%1===0?0:2)}` : ''}
+        ${item.priority ? `<span class="priority-badge ${pClass[item.priority]||''}">${pLabel[item.priority]||''}</span>` : ''}
+        ${item.deadline ? `<span class="dot"></span> 📅${item.deadline}` : ''}
+        ${item.buyer ? `<span class="dot"></span> 👤${escHtml(item.buyer)}` : ''}
+      </span>
+    </div>
+    <div class="item-actions">
+      <button class="item-btn" onclick="openEditModal('${item.id}')" title="編輯">✏️</button>
+      <button class="item-btn item-btn-del" onclick="deleteItem('${item.id}')" title="刪除">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleSection(header) {
+  header.classList.toggle('collapsed');
+}
+
+// ============================================================
+// CRUD
+// ============================================================
+function toggleStatus(id) {
+  const item = DATA.find(i => i.id === id);
+  if (item) {
+    item.status = item.status === 'done' ? 'pending' : 'done';
+    saveData();
+    renderAll();
+  }
+}
+
+function deleteItem(id) {
+  const item = DATA.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm(`確定刪除「${item.name}」？`)) return;
+  DATA = DATA.filter(i => i.id !== id);
+  saveData();
+  renderAll();
+  showToast('🗑️ 已刪除');
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = '新增採購項';
+  document.getElementById('fName').value = '';
+  document.getElementById('fQty').value = 1;
+  document.getElementById('fUnit').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fLocation').value = '';
+  document.getElementById('fPrice').value = 0;
+  document.getElementById('fBuyer').value = '';
+  document.getElementById('fDeadline').value = '';
+  document.getElementById('fPriority').value = 'medium';
+  document.getElementById('formModal').classList.add('active');
+  setTimeout(() => document.getElementById('fName').focus(), 200);
+}
+
+function openEditModal(id) {
+  const item = DATA.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = '編輯採購項';
+  document.getElementById('fName').value = item.name || '';
+  document.getElementById('fQty').value = item.quantity || 1;
+  document.getElementById('fUnit').value = item.unit || '';
+  document.getElementById('fCategory').value = item.category || '';
+  document.getElementById('fLocation').value = item.location || '';
+  document.getElementById('fPrice').value = item.price || 0;
+  document.getElementById('fBuyer').value = item.buyer || '';
+  document.getElementById('fDeadline').value = item.deadline || '';
+  document.getElementById('fPriority').value = item.priority || 'medium';
+  document.getElementById('formModal').classList.add('active');
+  setTimeout(() => document.getElementById('fName').focus(), 200);
+}
+
+function closeModal() {
+  document.getElementById('formModal').classList.remove('active');
+  editingId = null;
+}
+
+function confirmForm() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { showToast('❌ 請輸入物品名稱'); return; }
+
+  const obj = {
+    name,
+    quantity: parseFloat(document.getElementById('fQty').value) || 1,
+    unit: document.getElementById('fUnit').value.trim(),
+    category: document.getElementById('fCategory').value.trim(),
+    location: document.getElementById('fLocation').value.trim(),
+    price: parseFloat(document.getElementById('fPrice').value) || 0,
+    buyer: document.getElementById('fBuyer').value.trim(),
+    deadline: document.getElementById('fDeadline').value,
+    priority: document.getElementById('fPriority').value,
+    status: 'pending',
+  };
+
+  if (editingId) {
+    const idx = DATA.findIndex(i => i.id === editingId);
+    if (idx !== -1) {
+      // Preserve source and id
+      obj.id = DATA[idx].id;
+      obj.source = DATA[idx].source;
+      obj.status = DATA[idx].status;
+      DATA[idx] = obj;
+    }
+    showToast('✅ 已更新');
+  } else {
+    obj.id = genId();
+    obj.source = '手動添加';
+    DATA.push(obj);
+    showToast('✅ 已新增');
+  }
+
+  saveData();
+  renderAll();
+  closeModal();
+}
+
+// ============================================================
+// FILE UPLOAD
+// ============================================================
+function openUploadModal() {
+  document.getElementById('uploadModal').classList.add('active');
+}
+
+function closeUploadModal() {
+  document.getElementById('uploadModal').classList.remove('active');
+}
+
+// Drag & drop
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('click', () => document.getElementById('fileInput').click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  if (!files || !files.length) return;
+  let processed = 0;
+  const total = files.length;
+
+  for (const file of files) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'json') {
+      parseJSON(file).then(data => {
+        mergeData(data, file.name);
+        processed++;
+        if (processed === total) finalizeUpload(total);
+      });
+    } else if (ext === 'csv') {
+      parseCSV(file).then(data => {
+        mergeData(data, file.name);
+        processed++;
+        if (processed === total) finalizeUpload(total);
+      });
+    } else if (ext === 'xlsx') {
+      parseXLSX(file).then(data => {
+        mergeData(data, file.name);
+        processed++;
+        if (processed === total) finalizeUpload(total);
+      });
+    } else {
+      showToast(`❌ 不支援的格式: .${ext}`);
+      processed++;
+      if (processed === total) finalizeUpload(total);
+    }
+  }
+}
+
+function finalizeUpload(count) {
+  saveData();
+  saveFiles();
+  closeUploadModal();
+  renderAll();
+  showToast(`✅ 已導入 ${count} 個檔案，共 ${DATA.length} 項`);
+}
+
+function mergeData(newItems, fileName) {
+  if (!newItems || !newItems.length) return;
+  loadedFiles.push(fileName);
+  // Deduplicate loadedFiles
+  loadedFiles = [...new Set(loadedFiles)];
+
+  for (const item of newItems) {
+    DATA.push({
+      id: genId(),
+      name: item.name || '未命名',
+      category: item.category || '',
+      location: item.location || '',
+      buyer: item.buyer || '',
+      deadline: item.deadline || '',
+      quantity: parseFloat(item.quantity) || 1,
+      unit: item.unit || '',
+      price: parseFloat(item.price) || 0,
+      priority: item.priority || 'medium',
+      status: item.status === 'done' || item.status === '已完成' ? 'done' : 'pending',
+      source: fileName,
+    });
+  }
+}
+
+function removeFile(index) {
+  const fileName = loadedFiles[index];
+  if (!fileName) return;
+  if (!confirm(`移除檔案「${fileName}」及其所有數據？`)) return;
+  loadedFiles.splice(index, 1);
+  DATA = DATA.filter(i => i.source !== fileName);
+  saveData();
+  saveFiles();
+  renderAll();
+  showToast(`🗑️ 已移除「${fileName}」`);
+}
+
+// ============================================================
+// FILE PARSERS
+// ============================================================
+
+// --- JSON ---
+function parseJSON(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        let data = JSON.parse(e.target.result);
+        if (data && data.data && Array.isArray(data.data)) data = data.data;
+        if (!Array.isArray(data)) { resolve([]); return; }
+        resolve(data.map(normalizeItem));
+      } catch(_) { showToast(`❌ ${file.name}: JSON 解析失敗`); resolve([]); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// --- CSV ---
+function parseCSV(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) { resolve([]); return; }
+
+        const headers = parseCSVLine(lines[0]);
+        const fieldMap = headers.map(h => guessField(h) || h);
+
+        const results = [];
+        for (let i = 1; i < lines.length; i++) {
+          const vals = parseCSVLine(lines[i]);
+          const obj = {};
+          fieldMap.forEach((f, idx) => {
+            if (idx < vals.length) obj[f] = vals[idx].trim();
+          });
+          results.push(obj);
+        }
+        resolve(results.map(normalizeItem));
+      } catch(_) { showToast(`❌ ${file.name}: CSV 解析失敗`); resolve([]); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    if (inQuotes) {
+      if (line[i] === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = false;
+      } else current += line[i];
+    } else {
+      if (line[i] === '"') inQuotes = true;
+      else if (line[i] === ',') { result.push(current); current = ''; }
+      else current += line[i];
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// --- XLSX ---
+function parseXLSX(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        if (typeof XLSX === 'undefined') {
+          showToast('❌ Excel 解析庫未加載，請稍後重試');
+          resolve([]);
+          return;
+        }
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) { resolve([]); return; }
+
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (!json.length) { resolve([]); return; }
+
+        const headers = Object.keys(json[0]);
+        const fieldMap = headers.map(h => guessField(h) || h);
+
+        const results = json.map(row => {
+          const obj = {};
+          headers.forEach((h, idx) => {
+            obj[fieldMap[idx]] = row[h];
+          });
+          return obj;
+        });
+        resolve(results.map(normalizeItem));
+      } catch(_) { showToast(`❌ ${file.name}: Excel 解析失敗`); resolve([]); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// --- Normalize imported item ---
+function normalizeItem(raw) {
+  return {
+    name: String(raw.name || raw.名稱 || raw.名称 || raw.物品 || '').trim(),
+    category: String(raw.category || raw.類別 || raw.类别 || raw.分类 || raw.分類 || '').trim(),
+    location: String(raw.location || raw.地點 || raw.地点 || raw.位置 || '').trim(),
+    buyer: String(raw.buyer || raw.採購人 || raw.采购人 || raw.負責人 || raw.负责人 || '').trim(),
+    deadline: String(raw.deadline || raw.截止日期 || raw.期限 || raw.到期日 || raw.日期 || '').trim(),
+    quantity: parseFloat(raw.quantity || raw.數量 || raw.数量 || raw.qty || 1) || 1,
+    unit: String(raw.unit || raw.單位 || raw.单位 || raw.規格 || raw.规格 || '').trim(),
+    price: parseFloat(raw.price || raw.價格 || raw.价格 || raw.單價 || raw.单价 || 0) || 0,
+    priority: normalizePriority(raw.priority || raw.優先級 || raw.优先级 || raw.级别 || raw.級別 || 'medium'),
+    status: 'pending',
+  };
+}
+
+function normalizePriority(p) {
+  const pStr = String(p).toLowerCase().trim();
+  if (pStr === 'high' || pStr === '高' || pStr === '⚡' || pStr === '3') return 'high';
+  if (pStr === 'low' || pStr === '低' || pStr === '🟢' || pStr === '1') return 'low';
+  return 'medium';
+}
+
+// ============================================================
+// EXAMPLE DATA & RESET
+// ============================================================
+function loadExampleData() {
+  if (DATA.length > 0 && !confirm('加載示例數據將清空當前數據，確認？')) return;
+
+  DATA = [
+    { id: genId(), name: '雞胸肉', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-15', quantity: 2, unit: 'kg', price: 25.5, priority: 'high', status: 'pending', source: '示例' },
+    { id: genId(), name: '牛奶', category: '飲品', location: '超市A', buyer: '小紅', deadline: '2026-06-12', quantity: 1, unit: 'L', price: 18, priority: 'medium', status: 'done', source: '示例' },
+    { id: genId(), name: '雞蛋', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '盒(30枚)', price: 32, priority: 'high', status: 'pending', source: '示例' },
+    { id: genId(), name: '蘋果', category: '水果', location: '市場B', buyer: '小紅', deadline: '2026-06-13', quantity: 3, unit: '斤', price: 8, priority: 'medium', status: 'pending', source: '示例' },
+    { id: genId(), name: '衛生紙', category: '日用品', location: '超市A', buyer: '小明', deadline: '2026-06-20', quantity: 2, unit: '提', price: 22, priority: 'low', status: 'pending', source: '示例' },
+    { id: genId(), name: '洗潔精', category: '日用品', location: '超市A', buyer: '小紅', deadline: '2026-06-18', quantity: 1, unit: '瓶', price: 15, priority: 'medium', status: 'done', source: '示例' },
+    { id: genId(), name: '鮭魚', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-15', quantity: 1, unit: '片', price: 45, priority: 'high', status: 'pending', source: '示例' },
+    { id: genId(), name: '醬油', category: '調味料', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '瓶', price: 12, priority: 'low', status: 'pending', source: '示例' },
+    { id: genId(), name: '紅蘿蔔', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '袋', price: 10, priority: 'medium', status: 'pending', source: '示例' },
+    { id: genId(), name: '燕麥片', category: '食材', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '包', price: 28, priority: 'medium', status: 'done', source: '示例' },
+    { id: genId(), name: '文具組', category: '文具', location: '文具店', buyer: '小明', deadline: '2026-06-22', quantity: 2, unit: '套', price: 35, priority: 'low', status: 'pending', source: '示例' },
+    { id: genId(), name: '保鮮膜', category: '日用品', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '卷', price: 8.5, priority: 'low', status: 'pending', source: '示例' },
+  ];
+
+  loadedFiles = ['示例數據'];
+  saveData();
+  saveFiles();
+  renderAll();
+  showToast('📋 已加載示例數據 (12 項)');
+}
+
+function confirmReset() {
+  if (!confirm('⚠️ 確定重置所有數據？此操作無法恢復！')) return;
+  if (!confirm('再次確認：所有採購數據將被清空！')) return;
+  DATA = [];
+  loadedFiles = [];
+  saveData();
+  saveFiles();
+  renderAll();
+  showToast('🔄 數據已重置');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+});
+</script>
+</body>
+</html>
