@@ -1585,16 +1585,18 @@ ${context ? `補充信息：${context}` : ''}
 只返回 JSON 數組，不要有任何其他文字說明。如果無法識別任何物品，返回空數組 []。`;
 
   // Call OpenRouter
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
   fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
+    mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': window.location.origin,
-      'X-Title': '採購清單助手',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-4o-mini',
+      model: 'qwen/qwen3.6-flash',
       messages: [
         {
           role: 'user',
@@ -1606,7 +1608,8 @@ ${context ? `補充信息：${context}` : ''}
       ],
       max_tokens: 4096,
       temperature: 0.1,
-    })
+    }),
+    signal: controller.signal,
   })
   .then(async res => {
     if (!res.ok) {
@@ -1648,8 +1651,10 @@ ${context ? `補充信息：${context}` : ''}
     showRecognitionResult();
   })
   .catch(err => {
+    clearTimeout(timeoutId);
     console.error('Vision API error:', err);
-    showToast(`❌ 識別失敗：${err.message.slice(0, 80)}`);
+    const msg = err.name === 'AbortError' ? '請求超時，請檢查網絡或壓縮圖片大小' : err.message.slice(0, 80);
+    showToast(`❌ 識別失敗：${msg}`);
     document.getElementById('recProgress').style.display = 'none';
     document.getElementById('recognizeBtn').disabled = false;
     document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
