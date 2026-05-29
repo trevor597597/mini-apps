@@ -1594,7 +1594,7 @@ ${context ? `補充信息：${context}` : ''}
       'X-Title': '採購清單助手',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.0-flash-001',
+      model: 'openai/gpt-4o-mini',
       messages: [
         {
           role: 'user',
@@ -1608,8 +1608,17 @@ ${context ? `補充信息：${context}` : ''}
       temperature: 0.1,
     })
   })
-  .then(res => {
-    if (!res.ok) return res.json().then(e => { throw new Error(e.error?.message || `HTTP ${res.status}`); });
+  .then(async res => {
+    if (!res.ok) {
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const errBody = await res.json();
+        errMsg = errBody.error?.message || JSON.stringify(errBody).slice(0, 200);
+      } catch(_) {
+        try { errMsg = (await res.text()).slice(0, 200); } catch(_2) {}
+      }
+      throw new Error(errMsg);
+    }
     return res.json();
   })
   .then(data => {
@@ -1639,7 +1648,8 @@ ${context ? `補充信息：${context}` : ''}
     showRecognitionResult();
   })
   .catch(err => {
-    showToast(`❌ 識別失敗：${err.message}`);
+    console.error('Vision API error:', err);
+    showToast(`❌ 識別失敗：${err.message.slice(0, 80)}`);
     document.getElementById('recProgress').style.display = 'none';
     document.getElementById('recognizeBtn').disabled = false;
     document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
