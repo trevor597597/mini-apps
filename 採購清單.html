@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🛒 採購清單 — 分組管理 · 多檔案導入</title>
+<title>🛒 採購清單 — 分組管理 · 多檔案導入 · 比價</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;800;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,6 +32,7 @@
     color: var(--slate-800);
     padding: 1.5rem 1rem;
     min-height: 100vh;
+    padding-bottom: 80px;
   }
   .container { max-width: 1100px; margin: 0 auto; }
 
@@ -106,15 +107,58 @@
     align-items: center;
     gap: 0.3rem;
     white-space: nowrap;
+    min-height: 36px;
   }
   .btn:active { transform: scale(0.97); }
   .btn-primary { background: linear-gradient(135deg, var(--amber-500), var(--orange-500)); color: white; }
   .btn-primary:hover { background: linear-gradient(135deg, var(--amber-600), var(--orange-600)); }
   .btn-outline { background: transparent; border: 1.5px solid var(--warm-border); color: var(--amber-700); }
   .btn-outline:hover { border-color: var(--amber-400); color: var(--amber-800); background: var(--amber-50); }
-  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.72rem; }
+  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.72rem; min-height: 30px; }
   .btn-danger { background: var(--rose-500); color: white; }
   .btn-danger:hover { background: #e11d48; }
+  .btn-success { background: var(--emerald-500); color: white; }
+  .btn-success:hover { background: var(--emerald-600); }
+
+  /* Tag filter */
+  .tag-filter-select {
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--warm-card);
+    color: var(--slate-700);
+    min-width: 100px;
+    cursor: pointer;
+  }
+  .tag-filter-select:focus { border-color: var(--amber-400); }
+
+  /* Fuzzy merge toggle */
+  .fuzzy-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: var(--slate-500);
+    cursor: pointer;
+  }
+  .fuzzy-toggle input { accent-color: var(--amber-500); cursor: pointer; width: 16px; height: 16px; }
+
+  /* Sort select */
+  .sort-select {
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--warm-card);
+    color: var(--slate-700);
+    cursor: pointer;
+  }
+  .sort-select:focus { border-color: var(--amber-400); }
 
   /* Group Sections */
   .group-section {
@@ -160,6 +204,7 @@
     border: 1px solid var(--warm-border);
     overflow: hidden;
   }
+  .group-card.duplicate-flagged { border-color: #fde68a; border-width: 2px; }
   .group-card-header {
     display: flex;
     align-items: center;
@@ -200,6 +245,8 @@
   }
   .item-row:last-child { border-bottom: none; }
   .item-row:hover { background: var(--amber-50); }
+  .item-row.duplicate-item { border-left: 3px solid #fde68a; }
+  .item-row.price-expanded { background: #fffbeb; }
 
   .item-check {
     width: 18px; height: 18px;
@@ -256,6 +303,64 @@
   .priority-medium { background: var(--amber-100); color: var(--amber-700); }
   .priority-low { background: #f0fdf4; color: #16a34a; }
 
+  /* Tags display */
+  .item-tags {
+    display: inline-flex;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+  }
+  .item-tag {
+    display: inline-block;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-weight: 500;
+    background: var(--amber-50);
+    color: var(--amber-600);
+    border: 1px solid var(--amber-200);
+    line-height: 1.5;
+  }
+
+  /* Best price display */
+  .best-price {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--emerald-600);
+    white-space: nowrap;
+  }
+
+  /* Update dot */
+  .update-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-right: 2px;
+  }
+  .update-dot.recent { background: var(--emerald-500); }
+  .update-dot.warning { background: var(--orange-500); }
+  .update-dot.stale { background: var(--slate-300); }
+
+  /* Item row notes icon */
+  .notes-indicator {
+    cursor: help;
+    font-size: 0.65rem;
+    color: var(--slate-400);
+  }
+  .notes-tooltip {
+    display: none;
+    position: absolute;
+    background: var(--slate-800);
+    color: white;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    max-width: 200px;
+    line-height: 1.4;
+    z-index: 100;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
   .item-actions {
     display: flex;
     gap: 0.2rem;
@@ -275,6 +380,30 @@
   }
   .item-btn:hover { background: var(--amber-100); }
   .item-btn-del:hover { background: #fef2f2; color: var(--rose-500); }
+
+  /* Price History Panel */
+  .price-history-panel {
+    display: none;
+    padding: 0.4rem 0.8rem 0.5rem 2rem;
+    background: #fafaf5;
+    border-top: 1px solid #f5ede0;
+  }
+  .item-row.price-expanded + .price-history-panel { display: block; }
+  .ph-title { font-size: 0.68rem; font-weight: 600; color: var(--slate-500); margin-bottom: 0.3rem; }
+  .ph-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    margin-bottom: 0.15rem;
+  }
+  .ph-row.ph-best { background: #ecfdf5; }
+  .ph-row.ph-worst { background: #fef2f2; }
+  .ph-price { font-weight: 600; min-width: 50px; }
+  .ph-source { color: var(--slate-500); flex: 1; }
+  .ph-date { color: var(--slate-400); font-size: 0.65rem; white-space: nowrap; }
 
   /* Empty state */
   .empty-state {
@@ -315,6 +444,24 @@
   }
   .file-tag .file-del:hover { color: var(--rose-500); }
 
+  /* Duplicate Notification Bar */
+  .dup-notification {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    background: var(--amber-50);
+    border: 1px solid var(--amber-200);
+    border-radius: 12px;
+    margin-bottom: 0.8rem;
+    font-size: 0.78rem;
+    color: var(--amber-800);
+    flex-wrap: wrap;
+  }
+  .dup-notification.show { display: flex; }
+  .dup-notification .dup-msg { flex: 1; }
+  .dup-notification .btn { font-size: 0.7rem; padding: 0.3rem 0.6rem; min-height: 30px; }
+
   /* Modal */
   .modal-overlay {
     position: fixed;
@@ -339,6 +486,7 @@
     overflow-y: auto;
     box-shadow: 0 25px 60px rgba(0,0,0,.15);
   }
+  .modal-wide { max-width: 650px; }
   .modal-header {
     display: flex;
     align-items: center;
@@ -378,7 +526,7 @@
     color: var(--slate-500);
     margin-bottom: 0.2rem;
   }
-  .form-group input, .form-group select {
+  .form-group input, .form-group select, .form-group textarea {
     width: 100%;
     padding: 0.45rem 0.6rem;
     border: 1.5px solid var(--warm-border);
@@ -389,9 +537,16 @@
     background: white;
     transition: border-color 0.2s;
   }
-  .form-group input:focus, .form-group select:focus {
+  .form-group textarea { resize: vertical; min-height: 50px; height: 60px; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     border-color: var(--amber-400);
     box-shadow: 0 0 0 3px rgba(245,158,11,.1);
+  }
+  .char-count {
+    font-size: 0.6rem;
+    color: var(--slate-400);
+    text-align: right;
+    margin-top: 0.1rem;
   }
 
   .modal-footer {
@@ -531,6 +686,24 @@
   }
   .recognize-btn-row .btn { padding: 0.5rem 1.2rem; }
 
+  /* Voice input button */
+  .voice-btn {
+    width: 32px; height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--amber-100);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .voice-btn:hover { background: var(--amber-200); }
+  .voice-btn.listening { background: var(--rose-400); color: white; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
   /* Recognition Progress */
   .rec-progress {
     text-align: center;
@@ -581,7 +754,7 @@
   /* Toast */
   .toast {
     position: fixed;
-    bottom: 2rem;
+    bottom: 4rem;
     left: 50%;
     transform: translateX(-50%);
     background: var(--slate-800);
@@ -610,16 +783,115 @@
     font-weight: 400;
   }
 
+  /* Dedup Center Styles */
+  .dup-group {
+    background: var(--warm-card);
+    border: 1px solid var(--warm-border);
+    border-radius: 12px;
+    padding: 0.8rem;
+    margin-bottom: 0.6rem;
+  }
+  .dup-group-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--amber-800);
+    margin-bottom: 0.4rem;
+  }
+  .dup-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.75rem;
+    border-bottom: 1px solid #f5ede0;
+  }
+  .dup-item-row:last-child { border-bottom: none; }
+  .dup-item-row .dup-check { width: 16px; height: 16px; accent-color: var(--amber-500); flex-shrink: 0; }
+  .dup-actions { display: flex; gap: 0.3rem; margin-top: 0.4rem; }
+
+  /* Export Modal Styles */
+  .export-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .export-option-group label { font-weight: 600; font-size: 0.78rem; color: var(--slate-600); margin-bottom: 0.3rem; display: block; }
+  .export-radio-group, .export-check-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .export-radio-group label, .export-check-group label {
+    font-size: 0.75rem;
+    color: var(--slate-600);
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    cursor: pointer;
+  }
+  .export-radio-group input, .export-check-group input { accent-color: var(--amber-500); }
+
+  /* Mobile Bottom Nav */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid var(--warm-border);
+    box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+    z-index: 500;
+    padding: 0.4rem 0.5rem;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .bottom-nav .bn-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem 0.5rem;
+    border-radius: 10px;
+    font-family: inherit;
+    color: var(--slate-400);
+    transition: all 0.1s;
+    min-width: 60px;
+  }
+  .bottom-nav .bn-btn:active { background: var(--amber-50); }
+  .bottom-nav .bn-btn .bn-icon { font-size: 1.1rem; }
+  .bottom-nav .bn-btn .bn-label { font-size: 0.6rem; font-weight: 500; }
+  .bottom-nav .bn-btn.bn-primary .bn-icon {
+    background: linear-gradient(135deg, var(--amber-500), var(--orange-500));
+    color: white;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-top: -12px;
+  }
+
   /* Mobile */
+  @media (max-width: 768px) {
+    .controls .sort-select { display: none; }
+  }
+
   @media (max-width: 640px) {
-    body { padding: 1rem 0.6rem; }
+    body { padding: 1rem 0.6rem 80px; }
     .header h1 { font-size: 1.4rem; }
     .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
     .stat-card { padding: 0.6rem 0.4rem; }
     .stat-card .value { font-size: 1.1rem; }
     .controls { gap: 0.4rem; }
     .controls .search-box { min-width: 140px; }
-    .btn { font-size: 0.72rem; padding: 0.35rem 0.8rem; }
+    .btn { font-size: 0.72rem; padding: 0.35rem 0.8rem; min-height: 44px; }
+    .btn-sm { min-height: 36px; }
     .group-card-header { padding: 0.45rem 0.6rem; flex-direction: column; align-items: flex-start; }
     .group-card-header .gc-meta { width: 100%; }
     .item-row { padding: 0.4rem 0.6rem; flex-wrap: wrap; }
@@ -637,6 +909,10 @@
     .upload-tab { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
     .img-preview-inner { max-height: 200px; }
     .rr-item { flex-wrap: wrap; }
+    .tag-filter-select { min-width: 80px; font-size: 0.7rem; }
+    .bottom-nav { display: flex; }
+    .controls .btn-outline:not(.btn-primary) { display: none; }
+    .controls .tag-filter-select { display: none; }
   }
 
   @media (max-width: 380px) {
@@ -651,7 +927,7 @@
   <!-- Header -->
   <header class="header">
     <h1>🛒 採購清單</h1>
-    <p>多檔案導入 · 按地點 / 類別分組管理</p>
+    <p>多檔案導入 · 按地點 / 類別分組管理 · 自動比價</p>
   </header>
 
   <!-- Stats -->
@@ -666,10 +942,22 @@
   <div class="controls">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="搜尋物品、類別或地點..." oninput="renderAll()">
+      <input type="text" id="searchInput" placeholder="搜尋物品、類別、地點或備註..." oninput="renderAll()">
     </div>
+    <select class="tag-filter-select" id="tagFilter" onchange="renderAll()">
+      <option value="">🏷️ 全部標籤</option>
+    </select>
+    <select class="sort-select" id="sortSelect" onchange="renderAll()">
+      <option value="default">預設排序</option>
+      <option value="updated">📅 最近更新</option>
+    </select>
+    <label class="fuzzy-toggle">
+      <input type="checkbox" id="fuzzyMergeToggle"> 🔗 模糊合併
+    </label>
     <button class="btn btn-primary" onclick="openAddModal()">＋ 新增</button>
-    <button class="btn btn-outline" onclick="openUploadModal()">📤 上傳檔案</button>
+    <button class="btn btn-outline" onclick="openUploadModal()">📤 上傳</button>
+    <button class="btn btn-outline" onclick="openExportModal()">📥 匯出</button>
+    <button class="btn btn-outline btn-sm" onclick="openDedupModal()">🔀 去重</button>
     <button class="btn btn-outline btn-sm" onclick="loadExampleData()">📋 示例</button>
     <button class="btn btn-outline btn-sm" style="color:var(--rose-500);border-color:#fecaca;" onclick="confirmReset()">🔄 重置</button>
   </div>
@@ -677,11 +965,20 @@
   <!-- Uploaded File Tags -->
   <div class="file-list" id="fileList"></div>
 
+  <!-- Duplicate Notification Bar -->
+  <div class="dup-notification" id="dupNotification">
+    <span class="dup-msg" id="dupMsg"></span>
+    <button class="btn btn-sm btn-primary" onclick="mergeDuplicates()">合併</button>
+    <button class="btn btn-sm btn-outline" onclick="keepDuplicates()">保持獨立</button>
+    <button class="btn btn-sm btn-outline" onclick="openDedupModal()">查看詳情</button>
+    <button class="btn btn-sm" style="background:none;border:none;font-size:1rem;cursor:pointer;color:var(--slate-400);" onclick="hideDupNotification()">✕</button>
+  </div>
+
   <!-- Grouped Sections -->
   <div id="mainContent"></div>
 
   <!-- Footer -->
-  <div class="footer">數據自動保存至瀏覽器本地</div>
+  <div class="footer">數據自動保存至瀏覽器本地 · 採購清單 v2.0</div>
 </div>
 
 <!-- ===== Add/Edit Modal ===== -->
@@ -695,7 +992,10 @@
       <div class="form-row">
         <div class="form-group" style="flex:2">
           <label>物品名稱 *</label>
-          <input type="text" id="fName" placeholder="如：雞胸肉">
+          <div style="display:flex;gap:0.3rem;align-items:center;">
+            <input type="text" id="fName" placeholder="如：雞胸肉" style="flex:1;">
+            <button class="voice-btn" id="voiceBtn" onclick="startVoiceInput('fName')" title="語音輸入">🎤</button>
+          </div>
         </div>
         <div class="form-group">
           <label>數量</label>
@@ -736,6 +1036,19 @@
             <option value="high">高</option>
             <option value="low">低</option>
           </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>🏷️ 標籤（逗號分隔）</label>
+          <input type="text" id="fTags" placeholder="如：急需,冷鏈,進口">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>💬 備註</label>
+          <textarea id="fNotes" placeholder="最多 200 字的備註..." maxlength="200" oninput="updateCharCount()"></textarea>
+          <div class="char-count"><span id="charCount">0</span>/200</div>
         </div>
       </div>
     </div>
@@ -839,8 +1152,101 @@
   </div>
 </div>
 
+<!-- ===== Export Modal ===== -->
+<div class="modal-overlay" id="exportModal" onclick="if(event.target===this)closeExportModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>📥 匯出與報表</h2>
+      <button class="modal-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-options">
+        <div class="export-option-group">
+          <label>匯出範圍</label>
+          <div class="export-radio-group">
+            <label><input type="radio" name="exportScope" value="all" checked> 全部</label>
+            <label><input type="radio" name="exportScope" value="pending"> 未完成</label>
+            <label><input type="radio" name="exportScope" value="high"> 高優先</label>
+            <label><input type="radio" name="exportScope" value="custom" id="exportCustomRadio"> 自訂勾選</label>
+          </div>
+        </div>
+        <div class="export-option-group">
+          <label>顯示欄位</label>
+          <div class="export-check-group" id="exportFieldChecks">
+            <label><input type="checkbox" data-field="name" checked> 名稱</label>
+            <label><input type="checkbox" data-field="category" checked> 類別</label>
+            <label><input type="checkbox" data-field="location" checked> 地點</label>
+            <label><input type="checkbox" data-field="quantity" checked> 數量</label>
+            <label><input type="checkbox" data-field="unit" checked> 單位</label>
+            <label><input type="checkbox" data-field="price" checked> 單價</label>
+            <label><input type="checkbox" data-field="buyer" checked> 採購人</label>
+            <label><input type="checkbox" data-field="deadline" checked> 截止日</label>
+            <label><input type="checkbox" data-field="priority" checked> 優先級</label>
+            <label><input type="checkbox" data-field="status" checked> 狀態</label>
+            <label><input type="checkbox" data-field="tags"> 標籤</label>
+            <label><input type="checkbox" data-field="notes"> 備註</label>
+          </div>
+        </div>
+        <div class="export-option-group">
+          <label>匯出格式</label>
+          <div class="export-radio-group">
+            <label><input type="radio" name="exportFormat" value="xlsx" checked> Excel (.xlsx)</label>
+            <label><input type="radio" name="exportFormat" value="pdf"> PDF (列印)</label>
+            <label><input type="radio" name="exportFormat" value="csv"> CSV</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeExportModal()">取消</button>
+      <button class="btn btn-primary" onclick="doExport()">📥 匯出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Dedup Center Modal ===== -->
+<div class="modal-overlay" id="dedupModal" onclick="if(event.target===this)closeDedupModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>🔀 去重中心</h2>
+      <button class="modal-close" onclick="closeDedupModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dedupBody">
+      <p style="color:var(--slate-500);font-size:0.78rem;margin-bottom:0.6rem;">相同名稱 + 相同單位的物品被歸為一組，可選擇合併或刪除。</p>
+      <div id="dedupContent"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeDedupModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Mobile Bottom Nav -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="bn-btn" onclick="toggleGroupView()">
+    <span class="bn-icon">📂</span>
+    <span class="bn-label">分組</span>
+  </button>
+  <button class="bn-btn" onclick="toggleMobileSearch()">
+    <span class="bn-icon">🔍</span>
+    <span class="bn-label">搜尋</span>
+  </button>
+  <button class="bn-btn bn-primary" onclick="openAddModal()">
+    <span class="bn-icon">＋</span>
+    <span class="bn-label">新增</span>
+  </button>
+  <button class="bn-btn" onclick="openExportModal()">
+    <span class="bn-icon">📥</span>
+    <span class="bn-label">匯出</span>
+  </button>
+  <button class="bn-btn" onclick="openUploadModal()">
+    <span class="bn-icon">📤</span>
+    <span class="bn-label">上傳</span>
+  </button>
+</div>
 
 <script>
 // ============================================================
@@ -867,10 +1273,70 @@ function loadData() {
   if (raw) {
     try {
       const d = JSON.parse(raw);
-      if (Array.isArray(d)) return d;
+      if (Array.isArray(d)) {
+        // Migrate old items to new schema
+        return d.map(migrateItem);
+      }
     } catch(e) {}
   }
   return JSON.parse(JSON.stringify(DEFAULT));
+}
+
+/**
+ * Migrate an item from old schema to new schema.
+ * Old: id, name, category, location, buyer, deadline, quantity, unit, price, priority, status, source
+ * New: + tags, notes, priceHistory, currentBestPrice, lastUpdated, lastUpdatedSource, duplicateGroupId
+ */
+function migrateItem(item) {
+  if (!item) return item;
+  const now = new Date().toISOString();
+
+  // Build priceHistory from old price if not present
+  if (!item.priceHistory) {
+    item.priceHistory = [];
+    if (item.price && item.price > 0) {
+      item.priceHistory.push({
+        price: item.price,
+        date: item.lastUpdated || now,
+        source: item.source || '未知來源',
+        location: item.location || ''
+      });
+    }
+  }
+
+  // currentBestPrice
+  if (item.currentBestPrice === undefined) {
+    item.currentBestPrice = item.priceHistory.length > 0
+      ? Math.min(...item.priceHistory.map(p => p.price))
+      : (item.price || 0);
+  }
+
+  // lastUpdated
+  if (!item.lastUpdated) {
+    item.lastUpdated = now;
+  }
+
+  // lastUpdatedSource
+  if (!item.lastUpdatedSource) {
+    item.lastUpdatedSource = item.source || '';
+  }
+
+  // tags
+  if (item.tags === undefined) {
+    item.tags = '';
+  }
+
+  // notes
+  if (item.notes === undefined) {
+    item.notes = '';
+  }
+
+  // duplicateGroupId
+  if (item.duplicateGroupId === undefined) {
+    item.duplicateGroupId = '';
+  }
+
+  return item;
 }
 
 function saveData() {
@@ -934,20 +1400,309 @@ function getStats() {
   const items = getFiltered();
   const total = items.length;
   const done = items.filter(i => i.status === 'done').length;
-  const cost = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
+  const cost = items.reduce((s, i) => s + (i.currentBestPrice || i.price || 0) * (i.quantity || 0), 0);
   const urgent = items.filter(i => i.status === 'pending' && i.priority === 'high').length;
   return { total, done, cost, urgent };
 }
 
 function getFiltered() {
   const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-  if (!q) return DATA;
-  return DATA.filter(i =>
-    (i.name || '').toLowerCase().includes(q) ||
-    (i.category || '').toLowerCase().includes(q) ||
-    (i.location || '').toLowerCase().includes(q) ||
-    (i.buyer || '').toLowerCase().includes(q)
-  );
+  const tagFilter = document.getElementById('tagFilter').value;
+
+  let items = DATA;
+  if (q) {
+    items = items.filter(i =>
+      (i.name || '').toLowerCase().includes(q) ||
+      (i.category || '').toLowerCase().includes(q) ||
+      (i.location || '').toLowerCase().includes(q) ||
+      (i.buyer || '').toLowerCase().includes(q) ||
+      (i.notes || '').toLowerCase().includes(q)
+    );
+  }
+  if (tagFilter) {
+    items = items.filter(i => {
+      const tags = (i.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      return tags.includes(tagFilter.toLowerCase());
+    });
+  }
+  return items;
+}
+
+function getSorted(items) {
+  const sortMode = document.getElementById('sortSelect').value;
+  if (sortMode === 'updated') {
+    return [...items].sort((a, b) => {
+      const da = a.lastUpdated || '';
+      const db = b.lastUpdated || '';
+      return db.localeCompare(da);
+    });
+  }
+  return items;
+}
+
+// ============================================================
+// TAG HELPERS
+// ============================================================
+function getAllTags() {
+  const tagSet = new Set();
+  DATA.forEach(item => {
+    if (item.tags) {
+      item.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => tagSet.add(t));
+    }
+  });
+  return [...tagSet].sort();
+}
+
+function renderTagFilter() {
+  const sel = document.getElementById('tagFilter');
+  const current = sel.value;
+  const tags = getAllTags();
+  sel.innerHTML = '<option value="">🏷️ 全部標籤</option>' +
+    tags.map(t => `<option value="${escHtml(t)}">#${escHtml(t)}</option>`).join('');
+  sel.value = current;
+}
+
+function renderTagFilterMobile() {
+  // Keep mobile tag filter in sync (we hide it, but value matters for filtering)
+}
+
+// ============================================================
+// DUPLICATE DETECTION
+// ============================================================
+let pendingDuplicates = [];
+
+function findDuplicates(items) {
+  const groups = {};
+  const fuzzyOn = document.getElementById('fuzzyMergeToggle').checked;
+  items.forEach(item => {
+    const key = ((item.name || '') + '|||' + (item.unit || '')).toLowerCase().trim();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+  const dupEntries = Object.values(groups).filter(g => g.length > 1);
+
+  // Fuzzy matching
+  if (fuzzyOn) {
+    const names = [...new Set(items.map(i => (i.name || '').toLowerCase().trim()).filter(Boolean))];
+    for (let i = 0; i < names.length; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        if (similarity(names[i], names[j]) >= 0.9) {
+          const group = items.filter(it => {
+            const n = (it.name || '').toLowerCase().trim();
+            return n === names[i] || n === names[j];
+          });
+          // Only add if they're not already in an existing dup group
+          const existingIds = new Set(dupEntries.flat().map(x => x.id));
+          const newIds = new Set(group.map(x => x.id));
+          if ([...newIds].some(id => existingIds.has(id)) || group.length > 1) {
+            const allIds = [...new Set([...dupEntries.flat().map(x => x.id), ...group.map(x => x.id)])];
+            // If not already fully covered
+            const existingCombined = new Set(dupEntries.flat().map(x => x.id));
+            const hasNew = group.some(x => !existingCombined.has(x.id));
+            if (hasNew) {
+              dupEntries.push(group);
+            }
+          }
+        }
+      }
+    }
+  }
+  return dupEntries;
+}
+
+// Levenshtein-based similarity
+function similarity(a, b) {
+  if (!a || !b) return 0;
+  a = a.toLowerCase(); b = b.toLowerCase();
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.95;
+  const len = Math.max(a.length, b.length);
+  if (len === 0) return 1;
+  // Simple character overlap
+  const setA = new Set(a.replace(/\s/g, ''));
+  const setB = new Set(b.replace(/\s/g, ''));
+  const intersect = new Set([...setA].filter(x => setB.has(x)));
+  const union = new Set([...setA, ...setB]);
+  return intersect.size / union.size;
+}
+
+function checkDuplicatesOnImport(newItems) {
+  const allItems = [...DATA, ...newItems];
+  const groups = findDuplicates(allItems);
+  if (groups.length > 0) {
+    const count = groups.reduce((s, g) => s + g.length, 0);
+    pendingDuplicates = groups;
+    showDupNotification(count, groups.length);
+    return true;
+  }
+  return false;
+}
+
+function showDupNotification(count, groupCount) {
+  const bar = document.getElementById('dupNotification');
+  document.getElementById('dupMsg').textContent = `🔀 偵測到 ${count} 件物品（${groupCount} 組）可能重複`;
+  bar.classList.add('show');
+}
+
+function hideDupNotification() {
+  document.getElementById('dupNotification').classList.remove('show');
+  pendingDuplicates = [];
+}
+
+function mergeDuplicates() {
+  if (!pendingDuplicates.length) { hideDupNotification(); return; }
+  let mergedCount = 0;
+  pendingDuplicates.forEach(group => {
+    if (group.length < 2) return;
+    const keep = group[0];
+    const rest = group.slice(1);
+    // Merge quantity
+    keep.quantity = (parseFloat(keep.quantity) || 1) + rest.reduce((s, r) => s + (parseFloat(r.quantity) || 1), 0);
+    // Merge priceHistory
+    rest.forEach(r => {
+      if (r.priceHistory) {
+        r.priceHistory.forEach(ph => {
+          if (!keep.priceHistory) keep.priceHistory = [];
+          const exists = keep.priceHistory.some(kph => kph.price === ph.price && kph.source === ph.source);
+          if (!exists) keep.priceHistory.push(ph);
+        });
+      }
+    });
+    // Merge tags
+    const allTags = new Set();
+    [keep, ...rest].forEach(item => {
+      if (item.tags) item.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => allTags.add(t));
+    });
+    keep.tags = [...allTags].join(',');
+    // Merge notes
+    const allNotes = [keep, ...rest].map(item => item.notes).filter(Boolean);
+    if (allNotes.length > 1) keep.notes = allNotes.join('; ');
+    else if (allNotes.length === 1) keep.notes = allNotes[0];
+    // Keep sources
+    keep.sources = [keep.source, ...rest.map(r => r.source)].filter(Boolean);
+
+    // Remove rest from DATA
+    const restIds = new Set(rest.map(r => r.id));
+    DATA = DATA.filter(item => !restIds.has(item.id));
+    // Update kept item
+    const keepIdx = DATA.findIndex(item => item.id === keep.id);
+    if (keepIdx !== -1) DATA[keepIdx] = keep;
+    mergedCount += rest.length;
+  });
+  saveData();
+  renderAll();
+  hideDupNotification();
+  showToast(`✅ 已合併 ${mergedCount} 件重複物品`);
+}
+
+function keepDuplicates() {
+  // Flag duplicates visually
+  pendingDuplicates.forEach(group => {
+    group.forEach(item => {
+      const idx = DATA.findIndex(d => d.id === item.id);
+      if (idx !== -1) {
+        DATA[idx].duplicateGroupId = group[0].id;
+      }
+    });
+  });
+  saveData();
+  renderAll();
+  hideDupNotification();
+  showToast('已保持獨立，淡黃色邊框標記');
+}
+
+// ============================================================
+// DEDUP CENTER MODAL
+// ============================================================
+function openDedupModal() {
+  const dupGroups = findDuplicates(DATA);
+  const container = document.getElementById('dedupContent');
+  if (!dupGroups.length) {
+    container.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>目前沒有發現重複物品</p></div>';
+  } else {
+    container.innerHTML = dupGroups.map((group, gi) => {
+      const groupName = group[0].name || '未命名';
+      return `<div class="dup-group">
+        <div class="dup-group-title">📦 ${escHtml(groupName)} (${group.length} 項)</div>
+        ${group.map((item, ii) => `
+          <div class="dup-item-row">
+            <input type="checkbox" class="dup-check" checked id="dup_${gi}_${ii}" data-gi="${gi}" data-ii="${ii}">
+            <span>${escHtml(item.name || '')} — ${item.quantity || 1}${item.unit || ''} ¥${item.price || 0} (${escHtml(item.source || '')})</span>
+          </div>
+        `).join('')}
+        <div class="dup-actions">
+          <button class="btn btn-sm btn-primary" onclick="dedupMergeGroup(${gi})">合併選中項</button>
+          <button class="btn btn-sm btn-danger" onclick="dedupDeleteGroup(${gi})">刪除選中項</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('dedupModal').classList.add('active');
+}
+
+function closeDedupModal() {
+  document.getElementById('dedupModal').classList.remove('active');
+}
+
+function dedupMergeGroup(gi) {
+  const group = findDuplicates(DATA)[gi];
+  if (!group || group.length < 2) return;
+  const checkedIds = [];
+  group.forEach((item, ii) => {
+    const cb = document.getElementById(`dup_${gi}_${ii}`);
+    if (cb && cb.checked) checkedIds.push(item.id);
+  });
+  if (checkedIds.length < 2) { showToast('請至少勾選 2 項才能合併'); return; }
+
+  const keep = DATA.find(d => d.id === checkedIds[0]);
+  const rest = checkedIds.slice(1).map(id => DATA.find(d => d.id === id)).filter(Boolean);
+  if (!keep) return;
+
+  keep.quantity = (parseFloat(keep.quantity) || 1) + rest.reduce((s, r) => s + (parseFloat(r.quantity) || 1), 0);
+  rest.forEach(r => {
+    if (r.priceHistory) {
+      r.priceHistory.forEach(ph => {
+        if (!keep.priceHistory) keep.priceHistory = [];
+        const exists = keep.priceHistory.some(kph => kph.price === ph.price && kph.source === ph.source);
+        if (!exists) keep.priceHistory.push(ph);
+      });
+    }
+  });
+  const allTags = new Set();
+  [keep, ...rest].forEach(item => {
+    if (item.tags) item.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => allTags.add(t));
+  });
+  keep.tags = [...allTags].join(',');
+
+  const restIds = new Set(rest.map(r => r.id));
+  DATA = DATA.filter(item => !restIds.has(item.id));
+  const keepIdx = DATA.findIndex(item => item.id === keep.id);
+  if (keepIdx !== -1) DATA[keepIdx] = keep;
+
+  // Recalculate best price
+  recalcBestPrice(keep);
+
+  saveData();
+  renderAll();
+  openDedupModal();
+  showToast('✅ 已合併');
+}
+
+function dedupDeleteGroup(gi) {
+  const group = findDuplicates(DATA)[gi];
+  if (!group) return;
+  const checkedIds = [];
+  group.forEach((item, ii) => {
+    const cb = document.getElementById(`dup_${gi}_${ii}`);
+    if (cb && cb.checked) checkedIds.push(item.id);
+  });
+  if (!checkedIds.length) { showToast('請至少勾選 1 項'); return; }
+  const delIds = new Set(checkedIds);
+  DATA = DATA.filter(item => !delIds.has(item.id));
+  saveData();
+  renderAll();
+  openDedupModal();
+  showToast(`🗑️ 已刪除 ${checkedIds.length} 項`);
 }
 
 // ============================================================
@@ -956,6 +1711,7 @@ function getFiltered() {
 function renderAll() {
   renderStats();
   renderFileList();
+  renderTagFilter();
   renderGroups();
 }
 
@@ -977,7 +1733,8 @@ function renderFileList() {
 
 function renderGroups() {
   const container = document.getElementById('mainContent');
-  const items = getFiltered();
+  let items = getFiltered();
+  items = getSorted(items);
   const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
 
   if (!items.length) {
@@ -1023,7 +1780,6 @@ function groupBy(arr, key) {
     if (!map[k]) map[k] = [];
     map[k].push(item);
   });
-  // Sort keys alphabetically
   return Object.keys(map).sort().reduce((acc, k) => {
     acc[k] = map[k];
     return acc;
@@ -1035,10 +1791,11 @@ function renderCardGroup(groups, groupKey) {
   return Object.entries(groups).map(([name, items]) => {
     const done = items.filter(i => i.status === 'done').length;
     const total = items.length;
-    const subtotal = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
+    const subtotal = items.reduce((s, i) => s + (i.currentBestPrice || i.price || 0) * (i.quantity || 0), 0);
     const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    const hasDup = items.some(i => i.duplicateGroupId);
 
-    return `<div class="group-card">
+    return `<div class="group-card ${hasDup ? 'duplicate-flagged' : ''}">
       <div class="group-card-header">
         <div class="gc-name">${groupIcon} ${name}</div>
         <div class="gc-meta">
@@ -1059,25 +1816,115 @@ function renderItemRow(item) {
   const pLabel = { high: '⚡高', medium: '🟡中', low: '🟢低' };
   const pClass = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' };
   const done = item.status === 'done';
+  const bestPrice = item.currentBestPrice || item.price || 0;
+  const isDup = item.duplicateGroupId ? 'duplicate-item' : '';
 
-  return `<div class="item-row" data-id="${item.id}">
-    <input type="checkbox" class="item-check" ${done ? 'checked' : ''} onchange="toggleStatus('${item.id}')">
+  // Tags
+  let tagsHtml = '';
+  if (item.tags) {
+    const tags = item.tags.split(',').map(t => t.trim()).filter(Boolean);
+    if (tags.length) {
+      tagsHtml = `<span class="item-tags">${tags.map(t => `<span class="item-tag">#${escHtml(t)}</span>`).join('')}</span>`;
+    }
+  }
+
+  // Notes indicator
+  let notesHtml = '';
+  if (item.notes) {
+    notesHtml = `<span class="notes-indicator" onclick="showNotesTooltip(event, '${escHtml(item.notes).replace(/'/g, "\\'")}')" title="${escHtml(item.notes)}">💬</span>`;
+  }
+
+  // Update dot
+  let updateDot = '';
+  if (item.lastUpdated) {
+    const days = (Date.now() - new Date(item.lastUpdated).getTime()) / 86400000;
+    if (days <= 7) updateDot = '<span class="update-dot recent" title="最近更新"></span>';
+    else if (days > 30) updateDot = '<span class="update-dot warning" title="超過30天未更新"></span>';
+    else updateDot = '<span class="update-dot stale" title="已更新"></span>';
+  }
+
+  // Price history expand
+  const phCount = (item.priceHistory || []).length;
+
+  return `<div class="item-row ${isDup} ${phCount > 1 ? 'has-price-history' : ''}" data-id="${item.id}" onclick="${phCount > 1 ? `togglePriceHistory('${item.id}')` : ''}" style="cursor:${phCount > 1 ? 'pointer' : 'default'}">
+    <input type="checkbox" class="item-check" ${done ? 'checked' : ''} onchange="event.stopPropagation();toggleStatus('${item.id}')">
     <div class="item-info ${done ? 'done' : ''}">
-      <span class="item-name" onclick="openEditModal('${item.id}')" title="點擊編輯">${escHtml(item.name || '')}</span>
+      <span class="item-name" onclick="event.stopPropagation();openEditModal('${item.id}')" title="點擊編輯">${escHtml(item.name || '')}</span>
       <span class="item-detail">
         ${item.quantity ? item.quantity + (item.unit || '') : ''}
-        ${item.price ? `× ¥${item.price}` : ''}
-        ${item.price && item.quantity ? `= ¥${((item.price||0)*(item.quantity||0)).toFixed(((item.price||0)*(item.quantity||0))%1===0?0:2)}` : ''}
+        ${bestPrice > 0 ? `<span class="best-price">¥${bestPrice}</span>` : ''}
         ${item.priority ? `<span class="priority-badge ${pClass[item.priority]||''}">${pLabel[item.priority]||''}</span>` : ''}
         ${item.deadline ? `<span class="dot"></span> 📅${item.deadline}` : ''}
         ${item.buyer ? `<span class="dot"></span> 👤${escHtml(item.buyer)}` : ''}
+        ${updateDot}
+        ${tagsHtml}
+        ${notesHtml}
+        ${phCount > 1 ? `<span style="font-size:0.6rem;color:var(--amber-500);">📊${phCount}</span>` : ''}
       </span>
     </div>
-    <div class="item-actions">
+    <div class="item-actions" onclick="event.stopPropagation()">
       <button class="item-btn" onclick="openEditModal('${item.id}')" title="編輯">✏️</button>
       <button class="item-btn item-btn-del" onclick="deleteItem('${item.id}')" title="刪除">🗑️</button>
     </div>
+  </div>
+  ${phCount > 1 ? renderPriceHistoryPanel(item) : ''}`;
+}
+
+function renderPriceHistoryPanel(item) {
+  const ph = item.priceHistory || [];
+  const bestPrice = Math.min(...ph.map(p => p.price));
+  const worstPrice = Math.max(...ph.map(p => p.price));
+  const now = Date.now();
+
+  return `<div class="price-history-panel" id="ph_${item.id}">
+    <div class="ph-title">📊 歷史報價 (${ph.length})</div>
+    ${ph.map(p => {
+      const isBest = p.price === bestPrice;
+      const isWorst = p.price === worstPrice;
+      let cls = '';
+      if (isBest) cls = 'ph-best';
+      if (isWorst && !isBest) cls = 'ph-worst';
+
+      let dateDot = '';
+      if (p.date) {
+        const days = (now - new Date(p.date).getTime()) / 86400000;
+        if (days <= 7) dateDot = '<span class="update-dot recent" title="最近7天"></span>';
+        else if (days > 30) dateDot = '<span class="update-dot warning" title="超過30天"></span>';
+        else dateDot = '<span class="update-dot stale"></span>';
+      }
+
+      return `<div class="ph-row ${cls}">
+        <span class="ph-price">¥${p.price}</span>
+        <span class="ph-source">${escHtml(p.source || '')}${p.location ? ' · ' + escHtml(p.location) : ''}</span>
+        <span class="ph-date">${dateDot}${p.date ? new Date(p.date).toLocaleDateString('zh-CN') : ''}</span>
+        ${isBest ? '<span style="font-size:0.6rem;font-weight:700;color:var(--emerald-600);">最低</span>' : ''}
+        ${isWorst && !isBest ? '<span style="font-size:0.6rem;color:var(--rose-400);">最高</span>' : ''}
+      </div>`;
+    }).join('')}
   </div>`;
+}
+
+function togglePriceHistory(id) {
+  const panel = document.getElementById('ph_' + id);
+  const row = panel ? panel.previousElementSibling : null;
+  if (row) {
+    row.classList.toggle('price-expanded');
+  }
+}
+
+function recalcBestPrice(item) {
+  if (item.priceHistory && item.priceHistory.length > 0) {
+    item.currentBestPrice = Math.min(...item.priceHistory.map(p => p.price));
+  } else if (item.price) {
+    item.currentBestPrice = item.price;
+  } else {
+    item.currentBestPrice = 0;
+  }
+}
+
+function showNotesTooltip(event, text) {
+  // Simple approach: just show in toast for now
+  showToast('💬 ' + text);
 }
 
 function escHtml(s) {
@@ -1096,6 +1943,7 @@ function toggleStatus(id) {
   const item = DATA.find(i => i.id === id);
   if (item) {
     item.status = item.status === 'done' ? 'pending' : 'done';
+    item.lastUpdated = new Date().toISOString();
     saveData();
     renderAll();
   }
@@ -1123,6 +1971,9 @@ function openAddModal() {
   document.getElementById('fBuyer').value = '';
   document.getElementById('fDeadline').value = '';
   document.getElementById('fPriority').value = 'medium';
+  document.getElementById('fTags').value = '';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('charCount').textContent = '0';
   document.getElementById('formModal').classList.add('active');
   setTimeout(() => document.getElementById('fName').focus(), 200);
 }
@@ -1141,6 +1992,9 @@ function openEditModal(id) {
   document.getElementById('fBuyer').value = item.buyer || '';
   document.getElementById('fDeadline').value = item.deadline || '';
   document.getElementById('fPriority').value = item.priority || 'medium';
+  document.getElementById('fTags').value = item.tags || '';
+  document.getElementById('fNotes').value = item.notes || '';
+  document.getElementById('charCount').textContent = String(item.notes || '').length;
   document.getElementById('formModal').classList.add('active');
   setTimeout(() => document.getElementById('fName').focus(), 200);
 }
@@ -1150,9 +2004,16 @@ function closeModal() {
   editingId = null;
 }
 
+function updateCharCount() {
+  const val = document.getElementById('fNotes').value;
+  document.getElementById('charCount').textContent = val.length;
+}
+
 function confirmForm() {
   const name = document.getElementById('fName').value.trim();
   if (!name) { showToast('❌ 請輸入物品名稱'); return; }
+
+  const now = new Date().toISOString();
 
   const obj = {
     name,
@@ -1164,29 +2025,114 @@ function confirmForm() {
     buyer: document.getElementById('fBuyer').value.trim(),
     deadline: document.getElementById('fDeadline').value,
     priority: document.getElementById('fPriority').value,
+    tags: document.getElementById('fTags').value.trim(),
+    notes: document.getElementById('fNotes').value.trim().slice(0, 200),
     status: 'pending',
   };
 
   if (editingId) {
     const idx = DATA.findIndex(i => i.id === editingId);
     if (idx !== -1) {
-      // Preserve source and id
+      // Preserve source, id, priceHistory, lastUpdated, etc.
       obj.id = DATA[idx].id;
       obj.source = DATA[idx].source;
       obj.status = DATA[idx].status;
+      obj.priceHistory = DATA[idx].priceHistory || [];
+      obj.lastUpdated = now;
+      obj.lastUpdatedSource = DATA[idx].source || '手動編輯';
+
+      // Update price history if price changed
+      const oldPrice = DATA[idx].price || 0;
+      if (obj.price > 0 && obj.price !== oldPrice) {
+        obj.priceHistory.push({
+          price: obj.price,
+          date: now,
+          source: '手動編輯',
+          location: obj.location
+        });
+      }
+
+      // Keep duplicateGroupId
+      obj.duplicateGroupId = DATA[idx].duplicateGroupId || '';
+
+      // Recalculate best price
+      obj.currentBestPrice = obj.priceHistory.length > 0
+        ? Math.min(...obj.priceHistory.map(p => p.price))
+        : obj.price;
+
       DATA[idx] = obj;
     }
     showToast('✅ 已更新');
   } else {
     obj.id = genId();
     obj.source = '手動添加';
-    DATA.push(obj);
+    obj.priceHistory = obj.price > 0 ? [{
+      price: obj.price,
+      date: now,
+      source: '手動添加',
+      location: obj.location
+    }] : [];
+    obj.currentBestPrice = obj.price;
+    obj.lastUpdated = now;
+    obj.lastUpdatedSource = '手動添加';
+    obj.duplicateGroupId = '';
+
+    // Check duplicates
+    const newItem = obj;
+    const dupCheck = findDuplicates([...DATA, newItem]);
+    if (dupCheck.length > 0) {
+      pendingDuplicates = dupCheck;
+      const count = dupCheck.reduce((s, g) => s + g.length, 0);
+      showDupNotification(count, dupCheck.length);
+    }
+
+    DATA.push(newItem);
     showToast('✅ 已新增');
   }
 
   saveData();
   renderAll();
   closeModal();
+}
+
+// ============================================================
+// VOICE INPUT
+// ============================================================
+function startVoiceInput(fieldId) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('❌ 此瀏覽器不支援語音輸入');
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  const btn = document.getElementById('voiceBtn');
+  btn.classList.add('listening');
+  btn.textContent = '🔴';
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const input = document.getElementById(fieldId);
+    input.value = input.value ? input.value + ' ' + transcript : transcript;
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+  };
+
+  recognition.onerror = () => {
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+    showToast('❌ 語音識別失敗，請重試');
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+  };
+
+  recognition.start();
 }
 
 // ============================================================
@@ -1255,24 +2201,102 @@ function finalizeUpload(count) {
 function mergeData(newItems, fileName) {
   if (!newItems || !newItems.length) return;
   loadedFiles.push(fileName);
-  // Deduplicate loadedFiles
   loadedFiles = [...new Set(loadedFiles)];
 
+  const now = new Date().toISOString();
+  let freshItems = [];
+
   for (const item of newItems) {
-    DATA.push({
-      id: genId(),
-      name: item.name || '未命名',
-      category: item.category || '',
-      location: item.location || '',
-      buyer: item.buyer || '',
-      deadline: item.deadline || '',
-      quantity: parseFloat(item.quantity) || 1,
-      unit: item.unit || '',
-      price: parseFloat(item.price) || 0,
-      priority: item.priority || 'medium',
-      status: item.status === 'done' || item.status === '已完成' ? 'done' : 'pending',
-      source: fileName,
-    });
+    // Check for duplicate by name + unit
+    const existing = DATA.find(d =>
+      (d.name || '').toLowerCase().trim() === (item.name || '').toLowerCase().trim() &&
+      (d.unit || '').toLowerCase().trim() === (item.unit || '').toLowerCase().trim()
+    );
+
+    if (existing) {
+      // Merge into priceHistory
+      const newPrice = parseFloat(item.price) || 0;
+      if (newPrice > 0) {
+        if (!existing.priceHistory) existing.priceHistory = [];
+        const dup = existing.priceHistory.some(p =>
+          p.price === newPrice && p.source === fileName
+        );
+        if (!dup) {
+          existing.priceHistory.push({
+            price: newPrice,
+            date: now,
+            source: fileName,
+            location: item.location || existing.location || ''
+          });
+        }
+      }
+      // Update best price
+      recalcBestPrice(existing);
+      // Update lastUpdated
+      existing.lastUpdated = now;
+      existing.lastUpdatedSource = fileName;
+      // Merge quantity
+      if (parseFloat(item.quantity) > 0) {
+        existing.quantity = (parseFloat(existing.quantity) || 1) + (parseFloat(item.quantity) || 1);
+      }
+      // Merge tags
+      if (item.tags) {
+        const tags = item.tags.split(',').map(t => t.trim()).filter(Boolean);
+        const existingTags = (existing.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+        const allTags = new Set([...existingTags, ...tags]);
+        existing.tags = [...allTags].join(',');
+      }
+      // Merge notes
+      if (item.notes && existing.notes !== item.notes) {
+        existing.notes = existing.notes ? existing.notes + '; ' + item.notes : item.notes;
+      }
+    } else {
+      // New item
+      const newItem = {
+        id: genId(),
+        name: item.name || '未命名',
+        category: item.category || '',
+        location: item.location || '',
+        buyer: item.buyer || '',
+        deadline: item.deadline || '',
+        quantity: parseFloat(item.quantity) || 1,
+        unit: item.unit || '',
+        price: parseFloat(item.price) || 0,
+        priority: item.priority || 'medium',
+        status: item.status === 'done' || item.status === '已完成' ? 'done' : 'pending',
+        source: fileName,
+        tags: item.tags || '',
+        notes: item.notes || '',
+        priceHistory: [],
+        currentBestPrice: parseFloat(item.price) || 0,
+        lastUpdated: now,
+        lastUpdatedSource: fileName,
+        duplicateGroupId: '',
+      };
+      const p = parseFloat(item.price) || 0;
+      if (p > 0) {
+        newItem.priceHistory.push({
+          price: p,
+          date: now,
+          source: fileName,
+          location: item.location || ''
+        });
+      }
+      freshItems.push(newItem);
+    }
+  }
+
+  // Now add fresh items and check duplicates
+  const beforeCount = DATA.length;
+  DATA.push(...freshItems);
+  const allNew = freshItems;
+
+  // Check duplicates among fresh + existing
+  const dupCheck = findDuplicates(DATA);
+  if (dupCheck.length > 0) {
+    pendingDuplicates = dupCheck;
+    const count = dupCheck.reduce((s, g) => s + g.length, 0);
+    showDupNotification(count, dupCheck.length);
   }
 }
 
@@ -1405,6 +2429,8 @@ function normalizeItem(raw) {
     price: parseFloat(raw.price || raw.價格 || raw.价格 || raw.單價 || raw.单价 || 0) || 0,
     priority: normalizePriority(raw.priority || raw.優先級 || raw.优先级 || raw.级别 || raw.級別 || 'medium'),
     status: 'pending',
+    tags: String(raw.tags || raw.標籤 || raw.标签 || '').trim(),
+    notes: String(raw.notes || raw.備註 || raw.备注 || '').trim(),
   };
 }
 
@@ -1416,31 +2442,229 @@ function normalizePriority(p) {
 }
 
 // ============================================================
+// EXPORT
+// ============================================================
+function openExportModal() {
+  // Reset custom checkboxes
+  document.querySelectorAll('#exportFieldChecks input').forEach(cb => cb.checked = true);
+  document.querySelectorAll('input[name="exportScope"]').forEach(r => {
+    r.checked = r.value === 'all';
+  });
+  document.getElementById('exportModal').classList.add('active');
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.remove('active');
+}
+
+function getExportItems() {
+  const scope = document.querySelector('input[name="exportScope"]:checked');
+  if (!scope) return [];
+  const val = scope.value;
+  if (val === 'all') return DATA;
+  if (val === 'pending') return DATA.filter(i => i.status === 'pending');
+  if (val === 'high') return DATA.filter(i => i.priority === 'high' && i.status === 'pending');
+  if (val === 'custom') {
+    // Use currently filtered + visible items
+    return getFiltered();
+  }
+  return DATA;
+}
+
+function getExportFields() {
+  const fields = [];
+  document.querySelectorAll('#exportFieldChecks input').forEach(cb => {
+    if (cb.checked) fields.push(cb.getAttribute('data-field'));
+  });
+  return fields;
+}
+
+function doExport() {
+  const format = document.querySelector('input[name="exportFormat"]:checked');
+  if (!format) { showToast('❌ 請選擇匯出格式'); return; }
+  const fmt = format.value;
+
+  if (fmt === 'xlsx') return exportXLSX();
+  if (fmt === 'pdf') return exportPDF();
+  if (fmt === 'csv') return exportCSV();
+}
+
+function getExportData() {
+  const items = getExportItems();
+  const fields = getExportFields();
+  const fieldLabels = {
+    name: '物品名稱', category: '類別', location: '地點',
+    quantity: '數量', unit: '單位', price: '單價',
+    buyer: '採購人', deadline: '截止日期', priority: '優先級',
+    status: '狀態', tags: '標籤', notes: '備註'
+  };
+
+  return items.map(item => {
+    const row = {};
+    fields.forEach(f => {
+      if (f === 'priority') {
+        const pMap = { high: '高', medium: '中', low: '低' };
+        row[fieldLabels[f] || f] = pMap[item[f]] || item[f] || '';
+      } else if (f === 'status') {
+        row[fieldLabels[f] || f] = item[f] === 'done' ? '已完成' : '待辦';
+      } else if (f === 'price') {
+        row[fieldLabels[f] || f] = item[f] || 0;
+      } else {
+        row[fieldLabels[f] || f] = item[f] !== undefined ? item[f] : '';
+      }
+    });
+    return row;
+  });
+}
+
+function exportXLSX() {
+  if (typeof XLSX === 'undefined') {
+    showToast('❌ Excel 庫未加載，請稍後重試');
+    return;
+  }
+  const data = getExportData();
+  if (!data.length) { showToast('❌ 沒有數據可匯出'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+
+  // Column widths
+  const cols = Object.keys(data[0] || {});
+  const colWidths = cols.map(c => ({ wch: Math.max(8, c.length * 2) }));
+  ws['!cols'] = colWidths;
+
+  XLSX.utils.book_append_sheet(wb, ws, '採購清單');
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const fileName = `採購清單_${dateStr}.xlsx`;
+
+  XLSX.writeFile(wb, fileName);
+  closeExportModal();
+  showToast(`✅ 已匯出 ${fileName}`);
+}
+
+function exportPDF() {
+  const items = getExportData();
+  if (!items.length) { showToast('❌ 沒有數據可匯出'); return; }
+
+  // Use window.print() with a styled print view
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { showToast('❌ 請允許彈出視窗'); return; }
+
+  const fields = getExportFields();
+  const fieldLabels = {
+    name: '物品名稱', category: '類別', location: '地點',
+    quantity: '數量', unit: '單位', price: '單價',
+    buyer: '採購人', deadline: '截止日期', priority: '優先級',
+    status: '狀態', tags: '標籤', notes: '備註'
+  };
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN');
+
+  let tableRows = items.map(item => {
+    return '<tr>' + fields.map(f => {
+      let val = item[fieldLabels[f] || f];
+      if (val === undefined || val === null) val = '';
+      return `<td>${escHtml(String(val))}</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+
+  const headerCells = fields.map(f => `<th>${escHtml(fieldLabels[f] || f)}</th>`).join('');
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>採購清單</title>
+    <style>
+      body { font-family: 'Noto Sans SC', sans-serif; padding: 2rem; color: #333; }
+      h1 { color: #92400e; font-size: 1.5rem; margin-bottom: 0.3rem; }
+      .date { color: #d97706; font-size: 0.8rem; margin-bottom: 1rem; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+      th { background: #fef3c7; color: #92400e; padding: 0.5rem 0.6rem; text-align: left; border: 1px solid #f0e6d4; font-weight: 600; }
+      td { padding: 0.4rem 0.6rem; border: 1px solid #f0e6d4; }
+      tr:nth-child(even) { background: #fffbeb; }
+      .footer { margin-top: 1rem; font-size: 0.7rem; color: #d97706; text-align: center; }
+      @media print { body { padding: 0; } }
+    </style>
+    </head>
+    <body>
+      <h1>🛒 採購清單</h1>
+      <div class="date">匯出日期：${dateStr} | 共 ${items.length} 項</div>
+      <table><thead><tr>${headerCells}</tr></thead><tbody>${tableRows || '<tr><td colspan="99" style="text-align:center;color:#999;">無數據</td></tr>'}</tbody></table>
+      <div class="footer">採購清單 v2.0 — 自動生成</div>
+      <script>
+        window.onload = function() { window.print(); window.close(); }
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  closeExportModal();
+  showToast('🖨️ 正在開啟列印視窗');
+}
+
+function exportCSV() {
+  const data = getExportData();
+  if (!data.length) { showToast('❌ 沒有數據可匯出'); return; }
+
+  const headers = Object.keys(data[0]);
+  const csvRows = [headers.join(',')];
+
+  data.forEach(item => {
+    const vals = headers.map(h => {
+      let v = item[h];
+      if (v === undefined || v === null) v = '';
+      v = String(v).replace(/"/g, '""');
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v + '"';
+      return v;
+    });
+    csvRows.push(vals.join(','));
+  });
+
+  const csv = csvRows.join('\n');
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `採購清單_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  closeExportModal();
+  showToast('✅ 已匯出 CSV');
+}
+
+// ============================================================
 // EXAMPLE DATA & RESET
 // ============================================================
 function loadExampleData() {
   if (DATA.length > 0 && !confirm('加載示例數據將清空當前數據，確認？')) return;
 
+  const now = new Date().toISOString();
+
   DATA = [
-    { id: genId(), name: '雞胸肉', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-15', quantity: 2, unit: 'kg', price: 25.5, priority: 'high', status: 'pending', source: '示例' },
-    { id: genId(), name: '牛奶', category: '飲品', location: '超市A', buyer: '小紅', deadline: '2026-06-12', quantity: 1, unit: 'L', price: 18, priority: 'medium', status: 'done', source: '示例' },
-    { id: genId(), name: '雞蛋', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '盒(30枚)', price: 32, priority: 'high', status: 'pending', source: '示例' },
-    { id: genId(), name: '蘋果', category: '水果', location: '市場B', buyer: '小紅', deadline: '2026-06-13', quantity: 3, unit: '斤', price: 8, priority: 'medium', status: 'pending', source: '示例' },
-    { id: genId(), name: '衛生紙', category: '日用品', location: '超市A', buyer: '小明', deadline: '2026-06-20', quantity: 2, unit: '提', price: 22, priority: 'low', status: 'pending', source: '示例' },
-    { id: genId(), name: '洗潔精', category: '日用品', location: '超市A', buyer: '小紅', deadline: '2026-06-18', quantity: 1, unit: '瓶', price: 15, priority: 'medium', status: 'done', source: '示例' },
-    { id: genId(), name: '鮭魚', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-15', quantity: 1, unit: '片', price: 45, priority: 'high', status: 'pending', source: '示例' },
-    { id: genId(), name: '醬油', category: '調味料', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '瓶', price: 12, priority: 'low', status: 'pending', source: '示例' },
-    { id: genId(), name: '紅蘿蔔', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '袋', price: 10, priority: 'medium', status: 'pending', source: '示例' },
-    { id: genId(), name: '燕麥片', category: '食材', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '包', price: 28, priority: 'medium', status: 'done', source: '示例' },
-    { id: genId(), name: '文具組', category: '文具', location: '文具店', buyer: '小明', deadline: '2026-06-22', quantity: 2, unit: '套', price: 35, priority: 'low', status: 'pending', source: '示例' },
-    { id: genId(), name: '保鮮膜', category: '日用品', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '卷', price: 8.5, priority: 'low', status: 'pending', source: '示例' },
+    { id: genId(), name: '雞胸肉', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-15', quantity: 2, unit: 'kg', price: 25.5, priority: 'high', status: 'pending', source: '示例', tags: '急需,冷鏈', notes: '要買去皮去骨的', priceHistory: [{price:25.5,date:now,source:'示例',location:'超市A'},{price:28,date:now,source:'市場B',location:'市場B'}], currentBestPrice: 25.5, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '牛奶', category: '飲品', location: '超市A', buyer: '小紅', deadline: '2026-06-12', quantity: 1, unit: 'L', price: 18, priority: 'medium', status: 'done', source: '示例', tags: '常溫', notes: '', priceHistory: [{price:18,date:now,source:'示例',location:'超市A'}], currentBestPrice: 18, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '雞蛋', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '盒(30枚)', price: 32, priority: 'high', status: 'pending', source: '示例', tags: '急需', notes: '買有機的', priceHistory: [{price:32,date:now,source:'示例',location:'超市A'},{price:35,date:now,source:'市場B',location:'市場B'}], currentBestPrice: 32, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '蘋果', category: '水果', location: '市場B', buyer: '小紅', deadline: '2026-06-13', quantity: 3, unit: '斤', price: 8, priority: 'medium', status: 'pending', source: '示例', tags: '', notes: '要脆的富士蘋果', priceHistory: [{price:8,date:now,source:'示例',location:'市場B'}], currentBestPrice: 8, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '衛生紙', category: '日用品', location: '超市A', buyer: '小明', deadline: '2026-06-20', quantity: 2, unit: '提', price: 22, priority: 'low', status: 'pending', source: '示例', tags: '量販', notes: '', priceHistory: [{price:22,date:now,source:'示例',location:'超市A'},{price:20,date:now,source:'量販店',location:'量販店'}], currentBestPrice: 20, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '洗潔精', category: '日用品', location: '超市A', buyer: '小紅', deadline: '2026-06-18', quantity: 1, unit: '瓶', price: 15, priority: 'medium', status: 'done', source: '示例', tags: '', notes: '', priceHistory: [{price:15,date:now,source:'示例',location:'超市A'}], currentBestPrice: 15, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '鮭魚', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-15', quantity: 1, unit: '片', price: 45, priority: 'high', status: 'pending', source: '示例', tags: '冷鏈,進口', notes: '挪威鮭魚', priceHistory: [{price:45,date:now,source:'示例',location:'市場B'},{price:48,date:now,source:'超市A',location:'超市A'}], currentBestPrice: 45, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '醬油', category: '調味料', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '瓶', price: 12, priority: 'low', status: 'pending', source: '示例', tags: '', notes: '', priceHistory: [{price:12,date:now,source:'示例',location:'超市A'}], currentBestPrice: 12, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '紅蘿蔔', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '袋', price: 10, priority: 'medium', status: 'pending', source: '示例', tags: '有機', notes: '', priceHistory: [{price:10,date:now,source:'示例',location:'市場B'}], currentBestPrice: 10, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '燕麥片', category: '食材', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '包', price: 28, priority: 'medium', status: 'done', source: '示例', tags: '', notes: '', priceHistory: [{price:28,date:now,source:'示例',location:'超市A'}], currentBestPrice: 28, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '文具組', category: '文具', location: '文具店', buyer: '小明', deadline: '2026-06-22', quantity: 2, unit: '套', price: 35, priority: 'low', status: 'pending', source: '示例', tags: '', notes: '', priceHistory: [{price:35,date:now,source:'示例',location:'文具店'}], currentBestPrice: 35, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '保鮮膜', category: '日用品', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '卷', price: 8.5, priority: 'low', status: 'pending', source: '示例', tags: '', notes: '要寬版的', priceHistory: [{price:8.5,date:now,source:'示例',location:'超市A'}], currentBestPrice: 8.5, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
   ];
 
   loadedFiles = ['示例數據'];
   saveData();
   saveFiles();
   renderAll();
-  showToast('📋 已加載示例數據 (12 項)');
+  showToast('📋 已加載示例數據 (12 項，含比價與標籤)');
 }
 
 function confirmReset() {
@@ -1458,7 +2682,7 @@ function confirmReset() {
 // 圖片識別（OpenRouter 多模態）
 // ============================================================
 
-const API_KEY_STORAGE = 'procurement_vision_apikey';
+const API_KEY_STORAGE='procur...ikey';
 let recognizedItems = [];
 let currentImageBase64 = '';
 let apiKeyLoaded = false;
@@ -1498,7 +2722,6 @@ function switchUploadTab(tab) {
 
 function setupImageUploadZone() {
   const zone = document.getElementById('imageUploadZone');
-  // Remove old listeners by replacing
   const newZone = zone.cloneNode(true);
   zone.parentNode.replaceChild(newZone, zone);
 
@@ -1522,7 +2745,6 @@ function handleImageFile(file) {
     currentImageBase64 = e.target.result;
     document.getElementById('imgPreview').src = e.target.result;
     document.getElementById('imgPreviewWrap').style.display = 'block';
-    // Hide previous results
     document.getElementById('recResultArea').style.display = 'none';
     recognizedItems = [];
   };
@@ -1549,13 +2771,11 @@ function recognizeImage() {
 
   const context = document.getElementById('visionContext').value.trim();
 
-  // Show progress
   document.getElementById('recProgress').style.display = 'block';
   document.getElementById('recResultArea').style.display = 'none';
   document.getElementById('recognizeBtn').disabled = true;
   document.getElementById('recognizeBtn').textContent = '⏳ 識別中…';
 
-  // Build prompt
   const prompt = `你是一個採購物品識別助手。請仔細分析這張圖片，識別出所有採購相關的物品。
 
 ${context ? `補充信息：${context}` : ''}
@@ -1584,7 +2804,6 @@ ${context ? `補充信息：${context}` : ''}
 
 只返回 JSON 數組，不要有任何其他文字說明。如果無法識別任何物品，返回空數組 []。`;
 
-  // Call OpenRouter
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
 
@@ -1705,9 +2924,11 @@ function importRecognizedItems() {
   const toImport = recognizedItems.filter(i => i._checked);
   if (!toImport.length) { showToast('❌ 請至少選擇一項'); return; }
 
-  const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  const now = new Date().toISOString();
+  const timestamp = now.slice(0, 16).replace('T', ' ');
+
   for (const item of toImport) {
-    DATA.push({
+    const newItem = {
       id: genId(),
       name: item.name,
       category: item.category,
@@ -1720,7 +2941,23 @@ function importRecognizedItems() {
       priority: item.priority,
       status: 'pending',
       source: `圖片識別 (${timestamp})`,
-    });
+      tags: '',
+      notes: '',
+      priceHistory: [],
+      currentBestPrice: item.price,
+      lastUpdated: now,
+      lastUpdatedSource: `圖片識別 (${timestamp})`,
+      duplicateGroupId: '',
+    };
+    if (item.price > 0) {
+      newItem.priceHistory.push({
+        price: item.price,
+        date: now,
+        source: `圖片識別 (${timestamp})`,
+        location: item.location || ''
+      });
+    }
+    DATA.push(newItem);
   }
 
   loadedFiles.push(`🖼️ 圖片識別 (${timestamp})`);
@@ -1732,6 +2969,57 @@ function importRecognizedItems() {
   closeUploadModal();
   showToast(`✅ 已導入 ${toImport.length} 項`);
 }
+
+// ============================================================
+// MOBILE HELPERS
+// ============================================================
+function toggleGroupView() {
+  const sections = document.querySelectorAll('.group-section-header');
+  const allCollapsed = sections.length > 0 && [...sections].every(s => s.classList.contains('collapsed'));
+  sections.forEach(s => {
+    s.classList.toggle('collapsed', !allCollapsed);
+  });
+}
+
+function toggleMobileSearch() {
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.focus();
+    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// ============================================================
+// SERVICE WORKER (Offline cache)
+// ============================================================
+(function registerSW() {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    // Register a simple cache-first service worker via a blob URL
+    const swCode = `
+      const CACHE = 'procurement-cache-v1';
+      const ASSETS = ['.', 'index.html'];
+      self.addEventListener('install', e => {
+        e.waitUntil(
+          caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+        );
+      });
+      self.addEventListener('activate', e => {
+        e.waitUntil(clients.claim());
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.match(e.request).then(r => r || fetch(e.request))
+        );
+      });
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    // We register from a scope that matches
+    try {
+      navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(() => {});
+    } catch(e) {}
+  }
+})();
 
 // ============================================================
 // INIT
