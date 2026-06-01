@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>英語單詞卡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f13;
+  --bg2: #1a1a24;
+  --bg3: #24243a;
+  --card-bg: #1e1e2e;
+  --card-hover: #2a2a3e;
+  --text: #e8e8f0;
+  --text2: #9898b0;
+  --text3: #606080;
+  --accent: #7c6aff;
+  --accent2: #5b4ee0;
+  --accent-glow: rgba(124,106,255,0.25);
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.12);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.12);
+  --orange: #fbbf24;
+  --orange-bg: rgba(251,191,36,0.12);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+  height: 100vh;
+}
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 260px;
+  background: var(--bg2);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: transform .3s ease;
+  z-index: 100;
+}
+.sidebar-header {
+  padding: 1.2rem 1rem 0.8rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sidebar-header h1 span { font-size: 1.3rem; }
+.sidebar-header .sub {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 0.15rem;
+}
+.project-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+.project-list::-webkit-scrollbar { width: 4px; }
+.project-list::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 4px; }
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: 0.15rem;
+  position: relative;
+}
+.project-item:hover { background: var(--card-hover); }
+.project-item.active {
+  background: var(--accent-glow);
+  border-left: 3px solid var(--accent);
+}
+.project-item .p-icon { font-size: 1rem; flex-shrink: 0; }
+.project-item .p-name {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-item .p-count {
+  font-size: 0.65rem;
+  color: var(--text3);
+  background: var(--bg3);
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.project-item .p-del {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.project-item:hover .p-del { opacity: 0.5; }
+.project-item .p-del:hover { opacity: 1; color: var(--red); background: var(--red-bg); }
+
+.btn-add-project {
+  margin: 0.3rem 0.5rem 0.5rem;
+  padding: 0.55rem;
+  border: 1.5px dashed rgba(124,106,255,0.3);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.btn-add-project:hover {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+
+/* ===== MAIN ===== */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.main-header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  gap: 1rem;
+}
+.main-header .left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.main-header .left h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.main-header .left .word-count {
+  font-size: 0.75rem;
+  color: var(--text3);
+  background: var(--bg3);
+  padding: 0.15rem 0.5rem;
+  border-radius: 8px;
+}
+.main-header .actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.tabs {
+  display: flex;
+  gap: 0.15rem;
+  background: var(--bg2);
+  padding: 0.2rem;
+  border-radius: var(--radius-sm);
+}
+.tab-btn {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+}
+.btn-icon {
+  width: 34px; height: 34px;
+  border: none; border-radius: 8px;
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.btn-icon:hover { background: var(--card-hover); color: var(--text); }
+.btn-icon.primary { background: var(--accent); color: white; }
+.btn-icon.primary:hover { background: var(--accent2); }
+
+/* ===== TAB CONTENT ===== */
+.tab-content { display: none; flex: 1; overflow: hidden; }
+.tab-content.active { display: flex; flex-direction: column; }
+
+/* ---- Word List ---- */
+.word-list-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+.word-list-area::-webkit-scrollbar { width: 6px; }
+.word-list-area::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 4px; }
+
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.search-bar input {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border: 1.5px solid var(--bg3);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: border .15s;
+}
+.search-bar input:focus { border-color: var(--accent); }
+.search-bar input::placeholder { color: var(--text3); }
+
+.word-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+.word-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 0.9rem;
+  transition: all .2s;
+  cursor: pointer;
+  position: relative;
+}
+.word-card:hover {
+  border-color: var(--accent-glow);
+  box-shadow: 0 4px 20px rgba(124,106,255,0.08);
+  transform: translateY(-1px);
+}
+.word-card .en {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.3px;
+}
+.word-card .pos {
+  font-size: 0.65rem;
+  color: var(--accent);
+  background: var(--accent-glow);
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+.word-card .zh {
+  font-size: 0.82rem;
+  color: var(--text2);
+  margin-top: 0.3rem;
+}
+.word-card .stats {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.65rem;
+}
+.word-card .stats .correct { color: var(--green); }
+.word-card .stats .wrong { color: var(--red); }
+.word-card .card-del {
+  position: absolute;
+  top: 0.4rem; right: 0.4rem;
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.word-card:hover .card-del { opacity: 0.5; }
+.word-card .card-del:hover { opacity: 1; color: var(--red); }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text3);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+.empty-state p { font-size: 0.85rem; }
+
+/* ---- Study Mode ---- */
+.study-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+.study-mode-select {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.study-mode-btn {
+  padding: 0.4rem 1rem;
+  border: 1.5px solid var(--bg3);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.study-mode-btn:hover { border-color: var(--accent); color: var(--text); }
+.study-mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.study-progress {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin-bottom: 1rem;
+}
+.study-progress .bar {
+  width: 200px;
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 4px;
+  margin: 0.5rem auto 0;
+  overflow: hidden;
+}
+.study-progress .bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #a78bfa);
+  border-radius: 4px;
+  transition: width .3s;
+}
+
+/* Flashcard */
+.flashcard {
+  width: 340px;
+  height: 220px;
+  perspective: 1000px;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+}
+.flashcard-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transition: transform .5s cubic-bezier(0.4,0,0.2,1);
+  transform-style: preserve-3d;
+}
+.flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+.flashcard-front, .flashcard-back {
+  position: absolute;
+  width: 100%; height: 100%;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+.flashcard-front {
+  background: linear-gradient(135deg, var(--card-bg), #2a1e4e);
+  border: 1px solid rgba(124,106,255,0.2);
+}
+.flashcard-front .big-en {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.5px;
+}
+.flashcard-front .tap-hint {
+  font-size: 0.65rem;
+  color: var(--text3);
+  margin-top: 1rem;
+}
+.flashcard-back {
+  background: linear-gradient(135deg, #1e2e1e, var(--card-bg));
+  border: 1px solid rgba(74,222,128,0.2);
+  transform: rotateY(180deg);
+}
+.flashcard-back .big-zh {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--green);
+}
+.flashcard-back .back-en {
+  font-size: 1rem;
+  color: var(--text2);
+  margin-top: 0.5rem;
+}
+.flashcard-back .back-pos {
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-top: 0.3rem;
+}
+
+.flashcard-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.fc-btn {
+  width: 60px; height: 60px;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fc-btn:hover { transform: scale(1.1); }
+.fc-btn:active { transform: scale(0.95); }
+.fc-btn.wrong { background: var(--red-bg); color: var(--red); }
+.fc-btn.correct { background: var(--green-bg); color: var(--green); }
+.fc-btn.good { background: var(--orange-bg); color: var(--orange); }
+
+/* Multiple Choice */
+.quiz-area {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+.quiz-q {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.3rem;
+}
+.quiz-hint {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin-bottom: 1.2rem;
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.quiz-opt {
+  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--bg3);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+  font-family: inherit;
+}
+.quiz-opt:hover { border-color: var(--accent-glow); background: var(--card-hover); }
+.quiz-opt.selected-correct {
+  border-color: var(--green);
+  background: var(--green-bg);
+  color: var(--green);
+}
+.quiz-opt.selected-wrong {
+  border-color: var(--red);
+  background: var(--red-bg);
+  color: var(--red);
+}
+.quiz-opt.show-correct {
+  border-color: var(--green);
+  background: var(--green-bg);
+  color: var(--green);
+}
+.quiz-opt:disabled { cursor: default; opacity: 0.7; }
+
+/* Match Mode */
+.match-area {
+  width: 100%;
+  max-width: 500px;
+}
+.match-area .match-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text3);
+  margin-bottom: 1rem;
+}
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.match-col { display: flex; flex-direction: column; gap: 0.5rem; }
+.match-col .mc-label {
+  font-size: 0.7rem;
+  color: var(--text3);
+  text-align: center;
+  margin-bottom: 0.2rem;
+}
+.match-item {
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--bg3);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  font-family: inherit;
+}
+.match-item:hover { border-color: var(--accent-glow); }
+.match-item.selected { border-color: var(--accent); background: var(--accent-glow); }
+.match-item.matched {
+  border-color: var(--green);
+  background: var(--green-bg);
+  color: var(--green);
+  cursor: default;
+  opacity: 0.6;
+}
+.match-item.matched-wrong {
+  animation: shake .3s;
+  border-color: var(--red);
+  background: var(--red-bg);
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}
+}
+.match-score {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  overflow: hidden;
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn { from { opacity:0; transform:scale(0.92) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.modal-header {
+  padding: 1rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.modal-header h3 { font-size: 0.95rem; font-weight: 700; }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 6px;
+  transition: all .15s;
+}
+.modal-close:hover { color: var(--text); background: var(--card-hover); }
+.modal-body { padding: 1.2rem; }
+.modal-body label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 0.3rem;
+  margin-top: 0.8rem;
+}
+.modal-body label:first-child { margin-top: 0; }
+.modal-body input, .modal-body select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--bg3);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border .15s;
+}
+.modal-body input:focus, .modal-body select:focus { border-color: var(--accent); }
+.modal-body select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23606080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  padding-right: 1.8rem;
+}
+.modal-body .input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.modal-body .input-row > * { flex: 1; }
+.modal-footer {
+  padding: 0 1.2rem 1.2rem;
+  display: flex;
+  gap: 0.5rem;
+}
+.modal-footer button {
+  flex: 1;
+  padding: 0.55rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.btn-cancel {
+  background: var(--bg3);
+  color: var(--text2);
+}
+.btn-cancel:hover { background: var(--card-hover); color: var(--text); }
+.btn-confirm {
+  background: var(--accent);
+  color: white;
+}
+.btn-confirm:hover { background: var(--accent2); }
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 300;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== SIDEBAR TOGGLE (mobile) ===== */
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+@media (max-width: 640px) {
+  body.overlay-open .sidebar {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    transform: translateX(-100%);
+    width: 280px;
+  }
+  .sidebar-toggle { display: block; }
+  .main-header { padding: 0.8rem 1rem; }
+  .word-list-area { padding: 0.8rem 1rem; }
+  .word-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .word-card { padding: 0.7rem; }
+  .word-card .en { font-size: 0.95rem; }
+  .flashcard { width: 280px; height: 190px; }
+  .flashcard-front .big-en { font-size: 1.6rem; }
+  .quiz-q { font-size: 1.6rem; }
+  .match-grid { gap: 0.4rem; }
+  .match-item { padding: 0.5rem 0.6rem; font-size: 0.75rem; }
+}
+@media (max-width: 380px) {
+  .word-grid { grid-template-columns: 1fr; }
+  .main-header .left h2 { font-size: 0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1><span>📚</span> 單詞卡</h1>
+    <div class="sub">英語單詞學習工具</div>
+  </div>
+  <div class="project-list" id="projectList"></div>
+  <button class="btn-add-project" onclick="openAddProject()">＋ 新增項目</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="main-header">
+    <div class="left">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <h2 id="currentProjectName">選擇項目</h2>
+      <span class="word-count" id="wordCount">0 詞</span>
+    </div>
+    <div class="actions">
+      <div class="tabs" id="mainTabs">
+        <button class="tab-btn active" data-tab="list" onclick="switchTab('list')">📋 單詞</button>
+        <button class="tab-btn" data-tab="study" onclick="switchTab('study')">📖 學習</button>
+      </div>
+      <button class="btn-icon primary" onclick="openAddCard()" title="新增單詞" id="addCardBtn">＋</button>
+    </div>
+  </div>
+
+  <!-- Word List Tab -->
+  <div class="tab-content active" id="tabList">
+    <div class="word-list-area" id="wordListArea">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 搜尋單詞..." oninput="renderWordList()">
+      </div>
+      <div class="word-grid" id="wordGrid"></div>
+    </div>
+  </div>
+
+  <!-- Study Tab -->
+  <div class="tab-content" id="tabStudy">
+    <div class="study-area" id="studyArea">
+      <div class="study-mode-select">
+        <button class="study-mode-btn active" data-mode="flashcard" onclick="switchStudyMode('flashcard')">🃏 翻卡</button>
+        <button class="study-mode-btn" data-mode="quiz" onclick="switchStudyMode('quiz')">✍️ 選擇</button>
+        <button class="study-mode-btn" data-mode="match" onclick="switchStudyMode('match')">🔗 配對</button>
+      </div>
+      <div id="studyContent">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>請先在項目中添加單詞</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Card Modal -->
+<div class="modal-overlay" id="addCardModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📝 新增單詞</h3>
+      <button class="modal-close" onclick="closeModal('addCardModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>英文單詞</label>
+      <input type="text" id="fEnglish" placeholder="e.g. apple" autocomplete="off" autofocus>
+      <label>中文釋義</label>
+      <input type="text" id="fChinese" placeholder="e.g. 蘋果" autocomplete="off">
+      <div class="input-row">
+        <div>
+          <label>詞性</label>
+          <select id="fPos">
+            <option value="n.">n. 名詞</option>
+            <option value="v.">v. 動詞</option>
+            <option value="adj.">adj. 形容詞</option>
+            <option value="adv.">adv. 副詞</option>
+            <option value="prep.">prep. 介詞</option>
+            <option value="pron.">pron. 代詞</option>
+            <option value="conj.">conj. 連詞</option>
+            <option value="interj.">interj. 感嘆詞</option>
+            <option value="phr.">phr. 短語</option>
+          </select>
+        </div>
+        <div>
+          <label>項目</label>
+          <select id="fProject"></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('addCardModal')">取消</button>
+      <button class="btn-confirm" onclick="confirmAddCard()">確認添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Project Modal -->
+<div class="modal-overlay" id="addProjectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📁 新增項目</h3>
+      <button class="modal-close" onclick="closeModal('addProjectModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>項目名稱</label>
+      <input type="text" id="fProjectName" placeholder="e.g. CET-4 詞彙" autocomplete="off" autofocus>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('addProjectModal')">取消</button>
+      <button class="btn-confirm" onclick="confirmAddProject()">確認創建</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚠️ 確認刪除</h3>
+      <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+    </div>
+    <div class="modal-body" id="confirmBody">確定要刪除嗎？</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('confirmModal')">取消</button>
+      <button class="btn-confirm" id="confirmYesBtn" style="background:var(--red);" onclick="">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== DATA =====
+const STORAGE_KEY = 'vocab_app_v1';
+let DATA = loadData();
+let _currentTab = 'list';
+let _studyMode = 'flashcard';
+let _studyState = null;  // current study session state
+
+function getDefaultData() {
+  return {
+    projects: {
+      'default': {
+        name: '默認項目',
+        cards: []
+      }
+    },
+    currentProjectId: 'default'
+  };
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      if (d && d.projects && typeof d.currentProjectId === 'string') {
+        // ensure default project exists
+        if (!d.projects['default']) {
+          d.projects['default'] = { name: '默認項目', cards: [] };
+        }
+        return d;
+      }
+    } catch(e) {}
+  }
+  return getDefaultData();
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+}
+
+function getProject(id) { return DATA.projects[id]; }
+function getCurrentProject() { return getProject(DATA.currentProjectId); }
+function getProjectCards() {
+  const p = getCurrentProject();
+  return p ? p.cards : [];
+}
+
+// ===== HELPERS =====
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ===== SIDEBAR =====
+function toggleSidebar() {
+  document.body.classList.toggle('overlay-open');
+}
+
+function renderSidebar() {
+  const list = document.getElementById('projectList');
+  const entries = Object.entries(DATA.projects);
+  list.innerHTML = entries.map(([id, p]) => {
+    const active = id === DATA.currentProjectId ? 'active' : '';
+    const count = p.cards.length;
+    return `<div class="project-item ${active}" onclick="switchProject('${id}')">
+      <span class="p-icon">📁</span>
+      <span class="p-name">${escHtml(p.name)}</span>
+      <span class="p-count">${count}</span>
+      <button class="p-del" onclick="event.stopPropagation();deleteProject('${id}')" title="刪除項目">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function switchProject(id) {
+  DATA.currentProjectId = id;
+  saveData();
+  renderSidebar();
+  renderMain();
+  document.body.classList.remove('overlay-open');
+}
+
+function deleteProject(id) {
+  const entries = Object.keys(DATA.projects);
+  if (entries.length <= 1) {
+    showToast('⚠️ 至少保留一個項目');
+    return;
+  }
+  const p = DATA.projects[id];
+  const count = p.cards.length;
+  showConfirm(
+    `確定刪除項目「${escHtml(p.name)}」？${count > 0 ? `（內含 ${count} 個單詞）` : ''}`,
+    () => {
+      delete DATA.projects[id];
+      if (DATA.currentProjectId === id) {
+        DATA.currentProjectId = Object.keys(DATA.projects)[0];
+      }
+      saveData();
+      renderSidebar();
+      renderMain();
+    }
+  );
+}
+
+function openAddProject() {
+  document.getElementById('fProjectName').value = '';
+  openModal('addProjectModal');
+  setTimeout(() => document.getElementById('fProjectName').focus(), 100);
+}
+
+function confirmAddProject() {
+  const name = document.getElementById('fProjectName').value.trim();
+  if (!name) { showToast('⚠️ 請輸入項目名稱'); return; }
+  const id = genId();
+  DATA.projects[id] = { name, cards: [] };
+  DATA.currentProjectId = id;
+  saveData();
+  closeModal('addProjectModal');
+  renderSidebar();
+  renderMain();
+  showToast(`✅ 已創建「${name}」`);
+}
+
+// ===== MODALS =====
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) el.classList.remove('show');
+  });
+});
+
+// ===== MAIN RENDER =====
+function renderMain() {
+  const p = getCurrentProject();
+  if (!p) {
+    document.getElementById('currentProjectName').textContent = '無項目';
+    document.getElementById('wordCount').textContent = '0 詞';
+    document.getElementById('addCardBtn').style.display = 'none';
+    return;
+  }
+  document.getElementById('addCardBtn').style.display = '';
+  document.getElementById('currentProjectName').textContent = escHtml(p.name);
+  document.getElementById('wordCount').textContent = `${p.cards.length} 詞`;
+
+  const cardsSelect = document.getElementById('fProject');
+  if (cardsSelect) {
+    cardsSelect.innerHTML = Object.entries(DATA.projects).map(([id, proj]) =>
+      `<option value="${id}" ${id === DATA.currentProjectId ? 'selected' : ''}>${escHtml(proj.name)}</option>`
+    ).join('');
+  }
+
+  if (_currentTab === 'list') renderWordList();
+  else renderStudy();
+}
+
+function switchTab(tab) {
+  _currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1)));
+  renderMain();
+}
+
+// ===== WORD LIST =====
+function renderWordList() {
+  const cards = getProjectCards();
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filtered = q ? cards.filter(c => c.english.toLowerCase().includes(q) || c.chinese.includes(q)) : cards;
+  const grid = document.getElementById('wordGrid');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">${q ? '🔍' : '📭'}</div><p>${q ? '未找到匹配的單詞' : '暫無單詞，點擊 ＋ 添加'}</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(c => {
+    const correct = c.correctCount || 0;
+    const wrong = c.wrongCount || 0;
+    return `<div class="word-card" onclick="editCard('${c.id}')">
+      <button class="card-del" onclick="event.stopPropagation();deleteCard('${c.id}')">✕</button>
+      <div class="en">${escHtml(c.english)} <span class="pos">${escHtml(c.pos)}</span></div>
+      <div class="zh">${escHtml(c.chinese)}</div>
+      <div class="stats">
+        <span class="correct">✅ ${correct}</span>
+        <span class="wrong">❌ ${wrong}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== CARDS CRUD =====
+function openAddCard() {
+  if (Object.keys(DATA.projects).length === 0) {
+    showToast('⚠️ 請先創建項目');
+    return;
+  }
+  document.getElementById('fEnglish').value = '';
+  document.getElementById('fChinese').value = '';
+  document.getElementById('fPos').value = 'n.';
+  // Populate project select
+  const sel = document.getElementById('fProject');
+  sel.innerHTML = Object.entries(DATA.projects).map(([id, p]) =>
+    `<option value="${id}" ${id === DATA.currentProjectId ? 'selected' : ''}>${escHtml(p.name)}</option>`
+  ).join('');
+  delete document.getElementById('addCardModal').dataset.editId;
+  document.querySelector('#addCardModal .modal-header h3').textContent = '📝 新增單詞';
+  document.querySelector('#addCardModal .btn-confirm').textContent = '確認添加';
+  openModal('addCardModal');
+  setTimeout(() => document.getElementById('fEnglish').focus(), 100);
+}
+
+function confirmAddCard() {
+  const english = document.getElementById('fEnglish').value.trim();
+  const chinese = document.getElementById('fChinese').value.trim();
+  const pos = document.getElementById('fPos').value;
+  const projectId = document.getElementById('fProject').value;
+  const editId = document.getElementById('addCardModal').dataset.editId;
+
+  if (!english) { showToast('⚠️ 請輸入英文單詞'); return; }
+  if (!chinese) { showToast('⚠️ 請輸入中文釋義'); return; }
+
+  if (editId) {
+    // Edit existing card
+    const p = DATA.projects[projectId] || getCurrentProject();
+    const card = p.cards.find(c => c.id === editId);
+    if (card) {
+      card.english = english;
+      card.chinese = chinese;
+      card.pos = pos;
+    }
+    showToast('✅ 已更新');
+  } else {
+    const p = DATA.projects[projectId] || getCurrentProject();
+    if (!p) { showToast('⚠️ 項目不存在'); return; }
+    p.cards.push({
+      id: genId(),
+      english,
+      chinese,
+      pos,
+      correctCount: 0,
+      wrongCount: 0
+    });
+    showToast(`✅ 已添加「${english}」`);
+  }
+
+  saveData();
+  closeModal('addCardModal');
+  renderSidebar();
+  renderMain();
+}
+
+function editCard(id) {
+  const p = getCurrentProject();
+  if (!p) return;
+  const card = p.cards.find(c => c.id === id);
+  if (!card) return;
+  document.getElementById('fEnglish').value = card.english;
+  document.getElementById('fChinese').value = card.chinese;
+  document.getElementById('fPos').value = card.pos;
+  const sel = document.getElementById('fProject');
+  sel.innerHTML = Object.entries(DATA.projects).map(([pid, proj]) =>
+    `<option value="${pid}" ${pid === DATA.currentProjectId ? 'selected' : ''}>${escHtml(proj.name)}</option>`
+  ).join('');
+  document.getElementById('addCardModal').dataset.editId = id;
+  document.querySelector('#addCardModal .modal-header h3').textContent = '✏️ 編輯單詞';
+  document.querySelector('#addCardModal .btn-confirm').textContent = '確認修改';
+  openModal('addCardModal');
+}
+
+function deleteCard(id) {
+  const p = getCurrentProject();
+  if (!p) return;
+  const card = p.cards.find(c => c.id === id);
+  if (!card) return;
+  showConfirm(`確定刪除單詞「${escHtml(card.english)}」？`, () => {
+    p.cards = p.cards.filter(c => c.id !== id);
+    saveData();
+    renderSidebar();
+    renderMain();
+    showToast('🗑️ 已刪除');
+  });
+}
+
+// ===== STUDY MODES =====
+function switchStudyMode(mode) {
+  _studyMode = mode;
+  _studyState = null;
+  document.querySelectorAll('.study-mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === mode)
+  );
+  renderStudy();
+}
+
+function renderStudy() {
+  const cards = getProjectCards();
+  const container = document.getElementById('studyContent');
+  if (cards.length < 2) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>至少需要 2 個單詞才能開始學習</p></div>`;
+    return;
+  }
+
+  if (_studyMode === 'flashcard') renderFlashcard(cards);
+  else if (_studyMode === 'quiz') renderQuiz(cards);
+  else if (_studyMode === 'match') renderMatch(cards);
+}
+
+// ---- Flashcard ----
+function renderFlashcard(cards) {
+  if (!_studyState || _studyState.mode !== 'flashcard') {
+    _studyState = {
+      mode: 'flashcard',
+      shuffled: shuffleArray([...cards]),
+      index: 0,
+      flipped: false,
+      done: false
+    };
+  }
+  const s = _studyState;
+  if (s.done || s.index >= s.shuffled.length) {
+    document.getElementById('studyContent').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎉</div>
+        <p>全部複習完畢！${s.shuffled.length} 個單詞</p>
+        <button class="study-mode-btn active" style="margin-top:1rem;border-radius:8px;padding:0.5rem 1.5rem" onclick="restartStudy()">🔄 再來一次</button>
+      </div>`;
+    return;
+  }
+
+  const card = s.shuffled[s.index];
+  const total = s.shuffled.length;
+  const pct = ((s.index) / total * 100).toFixed(0);
+
+  document.getElementById('studyContent').innerHTML = `
+    <div class="study-progress">
+      第 ${s.index+1} / ${total} 個
+      <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="flashcard ${s.flipped ? 'flipped' : ''}" onclick="toggleFlashcard()">
+      <div class="flashcard-inner">
+        <div class="flashcard-front">
+          <div class="big-en">${escHtml(card.english)}</div>
+          <div class="tap-hint">👆 點擊翻看答案</div>
+        </div>
+        <div class="flashcard-back">
+          <div class="big-zh">${escHtml(card.chinese)}</div>
+          <div class="back-en">${escHtml(card.english)}</div>
+          <div class="back-pos">${escHtml(card.pos)}</div>
+        </div>
+      </div>
+    </div>
+    ${s.flipped ? `
+    <div class="flashcard-actions">
+      <button class="fc-btn wrong" onclick="flashcardResult('wrong')" title="不認識">❌</button>
+      <button class="fc-btn good" onclick="flashcardResult('good')" title="有點印象">🤔</button>
+      <button class="fc-btn correct" onclick="flashcardResult('correct')" title="認識">✅</button>
+    </div>` : ''}`;
+}
+
+function toggleFlashcard() {
+  if (!_studyState) return;
+  _studyState.flipped = !_studyState.flipped;
+  renderStudy();
+}
+
+function flashcardResult(result) {
+  if (!_studyState) return;
+  const card = _studyState.shuffled[_studyState.index];
+  const c = getCurrentProject().cards.find(c => c.id === card.id);
+  if (c) {
+    if (result === 'correct') c.correctCount = (c.correctCount || 0) + 1;
+    else c.wrongCount = (c.wrongCount || 0) + 1;
+    saveData();
+  }
+  _studyState.index++;
+  _studyState.flipped = false;
+  if (_studyState.index >= _studyState.shuffled.length) {
+    _studyState.done = true;
+  }
+  renderStudy();
+}
+
+// ---- Quiz ----
+function renderQuiz(cards) {
+  if (!_studyState || _studyState.mode !== 'quiz') {
+    _studyState = {
+      mode: 'quiz',
+      shuffled: shuffleArray([...cards]),
+      index: 0,
+      answered: false,
+      correct: 0,
+      wrong: 0,
+      done: false
+    };
+  }
+  const s = _studyState;
+  if (s.done || s.index >= s.shuffled.length) {
+    const pct = s.correct + s.wrong > 0 ? Math.round(s.correct / (s.correct + s.wrong) * 100) : 0;
+    document.getElementById('studyContent').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">${pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '💪'}</div>
+        <p>測驗完成！</p>
+        <p style="font-size:1.2rem;margin-top:0.5rem;">${s.correct} ✅ / ${s.wrong} ❌</p>
+        <p style="font-size:0.8rem;color:var(--text3);">正確率 ${pct}%</p>
+        <button class="study-mode-btn active" style="margin-top:1rem;border-radius:8px;padding:0.5rem 1.5rem" onclick="restartStudy()">🔄 再來一次</button>
+      </div>`;
+    return;
+  }
+
+  const card = s.shuffled[s.index];
+  const total = s.shuffled.length;
+  const pct = (s.index / total * 100).toFixed(0);
+
+  // Generate distractors (wrong Chinese meanings from other cards)
+  const others = cards.filter(c => c.id !== card.id);
+  const distractors = shuffleArray(others).slice(0, 3).map(c => c.chinese);
+  while (distractors.length < 3) { distractors.push('——'); }
+  const options = shuffleArray([card.chinese, ...distractors]);
+
+  const totalAnswered = s.correct + s.wrong + (s.answered ? 0 : 0);
+
+  document.getElementById('studyContent').innerHTML = `
+    <div class="study-progress">
+      第 ${s.index+1} / ${total} 題 &nbsp;|&nbsp; ✅ ${s.correct} &nbsp; ❌ ${s.wrong}
+      <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="quiz-area">
+      <div class="quiz-q">${escHtml(card.english)}</div>
+      <div class="quiz-hint">${escHtml(card.pos)} — 選擇正確的中文釋義</div>
+      <div class="quiz-options" id="quizOptions">
+        ${options.map((opt, i) => {
+          let cls = 'quiz-opt';
+          if (s.answered) {
+            if (opt === card.chinese) cls += ' show-correct';
+            if (opt === s.selected && s.selected !== card.chinese) cls += ' selected-wrong';
+            if (opt === s.selected && s.selected === card.chinese) cls += ' selected-correct';
+          }
+          return `<button class="${cls}" ${s.answered ? 'disabled' : ''} onclick="answerQuiz('${escHtml(opt)}','${escHtml(card.chinese)}', this)">${escHtml(opt)}</button>`;
+        }).join('')}
+      </div>
+      ${s.answered ? `<button class="study-mode-btn" style="margin-top:1rem;border-radius:8px;padding:0.4rem 1.5rem" onclick="nextQuiz()">${s.index+1 >= total ? '查看結果 →' : '下一題 →'}</button>` : ''}
+    </div>`;
+}
+
+function answerQuiz(selected, correct, btn) {
+  if (!_studyState || _studyState.answered) return;
+  _studyState.answered = true;
+  _studyState.selected = selected;
+  const card = _studyState.shuffled[_studyState.index];
+  const c = getCurrentProject().cards.find(c => c.id === card.id);
+  if (c) {
+    if (selected === correct) {
+      _studyState.correct++;
+      c.correctCount = (c.correctCount || 0) + 1;
+    } else {
+      _studyState.wrong++;
+      c.wrongCount = (c.wrongCount || 0) + 1;
+    }
+    saveData();
+  }
+  renderStudy();
+}
+
+function nextQuiz() {
+  if (!_studyState) return;
+  _studyState.index++;
+  _studyState.answered = false;
+  _studyState.selected = null;
+  if (_studyState.index >= _studyState.shuffled.length) {
+    _studyState.done = true;
+  }
+  renderStudy();
+}
+
+// ---- Match ----
+function renderMatch(cards) {
+  if (!_studyState || _studyState.mode !== 'match') {
+    const total = Math.min(cards.length, 6);  // max 6 pairs at a time
+    const selected = shuffleArray([...cards]).slice(0, total);
+    _studyState = {
+      mode: 'match',
+      cards: selected,
+      enOrder: shuffleArray(selected.map(c => ({ id: c.id, text: c.english, type: 'en' }))),
+      zhOrder: shuffleArray(selected.map(c => ({ id: c.id, text: c.chinese, type: 'zh' }))),
+      matched: new Set(),
+      selectedEn: null,
+      selectedZh: null,
+      matchedPairs: 0,
+      wrongCount: 0,
+      done: false
+    };
+  }
+  const s = _studyState;
+  if (s.done) {
+    document.getElementById('studyContent').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎉</div>
+        <p>配對完成！${s.cards.length} 對全部匹配</p>
+        <p style="font-size:0.8rem;color:var(--text3);">錯誤次數: ${s.wrongCount}</p>
+        <button class="study-mode-btn active" style="margin-top:1rem;border-radius:8px;padding:0.5rem 1.5rem" onclick="restartStudy()">🔄 再來一次</button>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('studyContent').innerHTML = `
+    <div class="match-area">
+      <div class="match-hint">點擊英文 → 再點擊對應的中文釋義進行配對</div>
+      <div class="match-score">已配對: ${s.matchedPairs} / ${s.cards.length} ${s.wrongCount > 0 ? `&nbsp;|&nbsp; ❌ ${s.wrongCount} 次` : ''}</div>
+      <div class="match-grid">
+        <div class="match-col">
+          <div class="mc-label">English</div>
+          ${s.enOrder.map(item => {
+            let cls = 'match-item';
+            if (s.matched.has(item.id)) cls += ' matched';
+            else if (s.selectedEn === item.id) cls += ' selected';
+            return `<button class="${cls}" onclick="matchSelect('en','${item.id}')" ${s.matched.has(item.id) ? 'disabled' : ''}>${escHtml(item.text)}</button>`;
+          }).join('')}
+        </div>
+        <div class="match-col">
+          <div class="mc-label">中文</div>
+          ${s.zhOrder.map(item => {
+            let cls = 'match-item';
+            if (s.matched.has(item.id)) cls += ' matched';
+            else if (s.selectedZh === item.id) cls += ' selected';
+            return `<button class="${cls}" onclick="matchSelect('zh','${item.id}')" ${s.matched.has(item.id) ? 'disabled' : ''}>${escHtml(item.text)}</button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function matchSelect(type, id) {
+  if (!_studyState) return;
+  const s = _studyState;
+  if (s.matched.has(id)) return;
+
+  if (type === 'en') {
+    s.selectedEn = id;
+    // If both selected, check match
+    if (s.selectedZh !== null) checkMatch();
+  } else {
+    s.selectedZh = id;
+    if (s.selectedEn !== null) checkMatch();
+  }
+  renderMatch(getProjectCards());
+}
+
+function checkMatch() {
+  if (!_studyState) return;
+  const s = _studyState;
+  if (s.selectedEn === s.selectedZh) {
+    // Correct match!
+    s.matched.add(s.selectedEn);
+    s.matchedPairs++;
+    s.selectedEn = null;
+    s.selectedZh = null;
+    if (s.matchedPairs >= s.cards.length) {
+      s.done = true;
+    }
+  } else {
+    // Wrong match
+    s.wrongCount++;
+    // Flash wrong and reset
+    s.selectedEn = null;
+    s.selectedZh = null;
+  }
+  // Re-render
+  renderMatch(getProjectCards());
+}
+
+// ===== CONFIRM MODAL =====
+function showConfirm(msg, callback) {
+  document.getElementById('confirmBody').innerHTML = msg;
+  document.getElementById('confirmYesBtn').onclick = () => {
+    closeModal('confirmModal');
+    callback();
+  };
+  openModal('confirmModal');
+}
+
+// ===== UTILS =====
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function restartStudy() {
+  _studyState = null;
+  renderStudy();
+}
+
+// ===== TOAST =====
+let _toastTimer = null;
+function showToast(msg, duration = 2200) {
+  if (_toastTimer) clearTimeout(_toastTimer);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  _toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+  }
+  // Enter in add card modal
+  if (e.key === 'Enter') {
+    const addCard = document.getElementById('addCardModal');
+    if (addCard.classList.contains('show')) { confirmAddCard(); return; }
+    const addProj = document.getElementById('addProjectModal');
+    if (addProj.classList.contains('show')) { confirmAddProject(); return; }
+  }
+});
+
+// ===== INIT =====
+renderSidebar();
+renderMain();
+</script>
+</body>
+</html>
