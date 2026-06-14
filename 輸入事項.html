@@ -252,6 +252,39 @@ body {
   .print-only { display: block !important; }
 }
 .print-only { display: none; }
+
+/* ── PDF Content Styles (for html2pdf) ── */
+#pdfRenderArea {
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  color: #1a1a1a; line-height: 1.7; font-size: 12pt; padding: 20px; margin: 0;
+}
+#pdfRenderArea h1 {
+  font-size: 22pt; text-align: center; color: #2c3e50;
+  border-bottom: 3px solid #3498db; padding-bottom: 8px; margin-bottom: 5px;
+}
+#pdfRenderArea h2 {
+  font-size: 16pt; color: #2c3e50;
+  border-left: 5px solid #3498db; padding-left: 12px; margin-top: 25px; margin-bottom: 10px;
+}
+#pdfRenderArea h3 { font-size: 13pt; color: #34495e; margin-top: 18px; margin-bottom: 8px; }
+#pdfRenderArea hr { border: none; border-top: 1px dashed #bdc3c7; margin: 20px 0; }
+#pdfRenderArea table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10.5pt; }
+#pdfRenderArea th {
+  background: #2c3e50; color: white; padding: 8px 10px; text-align: left; font-size: 10pt;
+  font-weight: 600;
+}
+#pdfRenderArea td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; font-size: 10pt; }
+#pdfRenderArea tr:nth-child(even) { background: #f8f9fa; }
+#pdfRenderArea strong { font-weight: 700; }
+#pdfRenderArea p { margin: 6px 0; }
+#pdfRenderArea code {
+  background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 10pt;
+  font-family: "Consolas", "SF Mono", monospace;
+}
+#pdfRenderArea .footer {
+  text-align: center; color: #95a5a6; font-size: 9pt;
+  margin-top: 30px; border-top: 1px solid #eee; padding-top: 12px;
+}
 /* ── Empty state ── */
 .empty-state {
   text-align: center; padding: 40px 20px; color: var(--slate-400);
@@ -1641,52 +1674,8 @@ function showConfirm(text, callback) {
 // ── PDF Generation: HTML Template ──
 function buildPDFHtml(markdownText) {
   const bodyHtml = marked.parse(markdownText);
-  const safeTitle = markdownText.match(/^#\s+(.+)/m);
-  const title = safeTitle ? safeTitle[1].trim() : '工作日誌';
   const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head><meta charset="utf-8">
-<style>
-@page { size: A4; margin: 2cm; }
-body {
-  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
-  color: #1a1a1a; line-height: 1.7; font-size: 12pt; padding: 0; margin: 0;
-}
-h1 {
-  font-size: 22pt; text-align: center; color: #2c3e50;
-  border-bottom: 3px solid #3498db; padding-bottom: 8px; margin-bottom: 5px;
-}
-h2 {
-  font-size: 16pt; color: #2c3e50;
-  border-left: 5px solid #3498db; padding-left: 12px; margin-top: 25px; margin-bottom: 10px;
-}
-h3 { font-size: 13pt; color: #34495e; margin-top: 18px; margin-bottom: 8px; }
-hr { border: none; border-top: 1px dashed #bdc3c7; margin: 20px 0; }
-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10.5pt; }
-th {
-  background: #2c3e50; color: white; padding: 8px 10px; text-align: left; font-size: 10pt;
-  font-weight: 600;
-}
-td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; font-size: 10pt; }
-tr:nth-child(even) { background: #f8f9fa; }
-strong { font-weight: 700; }
-p { margin: 6px 0; }
-code {
-  background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 10pt;
-  font-family: "Consolas", "SF Mono", monospace;
-}
-.footer {
-  text-align: center; color: #95a5a6; font-size: 9pt;
-  margin-top: 30px; border-top: 1px solid #eee; padding-top: 12px;
-}
-</style>
-</head>
-<body>
-${bodyHtml}
-<div class="footer">生成時間：${now} | 工具：輸入事項 v1.0</div>
-</body></html>`;
+  return `<div class="pdf-body">${bodyHtml}<div class="footer">生成時間：${now} | 工具：輸入事項 v1.0</div></div>`;
 }
 
 // ── PDF Generation: From Current Log ──
@@ -1745,8 +1734,21 @@ function generatePDFfromMarkdown() {
 function _openPDFPreview(mdText, defaultName) {
   if (typeof marked === 'undefined') {
     showToast('⚠️ CDN 未加載，使用瀏覽器列印');
-    // Fallback: open print dialog directly
-    const html = buildPDFHtml(mdText);
+    // Fallback: build full HTML doc for new window
+    const bodyHtml = marked.parse ? marked.parse(mdText) : mdText;
+    const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+    const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;color:#1a1a1a;line-height:1.7;font-size:12pt;padding:20px;margin:0}
+h1{font-size:22pt;text-align:center;color:#2c3e50;border-bottom:3px solid #3498db;padding-bottom:8px;margin-bottom:5px}
+h2{font-size:16pt;color:#2c3e50;border-left:5px solid #3498db;padding-left:12px;margin-top:25px;margin-bottom:10px}
+h3{font-size:13pt;color:#34495e;margin-top:18px;margin-bottom:8px}
+hr{border:none;border-top:1px dashed #bdc3c7;margin:20px 0}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:10.5pt}
+th{background:#2c3e50;color:white;padding:8px 10px;text-align:left;font-size:10pt;font-weight:600}
+td{padding:7px 10px;border:1px solid #ddd;vertical-align:top;font-size:10pt}
+tr:nth-child(even){background:#f8f9fa}
+.footer{text-align:center;color:#95a5a6;font-size:9pt;margin-top:30px;border-top:1px solid #eee;padding-top:12px}
+</style></head><body>${bodyHtml}<div class="footer">生成時間：${now} | 工具：輸入事項 v1.0</div></body></html>`;
     const win = window.open('', '_blank');
     if (win) {
       win.document.write(html);
@@ -1760,7 +1762,6 @@ function _openPDFPreview(mdText, defaultName) {
   }
 
   const html = buildPDFHtml(mdText);
-  document.getElementById('pdfContent').innerHTML = '';
   document.getElementById('pdfRenderArea').innerHTML = html;
   document.getElementById('pdfFilename').value = defaultName;
   document.getElementById('pdfStatus').textContent = '✅ 已渲染';
@@ -1781,8 +1782,7 @@ function downloadPDF() {
     filename:     filename + '.pdf',
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
 
   // Try html2pdf, fall back to print
@@ -1793,19 +1793,20 @@ function downloadPDF() {
     return;
   }
 
-  html2pdf().set(opt).from(element).save().then(function() {
-    btn.disabled = false;
-    btn.textContent = '💾 下載 PDF';
-    document.getElementById('pdfStatus').textContent = '✅ PDF 已下載';
-    showToast('✅ PDF 已下載');
-  }).catch(function(err) {
-    console.error('PDF error:', err);
-    document.getElementById('pdfStatus').textContent = '⚠️ 生成失敗，使用列印';
-    // Fallback to print
-    window.print();
-    btn.disabled = false;
-    btn.textContent = '💾 下載 PDF';
-  });
+  // Small delay to let CSS render
+  setTimeout(function() {
+    html2pdf().set(opt).from(element).save().then(function() {
+      btn.disabled = false;
+      btn.textContent = '💾 下載 PDF';
+      document.getElementById('pdfStatus').textContent = '✅ PDF 已下載';
+      showToast('✅ PDF 已下載');
+    }).catch(function() {
+      document.getElementById('pdfStatus').textContent = '⚠️ 生成失敗，使用列印';
+      window.print();
+      btn.disabled = false;
+      btn.textContent = '💾 下載 PDF';
+    });
+  }, 300);
 }
 
 // ── Keyboard shortcuts ──
