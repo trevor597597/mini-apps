@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>工作日誌 — 輸入事項工具 v1.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --blue-900: #1e3a5f;
+  --blue-800: #2c5282;
+  --blue-700: #3498db;
+  --blue-600: #5dade2;
+  --blue-50: #ebf5fb;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
+  --green-600: #16a34a;
+  --green-500: #22c55e;
+  --green-50: #f0fdf4;
+  --orange-500: #f59e0b;
+  --orange-100: #fef3c7;
+  --red-500: #ef4444;
+  --red-50: #fef2f2;
+  --amber-500: #f59e0b;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+body {
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: var(--slate-50);
+  color: var(--slate-700);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 0;
+}
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--slate-700); color: white; padding: 10px 24px;
+  border-radius: 8px; font-size: 0.9rem; z-index: 9999;
+  opacity: 0; transition: all 0.3s ease; pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ── Layout ── */
+.header {
+  background: linear-gradient(135deg, var(--blue-900), var(--blue-800));
+  color: white; padding: 20px 24px; text-align: center;
+}
+.header h1 { font-size: 1.3rem; font-weight: 700; }
+.header .sub { font-size: 0.8rem; opacity: 0.8; margin-top: 4px; }
+.container { max-width: 900px; margin: 0 auto; padding: 16px; }
+/* ── Cards ── */
+.card {
+  background: white; border-radius: var(--radius);
+  box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--slate-200);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.card-header h2 { font-size: 1rem; font-weight: 600; color: var(--blue-800); }
+.card-body { padding: 16px 20px; }
+/* ── Menu ── */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.menu-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 8px; border: 1.5px solid var(--slate-200);
+  border-radius: 10px; background: white; cursor: pointer;
+  font-family: inherit; font-size: 0.82rem; color: var(--slate-700);
+  transition: all 0.15s; min-height: 70px;
+}
+.menu-btn:hover { border-color: var(--blue-700); background: var(--blue-50); }
+.menu-btn:active { transform: scale(0.97); }
+.menu-btn .icon { font-size: 1.5rem; }
+.menu-btn .label { font-weight: 500; }
+.menu-btn .hint { font-size: 0.65rem; color: var(--slate-400); }
+.menu-btn.primary { border-color: var(--blue-700); background: var(--blue-50); color: var(--blue-800); }
+.menu-btn.primary:hover { background: var(--blue-600); color: white; }
+.menu-btn.danger { border-color: var(--red-500); color: var(--red-500); }
+.menu-btn.danger:hover { background: var(--red-50); }
+/* ── Task List ── */
+.task-empty { text-align: center; color: var(--slate-400); padding: 20px; font-size: 0.9rem; }
+.task-grid { display: flex; flex-direction: column; gap: 8px; }
+.task-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 70px 80px 70px 70px auto;
+  align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 8px;
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  font-size: 0.8rem;
+}
+.task-row .time { font-weight: 700; color: var(--slate-700); }
+.task-row .desc { font-weight: 500; }
+.task-row .status-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 0.65rem; font-weight: 600; text-align: center;
+}
+.task-row .status-badge.done { background: var(--green-50); color: var(--green-600); }
+.task-row .status-badge.progress { background: var(--orange-100); color: var(--orange-500); }
+.task-row .status-badge.pending { background: var(--slate-100); color: var(--slate-500); }
+.task-row .status-badge.cancel { background: var(--red-50); color: var(--red-500); }
+.task-row .loc { color: var(--slate-500); font-size: 0.75rem; }
+.task-row .type { color: var(--slate-500); font-size: 0.75rem; }
+.task-row .photo-indicator { font-size: 0.7rem; text-align: center; }
+.task-row .task-actions { display: flex; gap: 4px; }
+.task-row .task-actions button {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 0.85rem; padding: 2px 4px; border-radius: 4px;
+  min-height: 28px; min-width: 28px;
+}
+.task-row .task-actions button:hover { background: var(--slate-200); }
+.task-row .task-actions button.del:hover { background: var(--red-50); }
+/* ── Status Card ── */
+.status-bar {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  padding: 12px 0;
+}
+.status-item { flex: 1; min-width: 100px; text-align: center; }
+.status-item .num { font-size: 1.4rem; font-weight: 700; color: var(--blue-700); }
+.status-item .lbl { font-size: 0.7rem; color: var(--slate-400); }
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 1000;
+  justify-content: center; align-items: flex-end;
+}
+.modal-overlay.show { display: flex; }
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; }
+}
+.modal {
+  background: white; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 0; animation: slideUp 0.25s ease;
+}
+@media (min-width: 640px) {
+  .modal { border-radius: 20px; max-height: 80vh; }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px 12px; border-bottom: 1px solid var(--slate-200);
+  position: sticky; top: 0; background: white; z-index: 1;
+}
+.modal-header h3 { font-size: 1rem; font-weight: 600; color: var(--blue-800); }
+.modal-close {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 1.4rem; color: var(--slate-400); padding: 4px;
+  min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 16px 20px; }
+.modal-footer {
+  padding: 12px 20px 20px;
+  display: flex; gap: 10px; justify-content: flex-end;
+  position: sticky; bottom: 0; background: white;
+  border-top: 1px solid var(--slate-100);
+}
+/* ── Form ── */
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 0.78rem; font-weight: 600;
+  color: var(--slate-600); margin-bottom: 4px;
+}
+.form-group .hint { font-size: 0.7rem; color: var(--slate-400); margin-left: 4px; font-weight: 400; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--slate-300);
+  border-radius: 8px; font-family: inherit; font-size: 0.85rem;
+  color: var(--slate-700); outline: none; transition: border-color 0.15s;
+  background: white;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--blue-700); box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+}
+.form-textarea { resize: vertical; min-height: 60px; }
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+.form-select { cursor: pointer; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+}
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border: none; border-radius: 8px;
+  font-family: inherit; font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; min-height: 44px;
+}
+.btn-primary { background: var(--blue-700); color: white; }
+.btn-primary:hover { background: var(--blue-800); }
+.btn-secondary { background: var(--slate-100); color: var(--slate-600); }
+.btn-secondary:hover { background: var(--slate-200); }
+.btn-success { background: var(--green-600); color: white; }
+.btn-success:hover { background: #15803d; }
+.btn-danger { background: var(--red-500); color: white; }
+.btn-danger:hover { background: #dc2626; }
+.btn-sm { padding: 6px 14px; font-size: 0.78rem; min-height: 36px; }
+.btn-full { width: 100%; justify-content: center; }
+/* ── Markdown Preview ── */
+.preview-box {
+  background: var(--slate-50); border: 1px solid var(--slate-300);
+  border-radius: 8px; padding: 16px; font-family: "Consolas","SF Mono",monospace;
+  font-size: 0.78rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap;
+  max-height: 400px; overflow-y: auto; margin: 10px 0;
+}
+/* ── Photo Display ── */
+.photo-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.photo-thumb {
+  width: 60px; height: 60px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--slate-200); cursor: pointer;
+}
+.photo-thumb:hover { opacity: 0.8; }
+/* ── Print ── */
+@media print {
+  body { background: white; padding: 0; }
+  .header, .menu-grid, .menu-btn, .btn, .modal-overlay:not(#modalPDFPreview),
+  .modal-overlay:not(#modalPDFPreview) *,
+  .task-actions, #toast, .status-bar { display: none !important; }
+  #modalPDFPreview { display: block !important; position: static !important; background: white; }
+  #modalPDFPreview .modal { max-width: 100%; border-radius: 0; box-shadow: none; max-height: none; animation: none; }
+  #modalPDFPreview .modal-header,
+  #modalPDFPreview .modal-footer,
+  #modalPDFPreview #downloadPdfBtn,
+  #modalPDFPreview .btn,
+  #modalPDFPreview #pdfStatus,
+  #modalPDFPreview .form-group:first-child { display: none !important; }
+  #modalPDFPreview .modal-body { padding: 0; }
+  #modalPDFPreview #pdfRenderArea { border: none; padding: 0; }
+  @page { size: A4; margin: 2cm; }
+  .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+  .container { max-width: 100%; padding: 0; }
+  .task-row { grid-template-columns: 100px 1fr 60px 70px 60px 60px; }
+  .preview-box { max-height: none; overflow: visible; white-space: pre-wrap; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }
+/* ── Empty state ── */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--slate-400);
+}
+.empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+.empty-state p { font-size: 0.9rem; }
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header { padding: 14px 16px; }
+  .header h1 { font-size: 1.1rem; }
+  .container { padding: 12px; }
+  .card-header { padding: 12px 16px; }
+  .card-body { padding: 12px 16px; }
+  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .task-row {
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: auto auto;
+    gap: 4px 8px;
+    padding: 10px;
+    position: relative;
+  }
+  .task-row .time { grid-column: 1; }
+  .task-row .desc { grid-column: 2; font-weight: 600; }
+  .task-row .status-badge { grid-column: 1; justify-self: start; }
+  .task-row .loc { grid-column: 2; font-size: 0.7rem; color: var(--slate-400); }
+  .task-row .type, .task-row .photo-indicator { display: none; }
+  .task-row .task-actions {
+    position: absolute; top: 6px; right: 6px;
+  }
+  .form-row { flex-direction: column; gap: 0; }
+  .modal { border-radius: 16px 16px 0 0; }
+  .status-item .num { font-size: 1.1rem; }
+}
+/* ── Splitting UI ── */
+.split-card {
+  background: var(--blue-50); border: 1px solid var(--blue-600);
+  border-radius: 8px; padding: 12px; margin: 10px 0;
+}
+.split-card h4 { font-size: 0.85rem; color: var(--blue-800); margin-bottom: 8px; }
+.photo-assign {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid var(--slate-200);
+  font-size: 0.8rem;
+}
+.photo-assign:last-child { border-bottom: none; }
+.photo-assign select {
+  padding: 4px 8px; border: 1px solid var(--slate-300); border-radius: 6px;
+  font-family: inherit; font-size: 0.78rem;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 工作日誌 — 輸入事項工具 v1.0</h1>
+  <div class="sub">6 欄時間軸 · 地點 + 工種獨立 · Task-Splitting Rule</div>
+</div>
+
+<div class="container" id="app">
+  <!-- Status Bar -->
+  <div class="card">
+    <div class="card-body" id="statusArea">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">📄</div>
+        <p>尚未開始今日記錄</p>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="startNewDay()">📝 開始新工作日誌（開工）</button>
+        <button class="btn btn-secondary" style="margin-top:8px" onclick="showTemplate()">📖 查看模板格式</button>
+      </div>
+      <div id="activeStatus" style="display:none">
+        <div class="status-bar">
+          <div class="status-item"><div class="num" id="statDate">—</div><div class="lbl">日期</div></div>
+          <div class="status-item"><div class="num" id="statTasks">0</div><div class="lbl">事項</div></div>
+          <div class="status-item"><div class="num" id="statPhotos">0</div><div class="lbl">照片</div></div>
+          <div class="status-item"><div class="num" id="statStatus">⚠</div><div class="lbl">狀態</div></div>
+        </div>
+        <!-- Menu Grid -->
+        <div class="menu-grid" style="margin-top:12px">
+          <button class="menu-btn" onclick="addTask()">
+            <span class="icon">➕</span>
+            <span class="label">新增事項</span>
+          </button>
+          <button class="menu-btn" onclick="viewEditTasks()">
+            <span class="icon">📝</span>
+            <span class="label">檢視/編輯</span>
+          </button>
+          <button class="menu-btn" onclick="splitTask()">
+            <span class="icon">✂️</span>
+            <span class="label">拆分事項</span>
+          </button>
+          <button class="menu-btn" onclick="addPhotos()">
+            <span class="icon">📸</span>
+            <span class="label">添加照片</span>
+          </button>
+          <button class="menu-btn" onclick="fillNotes()">
+            <span class="icon">📝</span>
+            <span class="label">填寫備註</span>
+          </button>
+          <button class="menu-btn primary" onclick="finishDay()">
+            <span class="icon">🏁</span>
+            <span class="label">收工 &amp; 儲存</span>
+          </button>
+          <button class="menu-btn" onclick="generatePDF()">
+            <span class="icon">🖨️</span>
+            <span class="label">生成 PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task List Card -->
+  <div class="card" id="taskListCard" style="display:none">
+    <div class="card-header">
+      <h2>📋 時間軸記錄</h2>
+      <span id="taskCount" style="font-size:0.8rem;color:var(--slate-400)">0 項</span>
+    </div>
+    <div class="card-body" id="taskListBody">
+      <div class="task-empty">尚無事項</div>
+    </div>
+  </div>
+
+  <!-- Notes Preview Card -->
+  <div class="card" id="notesCard" style="display:none">
+    <div class="card-header"><h2>📌 備註區塊</h2></div>
+    <div class="card-body" id="notesBody">
+      <div style="font-size:0.8rem;color:var(--slate-400)">尚未填寫</div>
+    </div>
+  </div>
+
+  <!-- Markdown Preview Card -->
+  <div class="card" id="previewCard" style="display:none">
+    <div class="card-header">
+      <h2>📄 Markdown 預覽</h2>
+      <button class="btn btn-sm btn-secondary" onclick="refreshPreview()">🔄 重新生成</button>
+    </div>
+    <div class="card-body">
+      <div class="preview-box" id="markdownPreview"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="copyMarkdown()">📋 複製</button>
+        <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
+        <button class="btn btn-sm btn-success" onclick="generatePDF()">🖨️ 生成 PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Markdown Load & PDF Card -->
+  <div class="card">
+    <div class="card-header"><h2>📂 載入 Markdown → PDF</h2></div>
+    <div class="card-body">
+      <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:12px">
+        上傳 .md 工作日誌檔案，解析後生成專業排版 PDF
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label class="btn btn-primary" style="cursor:pointer">
+          📁 選擇 .md 檔案
+          <input type="file" accept=".md,.markdown,.txt" id="mdFileInput"
+                 onchange="loadMarkdownFile(event)" style="display:none">
+        </label>
+        <button class="btn btn-secondary" onclick="openMarkdownEditor()">✏️ 手動輸入 Markdown</button>
+      </div>
+      <div id="mdPreviewArea" style="display:none;margin-top:14px;border-top:1px solid var(--slate-200);padding-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span id="mdFileName" style="font-weight:600;font-size:0.9rem;color:var(--blue-800)"></span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-success" onclick="generatePDFfromMarkdown()">🖨️ 生成 PDF</button>
+            <button class="btn btn-sm btn-secondary" onclick="previewMarkdownHTML()">👁️ 預覽</button>
+          </div>
+        </div>
+        <div class="preview-box" id="mdPreviewContent" style="max-height:200px;font-size:0.75rem;white-space:pre-wrap"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ============ MODALS ============ -->
+
+<!-- Modal: Start New Day -->
+<div class="modal-overlay" id="modalNewDay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📝 開工 — 新工作日誌</h3>
+      <button class="modal-close" onclick="closeModal('modalNewDay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>日期</label>
+        <input class="form-input" id="fDate" type="date">
+      </div>
+      <div class="form-group">
+        <label>人員</label>
+        <input class="form-input" id="fPerson" value="千軍破蒼冥">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalNewDay')">取消</button>
+      <button class="btn btn-primary" onclick="confirmNewDay()">✅ 開始記錄</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add/Edit Task -->
+<div class="modal-overlay" id="modalTask">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTaskTitle">➕ 新增事項</h3>
+      <button class="modal-close" onclick="closeModal('modalTask')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>開始時間</label>
+          <input class="form-input" id="fStart" type="time" placeholder="09:00">
+        </div>
+        <div class="form-group">
+          <label>結束時間</label>
+          <input class="form-input" id="fEnd" type="time" placeholder="10:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>事項內容</label>
+        <input class="form-input" id="fDesc" placeholder="例如：更換消防閥門">
+      </div>
+      <div class="form-group">
+        <label>完成度</label>
+        <select class="form-select" id="fStatus">
+          <option value="已完成">已完成</option>
+          <option value="進行中">進行中</option>
+          <option value="待辦">待辦</option>
+          <option value="已取消">已取消</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>地點</label>
+          <select class="form-select" id="fLocation">
+            <option value="君悅酒店">君悅酒店</option>
+            <option value="星際酒店">星際酒店</option>
+            <option value="雅辰酒店">雅辰酒店</option>
+            <option value="辨公室(文創園)">辨公室(文創園)</option>
+            <option value="辨公室(珠海永發大廈)">辨公室(珠海永發大廈)</option>
+            <option value="南光倉庫">南光倉庫</option>
+            <option value="—">—</option>
+            <option value="__custom__">其他（請輸入）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>工種 <span class="hint">可選</span></label>
+          <select class="form-select" id="fWorkType">
+            <option value="—">—</option>
+            <option value="維修">維修</option>
+            <option value="落貨">落貨</option>
+            <option value="助手">助手</option>
+            <option value="安裝">安裝</option>
+            <option value="檢查">檢查</option>
+            <option value="搬運">搬運</option>
+            <option value="焊接">焊接</option>
+            <option value="除銹">除銹</option>
+            <option value="__custom__">其他（請輸入）</option>
+          </select>
+        </div>
+      </div>
+      <div id="customLocationGroup" class="form-group" style="display:none">
+        <label>請輸入地點</label>
+        <input class="form-input" id="fCustomLocation" placeholder="輸入自訂地點">
+      </div>
+      <div id="customWorkTypeGroup" class="form-group" style="display:none">
+        <label>請輸入工種</label>
+        <input class="form-input" id="fCustomWorkType" placeholder="輸入自訂工種">
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="fHasPhoto" onchange="document.getElementById('fPhotoPathGroup').style.display=this.checked?'block':'none'">
+          有拍照
+        </label>
+      </div>
+      <div class="form-group" id="fPhotoPathGroup" style="display:none">
+        <label>添加照片</label>
+        <input class="form-input" id="fPhotoInput" type="file" accept="image/*" multiple
+               style="padding:8px;font-size:0.78rem">
+        <div class="hint" style="margin-top:4px">照片將以 base64 儲存在瀏覽器本地</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalTask')">取消</button>
+      <button class="btn btn-primary" onclick="confirmTask()">✅ 確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Task Selector -->
+<div class="modal-overlay" id="modalEditSelect">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📝 檢視/編輯事項</h3>
+      <button class="modal-close" onclick="closeModal('modalEditSelect')">✕</button>
+    </div>
+    <div class="modal-body" id="editSelectBody">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEditSelect')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Single Task -->
+<div class="modal-overlay" id="modalEditTask">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ 編輯事項</h3>
+      <button class="modal-close" onclick="closeModal('modalEditTask')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>時間範圍</label>
+          <input class="form-input" id="feTime" placeholder="09:00-10:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>事項內容</label>
+        <input class="form-input" id="feDesc">
+      </div>
+      <div class="form-group">
+        <label>完成度</label>
+        <select class="form-select" id="feStatus">
+          <option value="已完成">已完成</option>
+          <option value="進行中">進行中</option>
+          <option value="待辦">待辦</option>
+          <option value="已取消">已取消</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>地點</label>
+          <input class="form-input" id="feLocation">
+        </div>
+        <div class="form-group">
+          <label>工種</label>
+          <input class="form-input" id="feWorkType">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEditTask')">取消</button>
+      <button class="btn btn-danger" id="feDeleteBtn" onclick="feDeleteTask()">🗑️ 刪除</button>
+      <button class="btn btn-primary" onclick="feConfirmEdit()">✅ 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Split Task -->
+<div class="modal-overlay" id="modalSplit">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✂️ 拆分事項</h3>
+      <button class="modal-close" onclick="closeModal('modalSplit')">✕</button>
+    </div>
+    <div class="modal-body" id="splitBody">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalSplit')">取消</button>
+      <button class="btn btn-primary" onclick="confirmSplit()">✅ 確認拆分</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Photos -->
+<div class="modal-overlay" id="modalPhotos">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📸 添加照片</h3>
+      <button class="modal-close" onclick="closeModal('modalPhotos')">✕</button>
+    </div>
+    <div class="modal-body" id="photosBody">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalPhotos')">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Fill Notes -->
+<div class="modal-overlay" id="modalNotes">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📝 填寫底部區塊</h3>
+      <button class="modal-close" onclick="closeModal('modalNotes')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>問題（逐行輸入）</label>
+        <textarea class="form-textarea" id="fProblems" rows="3" placeholder="一行一個問題"></textarea>
+      </div>
+      <div class="form-group">
+        <label>風險</label>
+        <textarea class="form-textarea" id="fRisks" rows="3" placeholder="一行一個風險"></textarea>
+      </div>
+      <div class="form-group">
+        <label>待跟進</label>
+        <textarea class="form-textarea" id="fFollowups" rows="3" placeholder="一行一個待跟進事項"></textarea>
+      </div>
+      <div class="form-group">
+        <label>小復盤</label>
+        <textarea class="form-textarea" id="fSummary" rows="4" placeholder="今日工作小結"></textarea>
+      </div>
+      <div class="form-group">
+        <label>明日優先 TOP3</label>
+        <input class="form-input" id="fTop1" placeholder="TOP1" style="margin-bottom:6px">
+        <input class="form-input" id="fTop2" placeholder="TOP2" style="margin-bottom:6px">
+        <input class="form-input" id="fTop3" placeholder="TOP3">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalNotes')">取消</button>
+      <button class="btn btn-primary" onclick="confirmNotes()">✅ 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Finish Day -->
+<div class="modal-overlay" id="modalFinish">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🏁 收工 &amp; 儲存</h3>
+      <button class="modal-close" onclick="closeModal('modalFinish')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>收工時間</label>
+        <input class="form-input" id="fEndTime" type="time" value="17:00">
+      </div>
+      <div class="form-group">
+        <label>日誌預覽</label>
+        <div class="preview-box" id="finishPreview" style="max-height:300px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalFinish')">取消</button>
+      <button class="btn btn-primary" onclick="confirmFinish()">💾 儲存日誌</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Template -->
+<div class="modal-overlay" id="modalTemplate">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📖 工作日誌模板 v5.6 格式</h3>
+      <button class="modal-close" onclick="closeModal('modalTemplate')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preview-box" style="max-height:none;font-size:0.78rem">
+| 時間 | 事項 | 完成度 | 地點 | 工種 | 照片 |
+|------|------|--------|------|------|------|
+| 09:00-09:04 | 開工 | 已完成 | — | — | 無照片 |
+| 09:04-10:11 | 更換零件 | 已完成 | 星際酒店 | 維修 | 有拍照 |
+| 17:00-17:00 | 收工 | 已完成 | — | — | 無照片 |
+
+底部區塊：
+  問題／風險／待跟進（表格）
+  小復盤（文字）
+  明日優先 TOP3（列表）
+
+常用地點：
+  君悅酒店 / 星際酒店 / 雅辰酒店
+  辨公室(文創園) / 辨公室(珠海永發大廈) / 南光倉庫
+
+常用工種：
+  維修 / 落貨 / 助手 / 安裝 / 檢查 / 搬運 / 焊接 / 除銹
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalTemplate')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirm -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>⚠️ 確認</h3>
+      <button class="modal-close" onclick="closeModal('modalConfirm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmText" style="font-size:0.9rem"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalConfirm')">取消</button>
+      <button class="btn btn-danger" id="confirmBtn" onclick="">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Image Viewer -->
+<div class="modal-overlay" id="modalImageViewer">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h3>🖼️ 圖片</h3>
+      <button class="modal-close" onclick="closeModal('modalImageViewer')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <img id="viewerImage" src="" alt="照片" style="max-width:100%;max-height:70vh;border-radius:8px">
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Markdown Editor -->
+<div class="modal-overlay" id="modalMarkdownEditor">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ 手動輸入 Markdown</h3>
+      <button class="modal-close" onclick="closeModal('modalMarkdownEditor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>輸入工作日誌 Markdown 內容</label>
+        <textarea class="form-textarea" id="manualMdInput" rows="15"
+          placeholder="# 工作日誌 2026/06/14（週日）&#10;&#10;人員：千軍破蒼冥&#10;&#10;---&#10;&#10;## 時間軸&#10;&#10;| 時間 | 事項 | 完成度 | 地點 | 工種 | 照片 |&#10;|------|------|--------|------|------|------|&#10;| 09:00-09:00 | 開工 | 已完成 | — | — | 無照片 |"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalMarkdownEditor')">取消</button>
+      <button class="btn btn-primary" onclick="confirmManualMarkdown()">✅ 載入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: PDF Preview & Generate -->
+<div class="modal-overlay" id="modalPDFPreview">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h3>🖨️ PDF 預覽 &amp; 生成</h3>
+      <button class="modal-close" onclick="closeModal('modalPDFPreview')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-success" id="downloadPdfBtn" onclick="downloadPDF()">💾 下載 PDF</button>
+        <button class="btn btn-sm btn-secondary" onclick="window.print()">🖨️ 瀏覽器列印</button>
+        <span id="pdfStatus" style="font-size:0.78rem;color:var(--slate-400);align-self:center"></span>
+      </div>
+      <div class="form-group">
+        <label>文件名稱</label>
+        <input class="form-input" id="pdfFilename" value="工作日誌_輸出">
+      </div>
+      <div id="pdfRenderArea" style="background:white;padding:16px;border-radius:8px;border:1px solid var(--slate-200);min-height:100px">
+        <div id="pdfContent" style="font-size:12pt;line-height:1.7;color:#1a1a1a;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalPDFPreview')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STORAGE ──
+const STORAGE_KEY = 'worklog_input_v1';
+
+// ── APP DATA ──
+const LOCATIONS = [
+  '君悅酒店', '星際酒店', '雅辰酒店',
+  '辨公室(文創園)', '辨公室(珠海永發大廈)', '南光倉庫', '—'
+];
+const WORK_TYPES = ['—', '維修', '落貨', '助手', '安裝', '檢查', '搬運', '焊接', '除銹'];
+const STATUSES = ['已完成', '進行中', '待辦', '已取消'];
+
+let log = null;
+let toastTimer = null;
+let editIdx = -1;
+let splitTargetIdx = -1;
+let splitPhotoAssignments = [];
+let confirmCallback = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && data.dateStr) {
+        // Restore photos from base64
+        if (data.tasks) {
+          data.tasks.forEach(t => {
+            if (t.photos && Array.isArray(t.photos)) {
+              // photos are base64 strings or {dataUrl, name}
+            }
+          });
+        }
+        log = data;
+      }
+    }
+  } catch(e) {}
+  render();
+}
+
+function saveData() {
+  if (log) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+// ── HELPERS ──
+function showToast(msg, duration) {
+  if (toastTimer) clearTimeout(toastTimer);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration || 2000);
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getWeekday(dateStr) {
+  const d = new Date(dateStr);
+  const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+  return weekdays[d.getDay()];
+}
+
+function formatDate(dateStr) {
+  // Convert YYYY-MM-DD to YYYY/MM/DD
+  return dateStr.replace(/-/g, '/');
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+function getLastEndTime() {
+  if (!log || !log.tasks || log.tasks.length === 0) return '09:00';
+  const last = log.tasks[log.tasks.length - 1];
+  const parts = last.timeRange.split('-');
+  return parts.length > 1 ? parts[1] : '09:00';
+}
+
+// ── RENDER ──
+function render() {
+  if (!log) {
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('activeStatus').style.display = 'none';
+    document.getElementById('taskListCard').style.display = 'none';
+    document.getElementById('notesCard').style.display = 'none';
+    document.getElementById('previewCard').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('activeStatus').style.display = 'block';
+
+  // Stats
+  document.getElementById('statDate').textContent = formatDate(log.dateStr);
+  const realTasks = log.tasks.filter(t => t.desc !== '開工' && t.desc !== '收工').length;
+  document.getElementById('statTasks').textContent = log.tasks.length;
+  const totalPhotos = log.tasks.reduce((sum, t) => sum + (t.photos ? t.photos.length : 0), 0);
+  document.getElementById('statPhotos').textContent = totalPhotos;
+
+  const hasEnd = log.tasks.some(t => t.desc === '收工');
+  document.getElementById('statStatus').textContent = hasEnd ? '✅ 已收工' : '🔄 進行中';
+
+  // Render task list
+  renderTaskList();
+
+  // Render notes
+  renderNotes();
+
+  // Render markdown preview
+  refreshPreview();
+}
+
+function renderTaskList() {
+  const card = document.getElementById('taskListCard');
+  const body = document.getElementById('taskListBody');
+  const countEl = document.getElementById('taskCount');
+
+  if (!log || !log.tasks || log.tasks.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  countEl.textContent = log.tasks.length + ' 項';
+
+  let html = '<div class="task-grid">';
+  log.tasks.forEach((t, i) => {
+    const statusClass = t.status === '已完成' ? 'done' : t.status === '進行中' ? 'progress' : t.status === '待辦' ? 'pending' : 'cancel';
+    const photoCount = t.photos ? t.photos.length : 0;
+    const photoInd = photoCount > 0 ? `📸 ${photoCount}` : t.photoStatus === '有拍照' ? '📸' : '—';
+
+    // Show photo thumbnails if any
+    let thumbs = '';
+    if (photoCount > 0) {
+      thumbs = '<div class="photo-thumbs">';
+      t.photos.forEach((p, pi) => {
+        const src = typeof p === 'string' ? p : (p.dataUrl || '');
+        if (src) {
+          thumbs += `<img class="photo-thumb" src="${escHtml(src)}" onclick="viewImage('${escHtml(src)}')" title="照片 ${pi+1}">`;
+        }
+      });
+      thumbs += '</div>';
+    }
+
+    html += `<div class="task-row">
+      <div class="time">${escHtml(t.timeRange)}</div>
+      <div class="desc">${escHtml(t.desc)}</div>
+      <div><span class="status-badge ${statusClass}">${escHtml(t.status)}</span></div>
+      <div class="loc">${escHtml(t.location)}</div>
+      <div class="type">${escHtml(t.workType)}</div>
+      <div class="photo-indicator">${photoInd}</div>
+      <div class="task-actions">
+        <button onclick="openEditTask(${i})" title="編輯">✏️</button>
+        <button class="del" onclick="deleteTask(${i})" title="刪除">🗑️</button>
+      </div>
+    </div>`;
+    if (thumbs) html += thumbs;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function renderNotes() {
+  const card = document.getElementById('notesCard');
+  const body = document.getElementById('notesBody');
+
+  if (!log) { card.style.display = 'none'; return; }
+
+  const hasProblems = log.problems && log.problems.length > 0;
+  const hasRisks = log.risks && log.risks.length > 0;
+  const hasFollowups = log.followups && log.followups.length > 0;
+  const hasSummary = log.summary;
+  const hasTop3 = log.top3 && log.top3.some(Boolean);
+
+  if (!hasProblems && !hasRisks && !hasFollowups && !hasSummary && !hasTop3) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  let html = '';
+  if (hasProblems) html += `<div style="margin-bottom:6px"><strong>⚠️ 問題：</strong>${log.problems.map(p => escHtml(p)).join('；')}</div>`;
+  if (hasRisks) html += `<div style="margin-bottom:6px"><strong>🔴 風險：</strong>${log.risks.map(r => escHtml(r)).join('；')}</div>`;
+  if (hasFollowups) html += `<div style="margin-bottom:6px"><strong>📌 待跟進：</strong>${log.followups.map(f => escHtml(f)).join('；')}</div>`;
+  if (hasSummary) html += `<div style="margin-bottom:6px"><strong>📝 小復盤：</strong>${escHtml(log.summary)}</div>`;
+  if (hasTop3) {
+    html += '<div><strong>🎯 明日優先：</strong>';
+    log.top3.forEach((item, i) => {
+      if (item) html += `<br>${i+1}. ${escHtml(item)}`;
+    });
+    html += '</div>';
+  }
+  body.innerHTML = html;
+}
+
+// ── MARKDOWN GENERATION ──
+function generateMarkdown() {
+  if (!log) return '# 無數據';
+
+  const dateDisplay = formatDate(log.dateStr);
+  const weekday = getWeekday(log.dateStr);
+  let md = `# 工作日誌 ${dateDisplay}（${weekday}）\n\n`;
+  md += `人員：${escHtml(log.person || '千軍破蒼冥')}\n\n`;
+  md += "---\n\n";
+  md += "## 時間軸\n\n";
+  md += "| 時間 | 事項 | 完成度 | 地點 | 工種 | 照片 |\n";
+  md += "|------|------|--------|------|------|------|\n";
+
+  if (log.tasks) {
+    log.tasks.forEach(t => {
+      const loc = t.location || '—';
+      const wt = t.workType || '—';
+      const photo = t.photoStatus || '無照片';
+      md += `| <strong>${escHtml(t.timeRange)}</strong> | ${escHtml(t.desc)} | ${escHtml(t.status)} | ${escHtml(loc)} | ${escHtml(wt)} | ${photo} |\n`;
+    });
+  }
+
+  md += "\n---\n\n";
+  md += "## 問題／風險／待跟進\n\n";
+  md += "| 問題 | 風險 | 待跟進 |\n";
+  md += "|------|------|--------|\n";
+
+  const probs = log.problems || [];
+  const risks = log.risks || [];
+  const follows = log.followups || [];
+  const maxLen = Math.max(probs.length, risks.length, follows.length, 1);
+  for (let i = 0; i < maxLen; i++) {
+    const p = i < probs.length ? probs[i] : '';
+    const r = i < risks.length ? risks[i] : '';
+    const f = i < follows.length ? follows[i] : '';
+    md += `| ${escHtml(p)} | ${escHtml(r)} | ${escHtml(f)} |\n`;
+  }
+
+  md += "\n---\n\n";
+  md += "## 小復盤\n\n";
+  md += (log.summary || '（無）') + "\n\n";
+  md += "---\n\n";
+  md += "## 明日優先 TOP3\n\n";
+  for (let i = 0; i < 3; i++) {
+    const item = log.top3 && log.top3[i] ? log.top3[i] : '—';
+    md += `${i+1}. ${escHtml(item)}\n`;
+  }
+
+  return md;
+}
+
+function refreshPreview() {
+  if (!log) {
+    document.getElementById('previewCard').style.display = 'none';
+    return;
+  }
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('markdownPreview').textContent = generateMarkdown();
+}
+
+function copyMarkdown() {
+  const text = generateMarkdown();
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 已複製到剪貼簿');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ 已複製到剪貼簿');
+  });
+}
+
+function downloadMarkdown() {
+  const text = generateMarkdown();
+  const dateStr = log.dateStr.replace(/-/g, '');
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `工作日誌_${dateStr}.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ 已下載 .md 檔案');
+}
+
+function viewImage(src) {
+  document.getElementById('viewerImage').src = src;
+  openModal('modalImageViewer');
+}
+
+// ── FEATURE: Start New Day ──
+function startNewDay() {
+  const today = todayStr();
+  document.getElementById('fDate').value = today;
+  document.getElementById('fPerson').value = '千軍破蒼冥';
+  openModal('modalNewDay');
+}
+
+function confirmNewDay() {
+  const dateStr = document.getElementById('fDate').value;
+  const person = document.getElementById('fPerson').value.trim() || '千軍破蒼冥';
+  if (!dateStr) { showToast('⚠️ 請選擇日期'); return; }
+
+  log = {
+    dateStr: dateStr,
+    person: person,
+    tasks: [{
+      timeRange: '09:00-09:00',
+      desc: '開工',
+      status: '已完成',
+      location: '—',
+      workType: '—',
+      photoStatus: '無照片',
+      photos: []
+    }],
+    problems: [],
+    risks: [],
+    followups: [],
+    summary: '',
+    top3: ['', '', '']
+  };
+
+  saveData();
+  closeModal('modalNewDay');
+  render();
+  showToast(`✅ 已建立 ${formatDate(dateStr)}（${getWeekday(dateStr)}）工作日誌`);
+
+  // Ask to add first task
+  setTimeout(() => {
+    addTask();
+  }, 300);
+}
+
+// ── FEATURE: Add Task ──
+function addTask() {
+  if (!log) { showToast('⚠️ 請先開工'); return; }
+  editIdx = -1;
+  document.getElementById('modalTaskTitle').textContent = '➕ 新增事項';
+
+  const defaultStart = getLastEndTime();
+  document.getElementById('fStart').value = defaultStart;
+  document.getElementById('fEnd').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fStatus').value = '已完成';
+  document.getElementById('fLocation').value = '—';
+  document.getElementById('fWorkType').value = '—';
+  document.getElementById('fHasPhoto').checked = false;
+  document.getElementById('fPhotoPathGroup').style.display = 'none';
+  document.getElementById('fPhotoInput').value = '';
+  document.getElementById('customLocationGroup').style.display = 'none';
+  document.getElementById('customWorkTypeGroup').style.display = 'none';
+
+  openModal('modalTask');
+}
+
+function confirmTask() {
+  const start = document.getElementById('fStart').value;
+  const end = document.getElementById('fEnd').value;
+  const desc = document.getElementById('fDesc').value.trim();
+  const status = document.getElementById('fStatus').value;
+
+  // Handle custom location
+  let location = document.getElementById('fLocation').value;
+  if (location === '__custom__') {
+    location = document.getElementById('fCustomLocation').value.trim() || '—';
+  }
+
+  // Handle custom work type
+  let workType = document.getElementById('fWorkType').value;
+  if (workType === '__custom__') {
+    workType = document.getElementById('fCustomWorkType').value.trim() || '—';
+  }
+
+  if (!start || !end) { showToast('⚠️ 請填寫時間'); return; }
+  if (!desc) { showToast('⚠️ 請填寫事項內容'); return; }
+
+  const hasPhoto = document.getElementById('fHasPhoto').checked;
+  const photoStatus = hasPhoto ? '有拍照' : '無照片';
+
+  // Handle photo files
+  const fileInput = document.getElementById('fPhotoInput');
+  const photos = [];
+
+  if (hasPhoto && fileInput.files && fileInput.files.length > 0) {
+    // We'll collect photos as promises and add them
+    const files = Array.from(fileInput.files);
+    const readPromises = files.map(f => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(f);
+      });
+    });
+
+    Promise.all(readPromises).then(results => {
+      results.forEach(r => { if (r) photos.push(r); });
+      const task = {
+        timeRange: `${start}-${end}`,
+        desc: desc,
+        status: status,
+        location: location,
+        workType: workType,
+        photoStatus: photos.length > 0 ? '有拍照' : '無照片',
+        photos: photos
+      };
+      log.tasks.push(task);
+      saveData();
+      closeModal('modalTask');
+      render();
+      showToast(`✅ 已新增：${desc}（${start}-${end}）`);
+    });
+    return;
+  }
+
+  // No photos, just add task
+  const task = {
+    timeRange: `${start}-${end}`,
+    desc: desc,
+    status: status,
+    location: location,
+    workType: workType,
+    photoStatus: photoStatus,
+    photos: []
+  };
+  log.tasks.push(task);
+  saveData();
+  closeModal('modalTask');
+  render();
+  showToast(`✅ 已新增：${desc}（${start}-${end}）`);
+}
+
+// ── FEATURE: Edit Tasks ──
+function viewEditTasks() {
+  if (!log || !log.tasks || log.tasks.length === 0) {
+    showToast('尚無事項'); return;
+  }
+
+  const body = document.getElementById('editSelectBody');
+  let html = '<div style="font-size:0.85rem">點擊事項以編輯：</div>';
+  html += '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">';
+
+  log.tasks.forEach((t, i) => {
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;cursor:pointer" onclick="openEditTask(${i})">
+      <span style="color:var(--slate-400);font-size:0.75rem;min-width:20px">[${i}]</span>
+      <span style="font-weight:600;min-width:80px">${escHtml(t.timeRange)}</span>
+      <span style="flex:1">${escHtml(t.desc)}</span>
+      <span style="color:var(--slate-400);font-size:0.75rem">${escHtml(t.status)}</span>
+    </div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  openModal('modalEditSelect');
+}
+
+function openEditTask(idx) {
+  closeModal('modalEditSelect');
+  const t = log.tasks[idx];
+  editIdx = idx;
+
+  document.getElementById('feTime').value = t.timeRange;
+  document.getElementById('feDesc').value = t.desc;
+  document.getElementById('feStatus').value = t.status;
+  document.getElementById('feLocation').value = t.location;
+  document.getElementById('feWorkType').value = t.workType;
+
+  document.getElementById('feDeleteBtn').onclick = function() { feDeleteTask(idx); };
+  openModal('modalEditTask');
+}
+
+function feConfirmEdit() {
+  if (editIdx < 0) return;
+  const t = log.tasks[editIdx];
+  t.timeRange = document.getElementById('feTime').value || t.timeRange;
+  t.desc = document.getElementById('feDesc').value.trim() || t.desc;
+  t.status = document.getElementById('feStatus').value;
+  t.location = document.getElementById('feLocation').value.trim() || '—';
+  t.workType = document.getElementById('feWorkType').value.trim() || '—';
+
+  saveData();
+  closeModal('modalEditTask');
+  render();
+  showToast('✅ 已更新事項');
+}
+
+function feDeleteTask(idx) {
+  const desc = log.tasks[idx].desc;
+  showConfirm(`確定刪除「${desc}」？`, () => {
+    log.tasks.splice(idx, 1);
+    saveData();
+    closeModal('modalEditTask');
+    render();
+    showToast(`✅ 已刪除：${desc}`);
+  });
+}
+
+function deleteTask(idx) {
+  const desc = log.tasks[idx].desc;
+  showConfirm(`確定刪除「${desc}」？`, () => {
+    log.tasks.splice(idx, 1);
+    saveData();
+    render();
+    showToast(`✅ 已刪除：${desc}`);
+  });
+}
+
+// ── FEATURE: Split Task ──
+function splitTask() {
+  if (!log || !log.tasks) { showToast('⚠️ 請先開工'); return; }
+
+  const splittable = log.tasks
+    .map((t, i) => ({ idx: i, task: t }))
+    .filter(x => x.task.desc !== '開工' && x.task.desc !== '收工');
+
+  if (splittable.length === 0) {
+    showToast('無事項可拆分'); return;
+  }
+
+  let html = '<div style="font-size:0.85rem;margin-bottom:10px">選擇要拆分的事項：</div>';
+  splittable.forEach((s, i) => {
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;cursor:pointer" onclick="selectSplitTask(${i})">
+      <span style="font-weight:600;min-width:80px">${escHtml(s.task.timeRange)}</span>
+      <span>${escHtml(s.task.desc)}</span>
+      ${s.task.photos && s.task.photos.length > 0 ? `<span style="color:var(--slate-400)">📸 ${s.task.photos.length}</span>` : ''}
+    </div>`;
+  });
+
+  document.getElementById('splitBody').innerHTML = html;
+  splitTargetIdx = -1;
+  openModal('modalSplit');
+}
+
+function selectSplitTask(choice) {
+  const splittable = log.tasks
+    .map((t, i) => ({ idx: i, task: t }))
+    .filter(x => x.task.desc !== '開工' && x.task.desc !== '收工');
+
+  const orig = splittable[choice];
+  splitTargetIdx = choice;
+
+  // Build split form
+  let html = `<div class="split-card">
+    <h4>✂️ 拆分：${escHtml(orig.task.desc)}</h4>
+    <div style="font-size:0.8rem;color:var(--slate-500)">原時間：${orig.task.timeRange}</div>
+  </div>`;
+
+  html += '<div class="form-group"><label>拆分邊界時間 <span class="hint">HH:MM</span></label>';
+  html += '<input class="form-input" id="splitBoundary" type="time" placeholder="10:36"></div>';
+
+  html += '<div class="form-row"><div class="form-group"><label>子事項 1 名稱</label>';
+  html += `<input class="form-input" id="splitName1" value="${escHtml(orig.task.desc)}"></div>`;
+  html += '<div class="form-group"><label>子事項 2 名稱</label>';
+  html += `<input class="form-input" id="splitName2" value="${escHtml(orig.task.desc)}（續）"></div></div>`;
+
+  // Photo reassignment
+  if (orig.task.photos && orig.task.photos.length > 0) {
+    html += '<div style="margin-top:12px"><strong style="font-size:0.85rem">📸 照片重新分配：</strong></div>';
+    orig.task.photos.forEach((p, pi) => {
+      const src = typeof p === 'string' ? p : (p.dataUrl || '');
+      const displayName = typeof p === 'string' && p.startsWith('data:') ? `照片 ${pi+1}` : (p.name || `照片 ${pi+1}`);
+      html += `<div class="photo-assign">
+        ${src ? `<img src="${escHtml(src)}" style="width:36px;height:36px;object-fit:cover;border-radius:4px">` : '📷'}
+        <span style="flex:1">${escHtml(displayName)}</span>
+        <span>歸屬：</span>
+        <select id="splitPhoto_${pi}">
+          <option value="1">子事項 1</option>
+          <option value="2">子事項 2</option>
+        </select>
+      </div>`;
+    });
+  }
+
+  document.getElementById('splitBody').innerHTML = html;
+}
+
+function confirmSplit() {
+  const splittable = log.tasks
+    .map((t, i) => ({ idx: i, task: t }))
+    .filter(x => x.task.desc !== '開工' && x.task.desc !== '收工');
+
+  if (splitTargetIdx < 0 || splitTargetIdx >= splittable.length) {
+    showToast('⚠️ 請先選擇要拆分的事項'); return;
+  }
+
+  const origIdx = splittable[splitTargetIdx].idx;
+  const origTask = log.tasks[origIdx];
+  const boundary = document.getElementById('splitBoundary').value;
+  if (!boundary) { showToast('⚠️ 請輸入拆分邊界時間'); return; }
+
+  const name1 = document.getElementById('splitName1').value.trim() || origTask.desc;
+  const name2 = document.getElementById('splitName2').value.trim() || origTask.desc + '（續）';
+
+  const parts = origTask.timeRange.split('-');
+  const start = parts[0];
+  const end = parts[1];
+
+  // Create two tasks
+  const task1 = {
+    timeRange: `${start}-${boundary}`,
+    desc: name1,
+    status: origTask.status,
+    location: origTask.location,
+    workType: origTask.workType,
+    photoStatus: '無照片',
+    photos: []
+  };
+  const task2 = {
+    timeRange: `${boundary}-${end}`,
+    desc: name2,
+    status: origTask.status,
+    location: origTask.location,
+    workType: origTask.workType,
+    photoStatus: '無照片',
+    photos: []
+  };
+
+  // Reassign photos
+  if (origTask.photos && origTask.photos.length > 0) {
+    origTask.photos.forEach((p, pi) => {
+      const sel = document.getElementById(`splitPhoto_${pi}`);
+      if (sel && sel.value === '2') {
+        task2.photos.push(p);
+      } else {
+        task1.photos.push(p);
+      }
+    });
+    task1.photoStatus = task1.photos.length > 0 ? '有拍照' : '無照片';
+    task2.photoStatus = task2.photos.length > 0 ? '有拍照' : '無照片';
+  }
+
+  // Replace
+  log.tasks[origIdx] = task1;
+  log.tasks.splice(origIdx + 1, 0, task2);
+
+  saveData();
+  closeModal('modalSplit');
+  render();
+  showToast(`✅ 已拆分：${origTask.desc}`);
+}
+
+// ── FEATURE: Add Photos ──
+function addPhotos() {
+  if (!log || !log.tasks) { showToast('⚠️ 請先開工'); return; }
+
+  const photoTasks = log.tasks
+    .map((t, i) => ({ idx: i, task: t }))
+    .filter(x => x.task.desc !== '開工' && x.task.desc !== '收工');
+
+  if (photoTasks.length === 0) {
+    showToast('尚無可添加照片的事項'); return;
+  }
+
+  let html = '<div style="font-size:0.85rem;margin-bottom:10px">選擇要附加照片的事項：</div>';
+  photoTasks.forEach((s, i) => {
+    const pcount = s.task.photos ? s.task.photos.length : 0;
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px">
+      <span style="flex:1">[${i}] ${escHtml(s.task.timeRange)} | ${escHtml(s.task.desc)}</span>
+      <span style="color:var(--slate-400);font-size:0.75rem">已有 ${pcount} 張</span>
+      <input type="file" accept="image/*" multiple id="photoFile_${i}" style="display:none"
+             onchange="confirmPhotoUpload(${s.idx})">
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('photoFile_${i}').click()">📸 選擇照片</button>
+    </div>`;
+  });
+
+  document.getElementById('photosBody').innerHTML = html;
+  openModal('modalPhotos');
+}
+
+function confirmPhotoUpload(taskIdx) {
+  // Find which file input triggered this
+  const inputs = document.querySelectorAll('#photosBody input[type="file"]');
+  let fileInput = null;
+  inputs.forEach(inp => {
+    if (inp.files && inp.files.length > 0) fileInput = inp;
+  });
+
+  if (!fileInput) return;
+
+  const files = Array.from(fileInput.files);
+  const task = log.tasks[taskIdx];
+  if (!task) { showToast('⚠️ 找不到事項'); return; }
+
+  if (!task.photos) task.photos = [];
+
+  const readPromises = files.map(f => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(f);
+    });
+  });
+
+  Promise.all(readPromises).then(results => {
+    let count = 0;
+    results.forEach(r => {
+      if (r) { task.photos.push(r); count++; }
+    });
+    task.photoStatus = count > 0 ? '有拍照' : task.photoStatus;
+    saveData();
+    // Refresh the photo list
+    addPhotos(); // Re-open to show updated state
+    showToast(`✅ 已添加 ${count} 張照片`);
+  });
+}
+
+// ── FEATURE: Fill Notes ──
+function fillNotes() {
+  if (!log) { showToast('⚠️ 請先開工'); return; }
+
+  document.getElementById('fProblems').value = (log.problems || []).join('\n');
+  document.getElementById('fRisks').value = (log.risks || []).join('\n');
+  document.getElementById('fFollowups').value = (log.followups || []).join('\n');
+  document.getElementById('fSummary').value = log.summary || '';
+  document.getElementById('fTop1').value = log.top3 && log.top3[0] ? log.top3[0] : '';
+  document.getElementById('fTop2').value = log.top3 && log.top3[1] ? log.top3[1] : '';
+  document.getElementById('fTop3').value = log.top3 && log.top3[2] ? log.top3[2] : '';
+
+  openModal('modalNotes');
+}
+
+function confirmNotes() {
+  const problemsText = document.getElementById('fProblems').value.trim();
+  const risksText = document.getElementById('fRisks').value.trim();
+  const followupsText = document.getElementById('fFollowups').value.trim();
+  const summary = document.getElementById('fSummary').value.trim();
+
+  log.problems = problemsText ? problemsText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+  log.risks = risksText ? risksText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+  log.followups = followupsText ? followupsText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+  log.summary = summary;
+  log.top3 = [
+    document.getElementById('fTop1').value.trim(),
+    document.getElementById('fTop2').value.trim(),
+    document.getElementById('fTop3').value.trim()
+  ];
+
+  saveData();
+  closeModal('modalNotes');
+  render();
+  showToast('✅ 備註已更新');
+}
+
+// ── FEATURE: Finish Day ──
+function finishDay() {
+  if (!log) { showToast('⚠️ 請先開工'); return; }
+
+  // Check if already has end
+  const hasEnd = log.tasks.some(t => t.desc === '收工');
+  const lastEnd = getLastEndTime();
+  document.getElementById('fEndTime').value = hasEnd ? '' : '17:00';
+  document.getElementById('finishPreview').textContent = generateMarkdown();
+  openModal('modalFinish');
+}
+
+function confirmFinish() {
+  const hasEnd = log.tasks.some(t => t.desc === '收工');
+  if (!hasEnd) {
+    const endTime = document.getElementById('fEndTime').value || '17:00';
+    log.tasks.push({
+      timeRange: `${endTime}-${endTime}`,
+      desc: '收工',
+      status: '已完成',
+      location: '—',
+      workType: '—',
+      photoStatus: '無照片',
+      photos: []
+    });
+  }
+
+  saveData();
+  render();
+  closeModal('modalFinish');
+  showToast('✅ 工作日誌已完成！可複製 Markdown 或下載 .md 檔案');
+}
+
+// ── FEATURE: Generate PDF (Print) ──
+function generatePDF() {
+  if (!log) { showToast('⚠️ 請先開工'); return; }
+
+  // Open markdown preview in print mode
+  refreshPreview();
+  showToast('🖨️ 使用瀏覽器列印 (Ctrl+P) 來生成 PDF');
+  // Auto-scroll to preview
+  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── FEATURE: Show Template ──
+function showTemplate() {
+  openModal('modalTemplate');
+}
+
+// ── FEATURE: Custom location/work type handling ──
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('fLocation').addEventListener('change', function() {
+    document.getElementById('customLocationGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
+  });
+  document.getElementById('fWorkType').addEventListener('change', function() {
+    document.getElementById('customWorkTypeGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
+  });
+  loadData();
+});
+
+// ── Confirm Dialog ──
+function showConfirm(text, callback) {
+  document.getElementById('confirmText').textContent = text;
+  const btn = document.getElementById('confirmBtn');
+  confirmCallback = callback;
+  btn.onclick = function() {
+    if (confirmCallback) confirmCallback();
+    closeModal('modalConfirm');
+  };
+  openModal('modalConfirm');
+}
+
+// ── PDF Generation: HTML Template ──
+function buildPDFHtml(markdownText) {
+  const bodyHtml = marked.parse(markdownText);
+  const safeTitle = markdownText.match(/^#\s+(.+)/m);
+  const title = safeTitle ? safeTitle[1].trim() : '工作日誌';
+  const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8">
+<style>
+@page { size: A4; margin: 2cm; }
+body {
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  color: #1a1a1a; line-height: 1.7; font-size: 12pt; padding: 0; margin: 0;
+}
+h1 {
+  font-size: 22pt; text-align: center; color: #2c3e50;
+  border-bottom: 3px solid #3498db; padding-bottom: 8px; margin-bottom: 5px;
+}
+h2 {
+  font-size: 16pt; color: #2c3e50;
+  border-left: 5px solid #3498db; padding-left: 12px; margin-top: 25px; margin-bottom: 10px;
+}
+h3 { font-size: 13pt; color: #34495e; margin-top: 18px; margin-bottom: 8px; }
+hr { border: none; border-top: 1px dashed #bdc3c7; margin: 20px 0; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10.5pt; }
+th {
+  background: #2c3e50; color: white; padding: 8px 10px; text-align: left; font-size: 10pt;
+  font-weight: 600;
+}
+td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; font-size: 10pt; }
+tr:nth-child(even) { background: #f8f9fa; }
+strong { font-weight: 700; }
+p { margin: 6px 0; }
+code {
+  background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 10pt;
+  font-family: "Consolas", "SF Mono", monospace;
+}
+.footer {
+  text-align: center; color: #95a5a6; font-size: 9pt;
+  margin-top: 30px; border-top: 1px solid #eee; padding-top: 12px;
+}
+</style>
+</head>
+<body>
+${bodyHtml}
+<div class="footer">生成時間：${now} | 工具：輸入事項 v1.0</div>
+</body></html>`;
+}
+
+// ── PDF Generation: From Current Log ──
+function generatePDF() {
+  if (!log) { showToast('⚠️ 請先開工，或載入 Markdown 檔案'); return; }
+  const mdText = generateMarkdown();
+  _openPDFPreview(mdText, '工作日誌_' + log.dateStr.replace(/-/g, ''));
+}
+
+// ── PDF Generation: From Markdown ──
+let _currentMdForPDF = '';
+
+function loadMarkdownFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const content = e.target.result;
+    _currentMdForPDF = content;
+    document.getElementById('mdFileName').textContent = '📄 ' + file.name;
+    document.getElementById('mdPreviewContent').textContent = content;
+    document.getElementById('mdPreviewArea').style.display = 'block';
+    showToast('✅ 已載入：' + file.name);
+  };
+  reader.readAsText(file, 'UTF-8');
+  event.target.value = '';
+}
+
+function openMarkdownEditor() {
+  document.getElementById('manualMdInput').value = '';
+  openModal('modalMarkdownEditor');
+}
+
+function confirmManualMarkdown() {
+  const content = document.getElementById('manualMdInput').value.trim();
+  if (!content) { showToast('⚠️ 請輸入 Markdown 內容'); return; }
+  _currentMdForPDF = content;
+  document.getElementById('mdFileName').textContent = '✏️ 手動輸入';
+  document.getElementById('mdPreviewContent').textContent = content;
+  document.getElementById('mdPreviewArea').style.display = 'block';
+  closeModal('modalMarkdownEditor');
+  showToast('✅ 已載入 Markdown');
+}
+
+function previewMarkdownHTML() {
+  if (!_currentMdForPDF) { showToast('⚠️ 請先載入 Markdown'); return; }
+  _openPDFPreview(_currentMdForPDF, '工作日誌_輸出');
+}
+
+function generatePDFfromMarkdown() {
+  if (!_currentMdForPDF) { showToast('⚠️ 請先載入 Markdown'); return; }
+  _openPDFPreview(_currentMdForPDF, '工作日誌_載入');
+}
+
+function _openPDFPreview(mdText, defaultName) {
+  if (typeof marked === 'undefined') {
+    showToast('⚠️ CDN 未加載，使用瀏覽器列印');
+    // Fallback: open print dialog directly
+    const html = buildPDFHtml(mdText);
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      win.print();
+    } else {
+      showToast('⚠️ 請允許彈出視窗');
+    }
+    return;
+  }
+
+  const html = buildPDFHtml(mdText);
+  document.getElementById('pdfContent').innerHTML = '';
+  document.getElementById('pdfRenderArea').innerHTML = html;
+  document.getElementById('pdfFilename').value = defaultName;
+  document.getElementById('pdfStatus').textContent = '✅ 已渲染';
+  openModal('modalPDFPreview');
+}
+
+function downloadPDF() {
+  const btn = document.getElementById('downloadPdfBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+  document.getElementById('pdfStatus').textContent = '⏳ 生成中...';
+
+  const element = document.getElementById('pdfRenderArea');
+  const filename = document.getElementById('pdfFilename').value.trim() || '工作日誌_輸出';
+
+  const opt = {
+    margin:       [0.5, 0.5, 0.5, 0.5],
+    filename:     filename + '.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
+    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  // Try html2pdf, fall back to print
+  if (typeof html2pdf === 'undefined') {
+    window.print();
+    btn.disabled = false;
+    btn.textContent = '💾 下載 PDF';
+    return;
+  }
+
+  html2pdf().set(opt).from(element).save().then(function() {
+    btn.disabled = false;
+    btn.textContent = '💾 下載 PDF';
+    document.getElementById('pdfStatus').textContent = '✅ PDF 已下載';
+    showToast('✅ PDF 已下載');
+  }).catch(function(err) {
+    console.error('PDF error:', err);
+    document.getElementById('pdfStatus').textContent = '⚠️ 生成失敗，使用列印';
+    // Fallback to print
+    window.print();
+    btn.disabled = false;
+    btn.textContent = '💾 下載 PDF';
+  });
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => {
+      m.classList.remove('show');
+    });
+  }
+});
+</script>
+</body>
+</html>
