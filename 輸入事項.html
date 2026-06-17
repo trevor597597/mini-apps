@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>工作日誌 — 輸入事項工具 v1.0</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -234,16 +234,6 @@ body {
   .header, .menu-grid, .menu-btn, .btn, .modal-overlay:not(#modalPDFPreview),
   .modal-overlay:not(#modalPDFPreview) *,
   .task-actions, #toast, .status-bar { display: none !important; }
-  #modalPDFPreview { display: block !important; position: static !important; background: white; }
-  #modalPDFPreview .modal { max-width: 100%; border-radius: 0; box-shadow: none; max-height: none; animation: none; }
-  #modalPDFPreview .modal-header,
-  #modalPDFPreview .modal-footer,
-  #modalPDFPreview #downloadPdfBtn,
-  #modalPDFPreview .btn,
-  #modalPDFPreview #pdfStatus,
-  #modalPDFPreview .form-group:first-child { display: none !important; }
-  #modalPDFPreview .modal-body { padding: 0; }
-  #modalPDFPreview #pdfRenderArea { border: none; padding: 0; }
   @page { size: A4; margin: 2cm; }
   .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
   .container { max-width: 100%; padding: 0; }
@@ -253,37 +243,9 @@ body {
 }
 .print-only { display: none; }
 
-/* ── PDF Content Styles (for html2pdf) ── */
-#pdfRenderArea {
-  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
-  color: #1a1a1a; line-height: 1.7; font-size: 12pt; padding: 20px; margin: 0;
-}
-#pdfRenderArea h1 {
-  font-size: 22pt; text-align: center; color: #2c3e50;
-  border-bottom: 3px solid #3498db; padding-bottom: 8px; margin-bottom: 5px;
-}
-#pdfRenderArea h2 {
-  font-size: 16pt; color: #2c3e50;
-  border-left: 5px solid #3498db; padding-left: 12px; margin-top: 25px; margin-bottom: 10px;
-}
-#pdfRenderArea h3 { font-size: 13pt; color: #34495e; margin-top: 18px; margin-bottom: 8px; }
-#pdfRenderArea hr { border: none; border-top: 1px dashed #bdc3c7; margin: 20px 0; }
-#pdfRenderArea table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10.5pt; }
-#pdfRenderArea th {
-  background: #2c3e50; color: white; padding: 8px 10px; text-align: left; font-size: 10pt;
-  font-weight: 600;
-}
-#pdfRenderArea td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; font-size: 10pt; }
-#pdfRenderArea tr:nth-child(even) { background: #f8f9fa; }
-#pdfRenderArea strong { font-weight: 700; }
-#pdfRenderArea p { margin: 6px 0; }
-#pdfRenderArea code {
-  background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 10pt;
-  font-family: "Consolas", "SF Mono", monospace;
-}
-#pdfRenderArea .footer {
-  text-align: center; color: #95a5a6; font-size: 9pt;
-  margin-top: 30px; border-top: 1px solid #eee; padding-top: 12px;
+/* ── XLSX Button ── */
+.btn-xlsx { background: #27ae60; color: white; }
+.btn-xlsx:hover { background: #219a52; }
 }
 /* ── Empty state ── */
 .empty-state {
@@ -386,9 +348,9 @@ body {
             <span class="icon">🏁</span>
             <span class="label">收工 &amp; 儲存</span>
           </button>
-          <button class="menu-btn" onclick="generatePDF()">
-            <span class="icon">🖨️</span>
-            <span class="label">生成 PDF</span>
+          <button class="menu-btn" onclick="exportXLSX()">
+            <span class="icon">📊</span>
+            <span class="label">匯出 XLSX</span>
           </button>
         </div>
       </div>
@@ -425,35 +387,35 @@ body {
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
         <button class="btn btn-sm btn-primary" onclick="copyMarkdown()">📋 複製</button>
         <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
-        <button class="btn btn-sm btn-success" onclick="generatePDF()">🖨️ 生成 PDF</button>
+        <button class="btn btn-sm btn-xlsx" onclick="exportXLSX()">📊 匯出 XLSX</button>
       </div>
     </div>
   </div>
 
-  <!-- Markdown Load & PDF Card -->
+  <!-- Markdown Load & XLSX Card -->
   <div class="card">
-    <div class="card-header"><h2>📂 載入 Markdown → PDF</h2></div>
+    <div class="card-header"><h2>📂 載入 Markdown → XLSX</h2></div>
     <div class="card-body">
       <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:12px">
-        上傳 .md 工作日誌檔案，解析後生成專業排版 PDF
+        上傳 .md 工作日誌檔案，解析後輸出為 Excel（XLSX）
       </p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <label class="btn btn-primary" style="cursor:pointer">
           📁 選擇 .md 檔案
-          <input type="file" accept=".md,.markdown,.txt" id="mdFileInput"
-                 onchange="loadMarkdownFile(event)" style="display:none">
+          <input type="file" accept=".md,.markdown,.txt" id="mdFileInput2"
+                 onchange="loadMarkdownForXLSX(event)" style="display:none">
         </label>
-        <button class="btn btn-secondary" onclick="openMarkdownEditor()">✏️ 手動輸入 Markdown</button>
+        <button class="btn btn-secondary" onclick="openMdEditor()">✏️ 手動輸入 Markdown</button>
       </div>
-      <div id="mdPreviewArea" style="display:none;margin-top:14px;border-top:1px solid var(--slate-200);padding-top:14px">
+      <div id="mdPreviewArea2" style="display:none;margin-top:14px;border-top:1px solid var(--slate-200);padding-top:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span id="mdFileName" style="font-weight:600;font-size:0.9rem;color:var(--blue-800)"></span>
+          <span id="mdFileName2" style="font-weight:600;font-size:0.9rem;color:var(--blue-800)"></span>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-sm btn-success" onclick="generatePDFfromMarkdown()">🖨️ 生成 PDF</button>
-            <button class="btn btn-sm btn-secondary" onclick="previewMarkdownHTML()">👁️ 預覽</button>
+            <button class="btn btn-sm btn-xlsx" onclick="exportXLSXfromLoadedMd()">📊 輸出 XLSX</button>
+            <button class="btn btn-sm btn-secondary" onclick="previewLoadedMd()">👁️ 預覽</button>
           </div>
         </div>
-        <div class="preview-box" id="mdPreviewContent" style="max-height:200px;font-size:0.75rem;white-space:pre-wrap"></div>
+        <div class="preview-box" id="mdPreviewContent2" style="max-height:200px;font-size:0.75rem;white-space:pre-wrap"></div>
       </div>
     </div>
   </div>
@@ -795,50 +757,24 @@ body {
   </div>
 </div>
 
-<!-- Modal: Markdown Editor -->
-<div class="modal-overlay" id="modalMarkdownEditor">
+
+<!-- Modal: Manual Markdown Editor (for XLSX) -->
+<div class="modal-overlay" id="modalMdEditor">
   <div class="modal">
     <div class="modal-header">
       <h3>✏️ 手動輸入 Markdown</h3>
-      <button class="modal-close" onclick="closeModal('modalMarkdownEditor')">✕</button>
+      <button class="modal-close" onclick="closeModal('modalMdEditor')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label>輸入工作日誌 Markdown 內容</label>
-        <textarea class="form-textarea" id="manualMdInput" rows="15"
+        <textarea class="form-textarea" id="manualMdInput2" rows="15"
           placeholder="# 工作日誌 2026/06/14（週日）&#10;&#10;人員：千軍破蒼冥&#10;&#10;---&#10;&#10;## 時間軸&#10;&#10;| 時間 | 事項 | 完成度 | 地點 | 工種 | 照片 |&#10;|------|------|--------|------|------|------|&#10;| 09:00-09:00 | 開工 | 已完成 | — | — | 無照片 |"></textarea>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modalMarkdownEditor')">取消</button>
-      <button class="btn btn-primary" onclick="confirmManualMarkdown()">✅ 載入</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: PDF Preview & Generate -->
-<div class="modal-overlay" id="modalPDFPreview">
-  <div class="modal" style="max-width:700px">
-    <div class="modal-header">
-      <h3>🖨️ PDF 預覽 &amp; 生成</h3>
-      <button class="modal-close" onclick="closeModal('modalPDFPreview')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <button class="btn btn-sm btn-success" id="downloadPdfBtn" onclick="downloadPDF()">💾 下載 PDF</button>
-        <button class="btn btn-sm btn-secondary" onclick="window.print()">🖨️ 瀏覽器列印</button>
-        <span id="pdfStatus" style="font-size:0.78rem;color:var(--slate-400);align-self:center"></span>
-      </div>
-      <div class="form-group">
-        <label>文件名稱</label>
-        <input class="form-input" id="pdfFilename" value="工作日誌_輸出">
-      </div>
-      <div id="pdfRenderArea" style="background:white;padding:16px;border-radius:8px;border:1px solid var(--slate-200);min-height:100px">
-        <div id="pdfContent" style="font-size:12pt;line-height:1.7;color:#1a1a1a;"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modalPDFPreview')">關閉</button>
+      <button class="btn btn-secondary" onclick="closeModal('modalMdEditor')">取消</button>
+      <button class="btn btn-primary" onclick="confirmMdInput()">✅ 載入</button>
     </div>
   </div>
 </div>
@@ -1629,18 +1565,7 @@ function confirmFinish() {
   saveData();
   render();
   closeModal('modalFinish');
-  showToast('✅ 工作日誌已完成！可複製 Markdown 或下載 .md 檔案');
-}
-
-// ── FEATURE: Generate PDF (Print) ──
-function generatePDF() {
-  if (!log) { showToast('⚠️ 請先開工'); return; }
-
-  // Open markdown preview in print mode
-  refreshPreview();
-  showToast('🖨️ 使用瀏覽器列印 (Ctrl+P) 來生成 PDF');
-  // Auto-scroll to preview
-  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
+  showToast('✅ 工作日誌已完成！可複製 Markdown、下載 .md 或匯出 XLSX');
 }
 
 // ── FEATURE: Show Template ──
@@ -1671,143 +1596,223 @@ function showConfirm(text, callback) {
   openModal('modalConfirm');
 }
 
-// ── PDF Generation: HTML Template ──
-function buildPDFHtml(markdownText) {
-  const bodyHtml = marked.parse(markdownText);
-  const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-  return `<div class="pdf-body">${bodyHtml}<div class="footer">生成時間：${now} | 工具：輸入事項 v1.0</div></div>`;
-}
+// ── XLSX Export: Parsing + Generation ──
+let _mdContentForXLSX = '';
 
-// ── PDF Generation: From Current Log ──
-function generatePDF() {
-  if (!log) { showToast('⚠️ 請先開工，或載入 Markdown 檔案'); return; }
-  const mdText = generateMarkdown();
-  _openPDFPreview(mdText, '工作日誌_' + log.dateStr.replace(/-/g, ''));
-}
-
-// ── PDF Generation: From Markdown ──
-let _currentMdForPDF = '';
-
-function loadMarkdownFile(event) {
+function loadMarkdownForXLSX(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = function(e) {
-    const content = e.target.result;
-    _currentMdForPDF = content;
-    document.getElementById('mdFileName').textContent = '📄 ' + file.name;
-    document.getElementById('mdPreviewContent').textContent = content;
-    document.getElementById('mdPreviewArea').style.display = 'block';
+    _mdContentForXLSX = e.target.result;
+    document.getElementById('mdFileName2').textContent = '📄 ' + file.name;
+    document.getElementById('mdPreviewContent2').textContent = _mdContentForXLSX;
+    document.getElementById('mdPreviewArea2').style.display = 'block';
     showToast('✅ 已載入：' + file.name);
   };
   reader.readAsText(file, 'UTF-8');
   event.target.value = '';
 }
 
-function openMarkdownEditor() {
-  document.getElementById('manualMdInput').value = '';
-  openModal('modalMarkdownEditor');
+function openMdEditor() {
+  document.getElementById('manualMdInput2').value = '';
+  openModal('modalMdEditor');
 }
 
-function confirmManualMarkdown() {
-  const content = document.getElementById('manualMdInput').value.trim();
+function confirmMdInput() {
+  const content = document.getElementById('manualMdInput2').value.trim();
   if (!content) { showToast('⚠️ 請輸入 Markdown 內容'); return; }
-  _currentMdForPDF = content;
-  document.getElementById('mdFileName').textContent = '✏️ 手動輸入';
-  document.getElementById('mdPreviewContent').textContent = content;
-  document.getElementById('mdPreviewArea').style.display = 'block';
-  closeModal('modalMarkdownEditor');
+  _mdContentForXLSX = content;
+  document.getElementById('mdFileName2').textContent = '✏️ 手動輸入';
+  document.getElementById('mdPreviewContent2').textContent = content;
+  document.getElementById('mdPreviewArea2').style.display = 'block';
+  closeModal('modalMdEditor');
   showToast('✅ 已載入 Markdown');
 }
 
-function previewMarkdownHTML() {
-  if (!_currentMdForPDF) { showToast('⚠️ 請先載入 Markdown'); return; }
-  _openPDFPreview(_currentMdForPDF, '工作日誌_輸出');
+function previewLoadedMd() {
+  if (!_mdContentForXLSX) { showToast('⚠️ 請先載入 Markdown'); return; }
+  // Show as plain text in preview card
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('markdownPreview').textContent = _mdContentForXLSX;
+  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-function generatePDFfromMarkdown() {
-  if (!_currentMdForPDF) { showToast('⚠️ 請先載入 Markdown'); return; }
-  _openPDFPreview(_currentMdForPDF, '工作日誌_載入');
-}
-
-function _openPDFPreview(mdText, defaultName) {
-  if (typeof marked === 'undefined') {
-    showToast('⚠️ CDN 未加載，使用瀏覽器列印');
-    // Fallback: build full HTML doc for new window
-    const bodyHtml = marked.parse ? marked.parse(mdText) : mdText;
-    const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-    const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><style>
-body{font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;color:#1a1a1a;line-height:1.7;font-size:12pt;padding:20px;margin:0}
-h1{font-size:22pt;text-align:center;color:#2c3e50;border-bottom:3px solid #3498db;padding-bottom:8px;margin-bottom:5px}
-h2{font-size:16pt;color:#2c3e50;border-left:5px solid #3498db;padding-left:12px;margin-top:25px;margin-bottom:10px}
-h3{font-size:13pt;color:#34495e;margin-top:18px;margin-bottom:8px}
-hr{border:none;border-top:1px dashed #bdc3c7;margin:20px 0}
-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:10.5pt}
-th{background:#2c3e50;color:white;padding:8px 10px;text-align:left;font-size:10pt;font-weight:600}
-td{padding:7px 10px;border:1px solid #ddd;vertical-align:top;font-size:10pt}
-tr:nth-child(even){background:#f8f9fa}
-.footer{text-align:center;color:#95a5a6;font-size:9pt;margin-top:30px;border-top:1px solid #eee;padding-top:12px}
-</style></head><body>${bodyHtml}<div class="footer">生成時間：${now} | 工具：輸入事項 v1.0</div></body></html>`;
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      win.print();
-    } else {
-      showToast('⚠️ 請允許彈出視窗');
-    }
-    return;
-  }
-
-  const html = buildPDFHtml(mdText);
-  document.getElementById('pdfRenderArea').innerHTML = html;
-  document.getElementById('pdfFilename').value = defaultName;
-  document.getElementById('pdfStatus').textContent = '✅ 已渲染';
-  openModal('modalPDFPreview');
-}
-
-function downloadPDF() {
-  const btn = document.getElementById('downloadPdfBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ 生成中...';
-  document.getElementById('pdfStatus').textContent = '⏳ 生成中...';
-
-  const element = document.getElementById('pdfRenderArea');
-  const filename = document.getElementById('pdfFilename').value.trim() || '工作日誌_輸出';
-
-  const opt = {
-    margin:       [0.5, 0.5, 0.5, 0.5],
-    filename:     filename + '.pdf',
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+function _parseMarkdown(mdText) {
+  /* Parse work log markdown into structured data */
+  const data = {
+    dateStr: '', weekday: '', person: '',
+    tasks: [], problems: [], risks: [], followups: [],
+    summary: '', top3: []
   };
 
-  // Try html2pdf, fall back to print
-  if (typeof html2pdf === 'undefined') {
-    window.print();
-    btn.disabled = false;
-    btn.textContent = '💾 下載 PDF';
+  // Title: 工作日誌 YYYY/MM/DD（週X）
+  let m = mdText.match(/#?\s*工作日誌\s*(\d{4}\/\d{2}\/\d{2})（(.+?)）/);
+  if (m) { data.dateStr = m[1]; data.weekday = m[2]; }
+
+  // 人員
+  m = mdText.match(/人員：(.+)/);
+  if (m) data.person = m[1].trim();
+
+  // 時間軸 table
+  const timelineMatch = mdText.match(/## 時間軸[\s\S]*?\n((?:\|.+\|\s*\n)+)/);
+  if (timelineMatch) {
+    const rows = timelineMatch[1].trim().split('\n');
+    for (let r = 2; r < rows.length; r++) {
+      const cells = rows[r].split('|').map(c => c.trim()).filter((c,i,a) => i > 0 && i < a.length-1);
+      if (cells.length >= 6) {
+        const timeRange = cells[0].replace(/<\/?strong>/g, '').trim();
+        if (timeRange === '—' || timeRange === '' || timeRange === '-') continue;
+        data.tasks.push({
+          timeRange: timeRange,
+          desc: cells[1],
+          status: cells[2],
+          location: cells[3],
+          workType: cells[4],
+          photoStatus: cells[5]
+        });
+      }
+    }
+  }
+
+  // 問題/風險/待跟進
+  const issuesMatch = mdText.match(/## 問題\/風險\/待跟進[\s\S]*?\n((?:\|.+\|\s*\n)+)/);
+  if (issuesMatch) {
+    const rows = issuesMatch[1].trim().split('\n');
+    for (let r = 2; r < rows.length; r++) {
+      const cells = rows[r].split('|').map(c => c.trim()).filter((c,i,a) => i > 0 && i < a.length-1);
+      if (cells.length >= 3) {
+        if (cells[0]) data.problems.push(cells[0]);
+        if (cells[1]) data.risks.push(cells[1]);
+        if (cells[2]) data.followups.push(cells[2]);
+      }
+    }
+  }
+
+  // 小復盤
+  m = mdText.match(/## 小復盤\s*\n(.+?)(?:\n---|\n##)/s);
+  if (m) {
+    const s = m[1].trim();
+    if (s && s !== '（無）') data.summary = s;
+  }
+
+  // 明日優先 TOP3
+  m = mdText.match(/## 明日優先 TOP3\s*\n(.+?)$/s);
+  if (m) {
+    m[1].split('\n').forEach(line => {
+      const t = line.replace(/^\d+\.\s*/, '').trim();
+      if (t && t !== '—') data.top3.push(t);
+    });
+  }
+
+  return data;
+}
+
+function _buildXLSX(data, filename) {
+  /* Build xlsx workbook from structured log data */
+  if (typeof XLSX === 'undefined') {
+    showToast('⚠️ SheetJS 庫未載入，請檢查網絡');
     return;
   }
 
-  // Small delay to let CSS render
-  setTimeout(function() {
-    html2pdf().set(opt).from(element).save().then(function() {
-      btn.disabled = false;
-      btn.textContent = '💾 下載 PDF';
-      document.getElementById('pdfStatus').textContent = '✅ PDF 已下載';
-      showToast('✅ PDF 已下載');
-    }).catch(function() {
-      document.getElementById('pdfStatus').textContent = '⚠️ 生成失敗，使用列印';
-      window.print();
-      btn.disabled = false;
-      btn.textContent = '💾 下載 PDF';
-    });
-  }, 300);
+  const wb = XLSX.utils.book_new();
+
+  // ── Sheet 1: 時間軸 ──
+  const ws1Data = [];
+  const title = '工作日誌 ' + (data.dateStr || '') + (data.weekday ? '（' + data.weekday + '）' : '');
+  ws1Data.push([title, '']);
+  ws1Data.push(['人員', data.person || '']);
+  ws1Data.push([]);
+  ws1Data.push(['📅 時間軸', '']);
+  ws1Data.push(['時間', '事項／完成度／地點／工種／照片']);
+  (data.tasks || []).forEach(t => {
+    ws1Data.push([t.timeRange,
+      '事項：' + t.desc + '\n完成度：' + t.status + '\n地點：' + (t.location || '—') + '　工種：' + (t.workType || '—') + '\n照片：' + t.photoStatus]);
+  });
+
+  const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+  ws1['!cols'] = [{wch: 14}, {wch: 42}];
+  XLSX.utils.book_append_sheet(wb, ws1, '時間軸');
+
+  // ── Sheet 2: 備註 ──
+  const ws2Data = [];
+  ws2Data.push([title, '']);
+  ws2Data.push([]);
+
+  if (data.problems && data.problems.length > 0) {
+    ws2Data.push(['⚠️ 問題', '']);
+    data.problems.forEach(n => ws2Data.push(['問題', n]));
+    ws2Data.push([]);
+  }
+  if (data.risks && data.risks.length > 0) {
+    ws2Data.push(['⚠️ 風險', '']);
+    data.risks.forEach(r => ws2Data.push(['風險', r]));
+    ws2Data.push([]);
+  }
+  if (data.followups && data.followups.length > 0) {
+    ws2Data.push(['🔁 待跟進', '']);
+    data.followups.forEach(f => ws2Data.push(['待跟進', f]));
+    ws2Data.push([]);
+  }
+  if (data.summary) {
+    ws2Data.push(['💡 小復盤', '']);
+    ws2Data.push(['復盤', data.summary]);
+    ws2Data.push([]);
+  }
+  if (data.top3 && data.top3.length > 0) {
+    ws2Data.push(['📋 明日優先 TOP3', '']);
+    data.top3.forEach((item, i) => ws2Data.push(['TOP' + (i+1), item]));
+  }
+
+  const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+  ws2['!cols'] = [{wch: 14}, {wch: 42}];
+  XLSX.utils.book_append_sheet(wb, ws2, '備註');
+
+  // Export
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '.xlsx';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ 已輸出 ' + filename + '.xlsx');
 }
+
+// ── Export: From current log ──
+function exportXLSX() {
+  if (!log) { showToast('⚠️ 請先開工，或載入 Markdown 檔案'); return; }
+  const data = {
+    dateStr: formatDate(log.dateStr),
+    weekday: getWeekday(log.dateStr),
+    person: log.person || '千軍破蒼冥',
+    tasks: (log.tasks || []).map(t => ({
+      timeRange: t.timeRange,
+      desc: t.desc,
+      status: t.status,
+      location: t.location || '—',
+      workType: t.workType || '—',
+      photoStatus: t.photoStatus || '無照片'
+    })),
+    problems: log.problems || [],
+    risks: log.risks || [],
+    followups: log.followups || [],
+    summary: log.summary || '',
+    top3: log.top3 || []
+  };
+  const dateStr = log.dateStr.replace(/-/g, '');
+  _buildXLSX(data, '工作日誌_' + dateStr);
+}
+
+// ── Export: From loaded markdown ──
+function exportXLSXfromLoadedMd() {
+  if (!_mdContentForXLSX) { showToast('⚠️ 請先載入 Markdown'); return; }
+  const data = _parseMarkdown(_mdContentForXLSX);
+  const dateStr = data.dateStr ? data.dateStr.replace(/\//g, '') : '輸出';
+  _buildXLSX(data, '工作日誌_' + dateStr);
+}
+
+
 
 // ── Keyboard shortcuts ──
 document.addEventListener('keydown', function(e) {
