@@ -1717,21 +1717,25 @@ function _buildXLSX(data, filename) {
 
   const wb = XLSX.utils.book_new();
 
-  // ── Sheet 1: 時間軸 ──
+  // ── Sheet 1: 時間軸（6欄，對應 Markdown 格式）──
   const ws1Data = [];
   const title = '工作日誌 ' + (data.dateStr || '') + (data.weekday ? '（' + data.weekday + '）' : '');
-  ws1Data.push([title, '']);
-  ws1Data.push(['人員', data.person || '']);
+  ws1Data.push([title]);
   ws1Data.push([]);
-  ws1Data.push(['📅 時間軸', '']);
-  ws1Data.push(['時間', '事項／完成度／地點／工種／照片']);
+  ws1Data.push(['時間', '事項', '完成度', '地點', '工種', '照片']);
   (data.tasks || []).forEach(t => {
-    ws1Data.push([t.timeRange,
-      '事項：' + t.desc + '\n完成度：' + t.status + '\n地點：' + (t.location || '—') + '　工種：' + (t.workType || '—') + '\n照片：' + t.photoStatus]);
+    ws1Data.push([
+      t.timeRange || '',
+      t.desc || '',
+      t.status || '',
+      t.location || '—',
+      t.workType || '—',
+      t.photoStatus || '無照片'
+    ]);
   });
 
   const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
-  ws1['!cols'] = [{wch: 14}, {wch: 42}];
+  ws1['!cols'] = [{wch: 14}, {wch: 24}, {wch: 10}, {wch: 16}, {wch: 10}, {wch: 12}];
   XLSX.utils.book_append_sheet(wb, ws1, '時間軸');
 
   // ── Sheet 2: 備註 ──
