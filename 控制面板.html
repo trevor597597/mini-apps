@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚙️ 控制面板 · 千軍破蒼冥</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.1);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.1);
+    --orange: #f59e0b;
+    --orange-bg: rgba(245,158,11,0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.1);
+    --purple: #a855f7;
+    --purple-bg: rgba(168,85,247,0.1);
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  .container { max-width: 800px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+  .header-left { display: flex; align-items: center; gap: 0.75rem; }
+  .header-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+  }
+  .header h1 { font-size: 1.4rem; font-weight: 800; }
+  .header .sub { font-size: 0.78rem; color: var(--text2); font-weight: 400; }
+
+  .status-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; margin-right: 6px;
+    vertical-align: middle;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .status-dot.warning { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+
+  /* Section */
+  .section-title {
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text2); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title .badge {
+    font-size: 0.6rem; background: var(--surface2); padding: 2px 8px;
+    border-radius: 99px; letter-spacing: 0;
+  }
+
+  /* Status Grid */
+  .status-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .status-card {
+    background: var(--surface); border-radius: var(--radius); padding: 1rem;
+    border: 1px solid var(--border); position: relative;
+  }
+  .status-card .label {
+    font-size: 0.72rem; color: var(--text2); margin-bottom: 0.35rem;
+  }
+  .status-card .value {
+    font-size: 1.1rem; font-weight: 700;
+  }
+  .status-card .value.green { color: var(--green); }
+  .status-card .value.orange { color: var(--orange); }
+  .status-card .value.red { color: var(--red); }
+  .status-card .value.blue { color: var(--blue); }
+  .status-card .sub {
+    font-size: 0.68rem; color: var(--text2); margin-top: 0.2rem;
+  }
+
+  /* App Grid */
+  .app-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .app-card {
+    background: var(--surface); border-radius: var(--radius); padding: 1rem;
+    border: 1px solid var(--border);
+    text-decoration: none; color: inherit;
+    transition: all 0.2s; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  }
+  .app-card:hover {
+    border-color: var(--blue); transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59,130,246,0.15);
+  }
+  .app-card:active { transform: scale(0.97); }
+  .app-card .icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .app-card .icon.green { background: rgba(34,197,94,0.15); }
+  .app-card .icon.blue { background: rgba(59,130,246,0.15); }
+  .app-card .icon.purple { background: rgba(168,85,247,0.15); }
+  .app-card .icon.orange { background: rgba(245,158,11,0.15); }
+  .app-card .icon.red { background: rgba(239,68,68,0.15); }
+  .app-card .name { font-size: 0.82rem; font-weight: 600; text-align: center; }
+  .app-card .desc { font-size: 0.65rem; color: var(--text2); text-align: center; line-height: 1.3; }
+
+  /* Commands */
+  .cmd-section { margin-bottom: 1.5rem; }
+  .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; }
+  .cmd-item {
+    background: var(--surface); border-radius: 10px; padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .cmd-item code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem; background: var(--surface2); padding: 2px 6px;
+    border-radius: 4px; color: var(--green); white-space: nowrap;
+  }
+  .cmd-item .desc { font-size: 0.72rem; color: var(--text2); }
+
+  /* Data Section */
+  .data-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .data-card {
+    background: var(--surface); border-radius: var(--radius); padding: 1rem;
+    border: 1px solid var(--border);
+  }
+  .data-card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+  .data-card .src { font-size: 0.78rem; font-weight: 600; }
+  .data-card .size { font-size: 0.65rem; color: var(--text2); }
+  .data-card .sub { font-size: 0.7rem; color: var(--text2); }
+
+  /* Quick Action Buttons */
+  .action-row {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem;
+  }
+  .action-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 0.6rem 1.1rem; border-radius: 10px; font-size: 0.78rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .action-btn:hover { background: var(--surface2); border-color: var(--blue); }
+  .action-btn.primary {
+    background: var(--blue); border-color: var(--blue); color: white;
+  }
+  .action-btn.primary:hover { background: #2563eb; }
+
+  /* Footer */
+  .footer {
+    text-align: center; padding: 1.5rem 0 0.5rem;
+    font-size: 0.65rem; color: var(--text2);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Loading shimmer */
+  @keyframes shimmer { 0%{opacity:0.3} 50%{opacity:0.7} 100%{opacity:0.3} }
+  .loading { animation: shimmer 1.5s infinite; }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    body { padding: 1rem; }
+    .status-grid { grid-template-columns: repeat(2, 1fr); }
+    .app-grid { grid-template-columns: repeat(2, 1fr); }
+    .data-grid { grid-template-columns: 1fr; }
+    .cmd-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">⚙️</div>
+      <div>
+        <h1>控制面板</h1>
+        <div class="sub"><span class="status-dot online"></span>Hermes 連接中 · 千軍破蒼冥</div>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:0.65rem;color:var(--text2);line-height:1.5">
+      <div id="lastUpdate">—</div>
+      <div style="font-size:0.6rem;opacity:0.6" id="countdown"></div>
+    </div>
+  </div>
+
+  <!-- System Status -->
+  <div class="section-title">
+    📊 系統狀態 <span class="badge">live</span>
+  </div>
+  <div class="status-grid">
+    <div class="status-card">
+      <div class="label">🤖 Hermes Agent</div>
+      <div class="value green">● 運行中</div>
+      <div class="sub">v0.12.0 · DeepSeek V4 Flash</div>
+    </div>
+    <div class="status-card">
+      <div class="label">⏰ 爬蟲排程</div>
+      <div class="value orange">每週一 08:00</div>
+      <div class="sub">下次：2026-06-08</div>
+    </div>
+    <div class="status-card">
+      <div class="label">📈 資料總數</div>
+      <div class="value blue" id="totalRecords">—</div>
+      <div class="sub">5 個站點 · 合併後去重</div>
+    </div>
+    <div class="status-card">
+      <div class="label">🌐 GitHub Pages</div>
+      <div class="value green">● 在線</div>
+      <div class="sub">trevor597597.github.io/mini-apps</div>
+    </div>
+  </div>
+
+  <!-- Quick Action Buttons (Discord Commands) -->
+  <div class="section-title">⚡ 快速動作</div>
+  <div class="action-row">
+    <button class="action-btn primary" onclick="copyCmd('!run 爬虫')">📋 執行爬蟲</button>
+    <button class="action-btn primary" onclick="copyCmd('!run 合併')">📋 執行合併</button>
+    <button class="action-btn" onclick="copyCmd('!run 篩選')">📋 篩選職位</button>
+    <button class="action-btn" onclick="copyCmd('!status')">📋 查看狀態</button>
+    <button class="action-btn" onclick="copyCmd('!run 部署')">📋 部署上線</button>
+    <button class="action-btn" onclick="copyCmd('!schedule')">📋 排程管理</button>
+  </div>
+
+  <!-- Mini Apps -->
+  <div class="section-title">
+    🧩 小工具啟動
+  </div>
+  <div class="app-grid">
+    <a class="app-card" href="慢碳早餐規劃器.html">
+      <div class="icon green">🥗</div>
+      <div class="name">早餐規劃器</div>
+      <div class="desc">食材庫 · 方案生成<br>營養標籤</div>
+    </a>
+    <a class="app-card" href="採購清單.html">
+      <div class="icon orange">🛒</div>
+      <div class="name">採購清單</div>
+      <div class="desc">分組管理 · 比價<br>導入導出</div>
+    </a>
+    <a class="app-card" href="學習導航儀.html">
+      <div class="icon blue">📘</div>
+      <div class="name">學習導航儀</div>
+      <div class="desc">時長追蹤 · 任務<br>效率分析</div>
+    </a>
+    <a class="app-card" href="英語單詞卡.html">
+      <div class="icon purple">📚</div>
+      <div class="name">英語單詞卡</div>
+      <div class="desc">翻卡學習 · 測驗<br>答題統計</div>
+    </a>
+    <a class="app-card" href="fitness-wheel.html">
+      <div class="icon red">🏋️</div>
+      <div class="name">健身轉盤</div>
+      <div class="desc">隨機訓練<br>動作選擇器</div>
+    </a>
+  </div>
+
+  <!-- Data Sources -->
+  <div class="section-title">
+    🗄️ 資料狀態
+  </div>
+  <div class="data-grid" id="dataGrid">
+    <div class="data-card loading"><div class="src">載入中...</div></div>
+  </div>
+
+  <!-- Discord Command Reference -->
+  <div class="section-title">
+    💬 Discord 指令參考
+  </div>
+  <div class="cmd-section">
+    <div class="cmd-grid">
+      <div class="cmd-item"><code>!run 爬虫</code><span class="desc">執行全部爬蟲</span></div>
+      <div class="cmd-item"><code>!run 合併</code><span class="desc">合併去重</span></div>
+      <div class="cmd-item"><code>!run 篩選</code><span class="desc">依據條件篩選</span></div>
+      <div class="cmd-item"><code>!run 部署</code><span class="desc">部署到 GitHub Pages</span></div>
+      <div class="cmd-item"><code>!status</code><span class="desc">系統狀態概覽</span></div>
+      <div class="cmd-item"><code>!schedule</code><span class="desc">查看/修改排程</span></div>
+      <div class="cmd-item"><code>!log</code><span class="desc">查看最近執行記錄</span></div>
+      <div class="cmd-item"><code>!help</code><span class="desc">顯示所有指令</span></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    由 Hermes Agent 🤖 驅動 · D:\AI chat\claude code\小程序\控制面板.html
+  </div>
+</div>
+
+<script>
+// Update timestamp
+function updateTime() {
+  const now = new Date();
+  const cn = new Date(now.toLocaleString('en-US', {timeZone:'Asia/Shanghai'}));
+  const fmt = cn.toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('lastUpdate').textContent = '🕐 ' + fmt;
+}
+updateTime();
+setInterval(updateTime, 30000);
+
+// Copy command to clipboard
+function copyCmd(cmd) {
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btns = document.querySelectorAll('.action-btn');
+    btns.forEach(b => {
+      if(b.textContent.includes(cmd.split(' ')[1]||cmd)) {
+        const orig = b.textContent;
+        b.textContent = '✅ 已複製!';
+        setTimeout(() => b.textContent = orig, 1500);
+      }
+    });
+  });
+}
+
+// Load data stats (static since we can't do live API calls from static page)
+document.getElementById('dataGrid').innerHTML = `
+  <div class="data-card">
+    <div class="top"><span class="src">853hr.com</span><span class="size">~1.4 MB</span></div>
+    <div class="sub">853hr_全部職位.csv</div>
+  </div>
+  <div class="data-card">
+    <div class="top"><span class="src">hello-jobs</span><span class="size">~996 KB</span></div>
+    <div class="sub">hello-jobs_全部職位.csv</div>
+  </div>
+  <div class="data-card">
+    <div class="top"><span class="src">jobscall</span><span class="size">~111 KB</span></div>
+    <div class="sub">jobscall_全部招聘.csv</div>
+  </div>
+  <div class="data-card">
+    <div class="top"><span class="src">job853</span><span class="size">~61 KB</span></div>
+    <div class="sub">job853_全部職位.csv</div>
+  </div>
+  <div class="data-card">
+    <div class="top"><span class="src">macauHR</span><span class="size">—</span></div>
+    <div class="sub">macauhr_全部職位.csv (33條)</div>
+  </div>
+  <div class="data-card" style="border-color:var(--green)">
+    <div class="top"><span class="src">📦 合併檔</span><span class="size">~1.4 MB</span></div>
+    <div class="sub">澳门职位汇总_202605.csv</div>
+  </div>
+`;
+
+// Total records (approximate from known data)
+document.getElementById('totalRecords').textContent = '6,438+';
+
+// Countdown to next cron job
+function updateCountdown() {
+  const now = new Date();
+  const cn = new Date(now.toLocaleString('en-US', {timeZone:'Asia/Shanghai'}));
+  const target = new Date('2026-06-08T08:00:00+08:00');
+  const diff = target - cn;
+  if(diff <= 0) return;
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  document.getElementById('countdown').textContent = `⏳ 距下次爬蟲: ${days}天${hours}時${mins}分`;
+}
+updateCountdown();
+setInterval(updateCountdown, 60000);
+</script>
+</body>
+</html>

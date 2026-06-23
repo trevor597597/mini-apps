@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🛒 採購清單 — 分組管理 · 多檔案導入 · 比價</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --amber-50: #fffbeb;  --amber-100: #fef3c7;  --amber-200: #fde68a;
+    --amber-300: #fcd34d; --amber-400: #fbbf24;  --amber-500: #f59e0b;
+    --amber-600: #d97706; --amber-700: #b45309;  --amber-800: #92400e;
+    --amber-900: #78350f;
+    --orange-400: #fb923c; --orange-500: #f97316; --orange-600: #ea580c;
+    --rose-400: #fb7185;   --rose-500: #f43f5e;
+    --emerald-400: #34d399; --emerald-500: #10b981; --emerald-600: #059669;
+    --warm-bg: #fdf6ee;
+    --warm-card: #fff9f0;
+    --warm-border: #f0e6d4;
+    --slate-50: #f8fafc;   --slate-100: #f1f5f9;  --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;  --slate-400: #94a3b8;   --slate-500: #64748b;
+    --slate-600: #475569;  --slate-700: #334155;   --slate-800: #1e293b;
+    --card-shadow: 0 1px 3px rgba(146,64,14,.08), 0 1px 2px rgba(146,64,14,.05);
+    --card-shadow-lg: 0 4px 12px rgba(146,64,14,.1);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--warm-bg);
+    color: var(--slate-800);
+    padding: 1.5rem 1rem;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 1.5rem; }
+  .header h1 {
+    font-size: 1.8rem; font-weight: 800;
+    color: var(--amber-800);
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .header p { color: var(--amber-600); font-size: 0.85rem; margin-top: 0.2rem; font-weight: 400; }
+
+  /* Stats Bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .stat-card {
+    background: var(--warm-card);
+    border-radius: 14px;
+    padding: 0.8rem 0.6rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--warm-border);
+  }
+  .stat-card .value { font-size: 1.3rem; font-weight: 800; line-height: 1.2; }
+  .stat-card .label { font-size: 0.68rem; color: var(--amber-600); margin-top: 0.1rem; font-weight: 500; }
+  .stat-total .value { color: var(--amber-700); }
+  .stat-done .value { color: var(--emerald-500); }
+  .stat-cost .value { color: var(--orange-500); }
+  .stat-urgent .value { color: var(--rose-500); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  .controls .search-box {
+    flex: 1;
+    min-width: 180px;
+    position: relative;
+  }
+  .controls .search-box input {
+    width: 100%;
+    padding: 0.5rem 0.8rem 0.5rem 2rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--warm-card);
+    transition: border-color 0.2s;
+  }
+  .controls .search-box input:focus { border-color: var(--amber-400); box-shadow: 0 0 0 3px rgba(245,158,11,.12); }
+  .controls .search-box .search-icon { position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.85rem; pointer-events: none; }
+
+  .btn {
+    padding: 0.45rem 1rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--amber-500), var(--orange-500)); color: white; }
+  .btn-primary:hover { background: linear-gradient(135deg, var(--amber-600), var(--orange-600)); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--warm-border); color: var(--amber-700); }
+  .btn-outline:hover { border-color: var(--amber-400); color: var(--amber-800); background: var(--amber-50); }
+  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.72rem; min-height: 30px; }
+  .btn-danger { background: var(--rose-500); color: white; }
+  .btn-danger:hover { background: #e11d48; }
+  .btn-success { background: var(--emerald-500); color: white; }
+  .btn-success:hover { background: var(--emerald-600); }
+
+  /* Tag filter */
+  .tag-filter-select {
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--warm-card);
+    color: var(--slate-700);
+    min-width: 100px;
+    cursor: pointer;
+  }
+  .tag-filter-select:focus { border-color: var(--amber-400); }
+
+  /* Fuzzy merge toggle */
+  .fuzzy-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: var(--slate-500);
+    cursor: pointer;
+  }
+  .fuzzy-toggle input { accent-color: var(--amber-500); cursor: pointer; width: 16px; height: 16px; }
+
+  /* Sort select */
+  .sort-select {
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--warm-card);
+    color: var(--slate-700);
+    cursor: pointer;
+  }
+  .sort-select:focus { border-color: var(--amber-400); }
+
+  /* Group Sections */
+  .group-section {
+    background: var(--warm-card);
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--warm-border);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+  .group-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .group-section-header:hover { background: var(--amber-50); }
+  .group-section-header h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--amber-800);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .group-section-header .toggle-icon {
+    font-size: 0.75rem;
+    transition: transform 0.25s ease;
+    color: var(--amber-400);
+  }
+  .group-section-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .group-section-body { padding: 0 0.5rem 0.5rem; }
+  .group-section-header.collapsed + .group-section-body { display: none; }
+
+  /* Cards */
+  .group-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--warm-border);
+    overflow: hidden;
+  }
+  .group-card.duplicate-flagged { border-color: #fde68a; border-width: 2px; }
+  .group-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.8rem;
+    background: var(--amber-50);
+    border-bottom: 1px solid var(--warm-border);
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .group-card-header .gc-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--amber-800);
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .group-card-header .gc-meta {
+    font-size: 0.7rem;
+    color: var(--amber-600);
+    font-weight: 500;
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .group-card-header .gc-meta span { white-space: nowrap; }
+
+  .group-card-body { padding: 0.3rem 0; }
+
+  /* Item Row */
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid #f5ede0;
+    transition: background 0.1s;
+    min-height: 44px;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: var(--amber-50); }
+  .item-row.duplicate-item { border-left: 3px solid #fde68a; }
+  .item-row.price-expanded { background: #fffbeb; }
+
+  .item-check {
+    width: 18px; height: 18px;
+    accent-color: var(--amber-500);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.5rem;
+  }
+  .item-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--slate-700);
+    transition: color 0.15s;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+  }
+  .item-name:hover { color: var(--amber-700); border-bottom-color: var(--amber-300); }
+  .item-info.done .item-name { text-decoration: line-through; color: var(--slate-400); cursor: default; border-bottom: none; }
+
+  .item-detail {
+    font-size: 0.7rem;
+    color: var(--slate-400);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    align-items: center;
+  }
+  .item-detail .dot {
+    display: inline-block;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--slate-300);
+  }
+
+  .priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .priority-high { background: #fef2f2; color: #dc2626; }
+  .priority-medium { background: var(--amber-100); color: var(--amber-700); }
+  .priority-low { background: #f0fdf4; color: #16a34a; }
+
+  /* Tags display */
+  .item-tags {
+    display: inline-flex;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+  }
+  .item-tag {
+    display: inline-block;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-weight: 500;
+    background: var(--amber-50);
+    color: var(--amber-600);
+    border: 1px solid var(--amber-200);
+    line-height: 1.5;
+  }
+
+  /* Best price display */
+  .best-price {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--emerald-600);
+    white-space: nowrap;
+  }
+
+  /* Update dot */
+  .update-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-right: 2px;
+  }
+  .update-dot.recent { background: var(--emerald-500); }
+  .update-dot.warning { background: var(--orange-500); }
+  .update-dot.stale { background: var(--slate-300); }
+
+  /* Item row notes icon */
+  .notes-indicator {
+    cursor: help;
+    font-size: 0.65rem;
+    color: var(--slate-400);
+  }
+  .notes-tooltip {
+    display: none;
+    position: absolute;
+    background: var(--slate-800);
+    color: white;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    max-width: 200px;
+    line-height: 1.4;
+    z-index: 100;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .item-actions {
+    display: flex;
+    gap: 0.2rem;
+    flex-shrink: 0;
+  }
+  .item-btn {
+    width: 28px; height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+  }
+  .item-btn:hover { background: var(--amber-100); }
+  .item-btn-del:hover { background: #fef2f2; color: var(--rose-500); }
+
+  /* Price History Panel */
+  .price-history-panel {
+    display: none;
+    padding: 0.4rem 0.8rem 0.5rem 2rem;
+    background: #fafaf5;
+    border-top: 1px solid #f5ede0;
+  }
+  .item-row.price-expanded + .price-history-panel { display: block; }
+  .ph-title { font-size: 0.68rem; font-weight: 600; color: var(--slate-500); margin-bottom: 0.3rem; }
+  .ph-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    margin-bottom: 0.15rem;
+  }
+  .ph-row.ph-best { background: #ecfdf5; }
+  .ph-row.ph-worst { background: #fef2f2; }
+  .ph-price { font-weight: 600; min-width: 50px; }
+  .ph-source { color: var(--slate-500); flex: 1; }
+  .ph-date { color: var(--slate-400); font-size: 0.65rem; white-space: nowrap; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--amber-400);
+  }
+  .empty-state .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.82rem; line-height: 1.6; }
+
+  /* File List */
+  .file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem 0.2rem 0.7rem;
+    background: var(--amber-50);
+    border: 1px solid var(--warm-border);
+    border-radius: 8px;
+    font-size: 0.7rem;
+    color: var(--amber-700);
+    font-weight: 500;
+  }
+  .file-tag .file-del {
+    cursor: pointer;
+    font-size: 0.65rem;
+    color: var(--amber-400);
+    background: none;
+    border: none;
+    padding: 0.1rem;
+    line-height: 1;
+  }
+  .file-tag .file-del:hover { color: var(--rose-500); }
+
+  /* Duplicate Notification Bar */
+  .dup-notification {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    background: var(--amber-50);
+    border: 1px solid var(--amber-200);
+    border-radius: 12px;
+    margin-bottom: 0.8rem;
+    font-size: 0.78rem;
+    color: var(--amber-800);
+    flex-wrap: wrap;
+  }
+  .dup-notification.show { display: flex; }
+  .dup-notification .dup-msg { flex: 1; }
+  .dup-notification .btn { font-size: 0.7rem; padding: 0.3rem 0.6rem; min-height: 30px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 20px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,.15);
+  }
+  .modal-wide { max-width: 650px; }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 1.5rem 0.5rem;
+  }
+  .modal-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--amber-800); }
+  .modal-close {
+    width: 30px; height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: var(--slate-100);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--slate-400);
+  }
+  .modal-close:hover { background: var(--slate-200); }
+
+  .modal-body { padding: 0.8rem 1.5rem; }
+
+  .form-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .form-group {
+    flex: 1;
+    min-width: 0;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--slate-500);
+    margin-bottom: 0.2rem;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    outline: none;
+    background: white;
+    transition: border-color 0.2s;
+  }
+  .form-group textarea { resize: vertical; min-height: 50px; height: 60px; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--amber-400);
+    box-shadow: 0 0 0 3px rgba(245,158,11,.1);
+  }
+  .char-count {
+    font-size: 0.6rem;
+    color: var(--slate-400);
+    text-align: right;
+    margin-top: 0.1rem;
+  }
+
+  .modal-footer {
+    padding: 0.5rem 1.5rem 1.2rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+  .modal-footer .btn { padding: 0.55rem 1.5rem; }
+
+  /* Upload Drop Zone */
+  .upload-zone {
+    border: 2px dashed var(--warm-border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--warm-card);
+    margin-bottom: 1rem;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--amber-400);
+    background: var(--amber-50);
+  }
+  .upload-zone .uz-icon { font-size: 2rem; display: block; margin-bottom: 0.3rem; }
+  .upload-zone .uz-text { font-size: 0.82rem; color: var(--slate-500); }
+  .upload-zone .uz-text strong { color: var(--amber-700); }
+  .upload-zone .uz-hint { font-size: 0.7rem; color: var(--slate-400); margin-top: 0.3rem; }
+
+  /* Upload Tabs */
+  .upload-tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    background: var(--slate-100);
+    border-radius: 10px;
+    padding: 0.2rem;
+  }
+  .upload-tab {
+    flex: 1;
+    padding: 0.4rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: transparent;
+    color: var(--slate-500);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .upload-tab.active {
+    background: white;
+    color: var(--amber-700);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .upload-tab:hover:not(.active) { color: var(--slate-700); }
+  .upload-panel { display: block; }
+  .upload-panel.hidden { display: none; }
+
+  /* Image Import */
+  .image-upload-zone {
+    border: 2px dashed var(--warm-border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--warm-card);
+    margin-bottom: 0.8rem;
+  }
+  .image-upload-zone:hover, .image-upload-zone.dragover {
+    border-color: var(--amber-400);
+    background: var(--amber-50);
+  }
+  .image-upload-zone .uz-icon { font-size: 2rem; display: block; margin-bottom: 0.3rem; }
+  .image-upload-zone .uz-text { font-size: 0.82rem; color: var(--slate-500); }
+  .image-upload-zone .uz-hint { font-size: 0.7rem; color: var(--slate-400); margin-top: 0.2rem; }
+
+  .img-preview-wrap {
+    text-align: center;
+    margin-bottom: 0.8rem;
+  }
+  .img-preview-inner {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    border: 1px solid var(--warm-border);
+  }
+  .img-preview-remove {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--rose-500);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-decoration: underline;
+  }
+
+  /* API Key */
+  .api-key-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+    align-items: center;
+  }
+  .api-key-row input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--warm-border);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-key-row input:focus { border-color: var(--amber-400); }
+  .api-key-row .btn { flex-shrink: 0; }
+
+  .vision-hint {
+    font-size: 0.72rem;
+    color: var(--slate-400);
+    line-height: 1.6;
+    margin-bottom: 0.6rem;
+  }
+  .vision-hint strong { color: var(--amber-600); }
+
+  .recognize-btn-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .recognize-btn-row .btn { padding: 0.5rem 1.2rem; }
+
+  /* Voice input button */
+  .voice-btn {
+    width: 32px; height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--amber-100);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .voice-btn:hover { background: var(--amber-200); }
+  .voice-btn.listening { background: var(--rose-400); color: white; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+  /* Recognition Progress */
+  .rec-progress {
+    text-align: center;
+    padding: 1rem 0;
+    color: var(--slate-500);
+  }
+  .rec-progress .spinner {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border: 3px solid var(--warm-border);
+    border-top-color: var(--amber-500);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 0.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Recognition Result */
+  .rec-result {
+    background: var(--warm-card);
+    border: 1px solid var(--warm-border);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+    margin-bottom: 0.8rem;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .rr-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid #f5ede0;
+    font-size: 0.78rem;
+  }
+  .rr-item:last-child { border-bottom: none; }
+  .rr-item .rr-check { width: 16px; height: 16px; accent-color: var(--amber-500); flex-shrink: 0; }
+  .rr-item .rr-name { font-weight: 600; color: var(--slate-700); min-width: 60px; }
+  .rr-item .rr-detail { color: var(--slate-400); font-size: 0.7rem; flex: 1; }
+  .rr-item .rr-detail span { margin-right: 0.4rem; }
+  .rr-summary {
+    font-size: 0.75rem;
+    color: var(--amber-600);
+    font-weight: 500;
+    padding: 0.4rem 0.7rem 0.2rem;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--slate-800);
+    color: white;
+    padding: 0.6rem 1.3rem;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    z-index: 3000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--warm-border);
+    color: var(--amber-400);
+    font-size: 0.7rem;
+    font-weight: 400;
+  }
+
+  /* Dedup Center Styles */
+  .dup-group {
+    background: var(--warm-card);
+    border: 1px solid var(--warm-border);
+    border-radius: 12px;
+    padding: 0.8rem;
+    margin-bottom: 0.6rem;
+  }
+  .dup-group-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--amber-800);
+    margin-bottom: 0.4rem;
+  }
+  .dup-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.75rem;
+    border-bottom: 1px solid #f5ede0;
+  }
+  .dup-item-row:last-child { border-bottom: none; }
+  .dup-item-row .dup-check { width: 16px; height: 16px; accent-color: var(--amber-500); flex-shrink: 0; }
+  .dup-actions { display: flex; gap: 0.3rem; margin-top: 0.4rem; }
+
+  /* Export Modal Styles */
+  .export-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .export-option-group label { font-weight: 600; font-size: 0.78rem; color: var(--slate-600); margin-bottom: 0.3rem; display: block; }
+  .export-radio-group, .export-check-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .export-radio-group label, .export-check-group label {
+    font-size: 0.75rem;
+    color: var(--slate-600);
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    cursor: pointer;
+  }
+  .export-radio-group input, .export-check-group input { accent-color: var(--amber-500); }
+
+  /* Mobile Bottom Nav */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid var(--warm-border);
+    box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+    z-index: 500;
+    padding: 0.4rem 0.5rem;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .bottom-nav .bn-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem 0.5rem;
+    border-radius: 10px;
+    font-family: inherit;
+    color: var(--slate-400);
+    transition: all 0.1s;
+    min-width: 60px;
+  }
+  .bottom-nav .bn-btn:active { background: var(--amber-50); }
+  .bottom-nav .bn-btn .bn-icon { font-size: 1.1rem; }
+  .bottom-nav .bn-btn .bn-label { font-size: 0.6rem; font-weight: 500; }
+  .bottom-nav .bn-btn.bn-primary .bn-icon {
+    background: linear-gradient(135deg, var(--amber-500), var(--orange-500));
+    color: white;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-top: -12px;
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .controls .sort-select { display: none; }
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 1rem 0.6rem 80px; }
+    .header h1 { font-size: 1.4rem; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+    .stat-card { padding: 0.6rem 0.4rem; }
+    .stat-card .value { font-size: 1.1rem; }
+    .controls { gap: 0.4rem; }
+    .controls .search-box { min-width: 140px; }
+    .btn { font-size: 0.72rem; padding: 0.35rem 0.8rem; min-height: 44px; }
+    .btn-sm { min-height: 36px; }
+    .group-card-header { padding: 0.45rem 0.6rem; flex-direction: column; align-items: flex-start; }
+    .group-card-header .gc-meta { width: 100%; }
+    .item-row { padding: 0.4rem 0.6rem; flex-wrap: wrap; }
+    .item-info { width: calc(100% - 50px); }
+    .item-detail { gap: 0.15rem 0.35rem; }
+    .item-actions { opacity: 1; }
+    .modal { margin: 0.5rem; border-radius: 16px; }
+    .modal-header { padding: 1rem 1.2rem 0.3rem; }
+    .modal-body { padding: 0.5rem 1.2rem; }
+    .modal-footer { padding: 0.3rem 1.2rem 1rem; }
+    .form-row { flex-wrap: wrap; }
+    .form-group { min-width: calc(50% - 0.3rem); }
+    .upload-zone { padding: 1rem; }
+    .upload-tabs { flex-wrap: wrap; }
+    .upload-tab { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
+    .img-preview-inner { max-height: 200px; }
+    .rr-item { flex-wrap: wrap; }
+    .tag-filter-select { min-width: 80px; font-size: 0.7rem; }
+    .bottom-nav { display: flex; }
+    .controls .btn-outline:not(.btn-primary) { display: none; }
+    .controls .tag-filter-select { display: none; }
+  }
+
+  @media (max-width: 380px) {
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+    .file-list { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🛒 採購清單</h1>
+    <p>多檔案導入 · 按地點 / 類別分組管理 · 自動比價</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card stat-total"><div class="value" id="statTotal">0</div><div class="label">📦 總項目</div></div>
+    <div class="stat-card stat-done"><div class="value" id="statDone">0</div><div class="label">✅ 已完成</div></div>
+    <div class="stat-card stat-cost"><div class="value" id="statCost">¥0</div><div class="label">💰 預估總花費</div></div>
+    <div class="stat-card stat-urgent"><div class="value" id="statUrgent">0</div><div class="label">⚡ 高優先待辦</div></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="搜尋物品、類別、地點或備註..." oninput="renderAll()">
+    </div>
+    <select class="tag-filter-select" id="tagFilter" onchange="renderAll()">
+      <option value="">🏷️ 全部標籤</option>
+    </select>
+    <select class="sort-select" id="sortSelect" onchange="renderAll()">
+      <option value="default">預設排序</option>
+      <option value="updated">📅 最近更新</option>
+    </select>
+    <label class="fuzzy-toggle">
+      <input type="checkbox" id="fuzzyMergeToggle"> 🔗 模糊合併
+    </label>
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 新增</button>
+    <button class="btn btn-outline" onclick="openUploadModal()">📤 上傳</button>
+    <button class="btn btn-outline" onclick="openExportModal()">📥 匯出</button>
+    <button class="btn btn-outline btn-sm" onclick="openDedupModal()">🔀 去重</button>
+    <button class="btn btn-outline btn-sm" onclick="loadExampleData()">📋 示例</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--rose-500);border-color:#fecaca;" onclick="confirmReset()">🔄 重置</button>
+  </div>
+
+  <!-- Uploaded File Tags -->
+  <div class="file-list" id="fileList"></div>
+
+  <!-- Duplicate Notification Bar -->
+  <div class="dup-notification" id="dupNotification">
+    <span class="dup-msg" id="dupMsg"></span>
+    <button class="btn btn-sm btn-primary" onclick="mergeDuplicates()">合併</button>
+    <button class="btn btn-sm btn-outline" onclick="keepDuplicates()">保持獨立</button>
+    <button class="btn btn-sm btn-outline" onclick="openDedupModal()">查看詳情</button>
+    <button class="btn btn-sm" style="background:none;border:none;font-size:1rem;cursor:pointer;color:var(--slate-400);" onclick="hideDupNotification()">✕</button>
+  </div>
+
+  <!-- Grouped Sections -->
+  <div id="mainContent"></div>
+
+  <!-- Footer -->
+  <div class="footer">數據自動保存至瀏覽器本地 · 採購清單 v2.0</div>
+</div>
+
+<!-- ===== Add/Edit Modal ===== -->
+<div class="modal-overlay" id="formModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="formTitle">新增採購項</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>物品名稱 *</label>
+          <div style="display:flex;gap:0.3rem;align-items:center;">
+            <input type="text" id="fName" placeholder="如：雞胸肉" style="flex:1;">
+            <button class="voice-btn" id="voiceBtn" onclick="startVoiceInput('fName')" title="語音輸入">🎤</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>數量</label>
+          <input type="number" id="fQty" value="1" min="0" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>單位</label>
+          <input type="text" id="fUnit" placeholder="kg、個、箱">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>類別</label>
+          <input type="text" id="fCategory" placeholder="如：食材、日用品">
+        </div>
+        <div class="form-group">
+          <label>地點</label>
+          <input type="text" id="fLocation" placeholder="如：超市A、市場B">
+        </div>
+        <div class="form-group">
+          <label>預估單價 (¥)</label>
+          <input type="number" id="fPrice" value="0" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>採購人</label>
+          <input type="text" id="fBuyer" placeholder="小明 或 小明,小紅">
+        </div>
+        <div class="form-group">
+          <label>截止日期</label>
+          <input type="date" id="fDeadline">
+        </div>
+        <div class="form-group">
+          <label>優先級</label>
+          <select id="fPriority">
+            <option value="medium">中</option>
+            <option value="high">高</option>
+            <option value="low">低</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>🏷️ 標籤（逗號分隔）</label>
+          <input type="text" id="fTags" placeholder="如：急需,冷鏈,進口">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>💬 備註</label>
+          <textarea id="fNotes" placeholder="最多 200 字的備註..." maxlength="200" oninput="updateCharCount()"></textarea>
+          <div class="char-count"><span id="charCount">0</span>/200</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmForm()">✓ 確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Upload Modal ===== -->
+<div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)closeUploadModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="uploadModalTitle">📤 導入數據</h2>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Tabs -->
+      <div class="upload-tabs">
+        <button class="upload-tab active" onclick="switchUploadTab('file')">📄 檔案</button>
+        <button class="upload-tab" onclick="switchUploadTab('image')">🖼️ 圖片識別</button>
+      </div>
+
+      <!-- File Upload Panel -->
+      <div class="upload-panel" id="uploadPanelFile">
+        <div class="upload-zone" id="uploadZone">
+          <span class="uz-icon">📂</span>
+          <span class="uz-text">點擊或拖曳檔案至此處<br><strong>支援 .json / .csv / .xlsx</strong></span>
+          <span class="uz-hint">可同時選擇多個檔案</span>
+        </div>
+        <input type="file" id="fileInput" accept=".json,.csv,.xlsx" multiple style="display:none" onchange="handleFiles(this.files)">
+        <div style="font-size:0.78rem;color:var(--slate-400);line-height:1.6;">
+          <strong>📋 支援的檔案格式：</strong><br>
+          <strong>JSON</strong> — 物件陣列或含 data 字段的包裝<br>
+          <strong>CSV</strong> — 第一行為欄位名，系統自動識別中英文欄位<br>
+          <strong>Excel (.xlsx)</strong> — 同上，自動讀取第一個工作表
+        </div>
+      </div>
+
+      <!-- Image Recognition Panel -->
+      <div class="upload-panel hidden" id="uploadPanelImage">
+        <div class="vision-hint">
+          🧠 上傳購物清單、收據或菜單照片，AI 將自動識別並提取採購項目。<br>
+          <strong>需自行配置 OpenRouter API Key</strong>（免費，前往 <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--amber-600);">openrouter.ai/keys</a> 獲取）
+        </div>
+
+        <!-- API Key -->
+        <div class="api-key-row">
+          <input type="password" id="visionApiKey" placeholder="輸入 OpenRouter API Key..." style="flex:1;">
+          <button class="btn btn-outline btn-sm" onclick="saveApiKey()">💾 保存</button>
+        </div>
+        <div style="font-size:0.7rem;color:var(--slate-400);margin-bottom:0.6rem;">
+          🔑 Key 僅存在瀏覽器本地，不會上傳至其他服務器
+          <span id="apiKeyStatus" style="margin-left:0.3rem;font-weight:600;"></span>
+        </div>
+
+        <!-- Image Upload Area -->
+        <div class="image-upload-zone" id="imageUploadZone">
+          <span class="uz-icon">🖼️</span>
+          <span class="uz-text">點擊或拖曳圖片至此處<br><strong>支援 JPG / PNG / WebP</strong></span>
+          <span class="uz-hint">購物清單、收據、菜單照片均可</span>
+        </div>
+        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageFile(this.files[0])">
+
+        <!-- Image Preview -->
+        <div class="img-preview-wrap" id="imgPreviewWrap" style="display:none;">
+          <img class="img-preview-inner" id="imgPreview" alt="預覽">
+          <button class="img-preview-remove" onclick="removeImage()">✕ 移除圖片</button>
+        </div>
+
+        <!-- Context prompt -->
+        <div class="api-key-row" style="margin-bottom:0.6rem;">
+          <input type="text" id="visionContext" placeholder="可選：補充說明（如「這是全聯超市的收據」）" style="flex:1;">
+        </div>
+
+        <!-- Recognize button -->
+        <div class="recognize-btn-row">
+          <button class="btn btn-primary" id="recognizeBtn" onclick="recognizeImage()">🔍 識別圖片</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="rec-progress" id="recProgress" style="display:none;">
+          <div class="spinner"></div>
+          <div>AI 正在分析圖片，請稍候…</div>
+        </div>
+
+        <!-- Result -->
+        <div id="recResultArea" style="display:none;">
+          <div class="rec-result" id="recResultList"></div>
+          <div class="recognize-btn-row" style="justify-content:space-between;">
+            <span style="font-size:0.72rem;color:var(--slate-400);" id="recResultCount"></span>
+            <button class="btn btn-primary" onclick="importRecognizedItems()">📥 導入選中項 (0)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeUploadModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Export Modal ===== -->
+<div class="modal-overlay" id="exportModal" onclick="if(event.target===this)closeExportModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>📥 匯出與報表</h2>
+      <button class="modal-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-options">
+        <div class="export-option-group">
+          <label>匯出範圍</label>
+          <div class="export-radio-group">
+            <label><input type="radio" name="exportScope" value="all" checked> 全部</label>
+            <label><input type="radio" name="exportScope" value="pending"> 未完成</label>
+            <label><input type="radio" name="exportScope" value="high"> 高優先</label>
+            <label><input type="radio" name="exportScope" value="custom" id="exportCustomRadio"> 自訂勾選</label>
+          </div>
+        </div>
+        <div class="export-option-group">
+          <label>顯示欄位</label>
+          <div class="export-check-group" id="exportFieldChecks">
+            <label><input type="checkbox" data-field="name" checked> 名稱</label>
+            <label><input type="checkbox" data-field="category" checked> 類別</label>
+            <label><input type="checkbox" data-field="location" checked> 地點</label>
+            <label><input type="checkbox" data-field="quantity" checked> 數量</label>
+            <label><input type="checkbox" data-field="unit" checked> 單位</label>
+            <label><input type="checkbox" data-field="price" checked> 單價</label>
+            <label><input type="checkbox" data-field="buyer" checked> 採購人</label>
+            <label><input type="checkbox" data-field="deadline" checked> 截止日</label>
+            <label><input type="checkbox" data-field="priority" checked> 優先級</label>
+            <label><input type="checkbox" data-field="status" checked> 狀態</label>
+            <label><input type="checkbox" data-field="tags"> 標籤</label>
+            <label><input type="checkbox" data-field="notes"> 備註</label>
+          </div>
+        </div>
+        <div class="export-option-group">
+          <label>匯出格式</label>
+          <div class="export-radio-group">
+            <label><input type="radio" name="exportFormat" value="xlsx" checked> Excel (.xlsx)</label>
+            <label><input type="radio" name="exportFormat" value="pdf"> PDF (列印)</label>
+            <label><input type="radio" name="exportFormat" value="csv"> CSV</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeExportModal()">取消</button>
+      <button class="btn btn-primary" onclick="doExport()">📥 匯出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Dedup Center Modal ===== -->
+<div class="modal-overlay" id="dedupModal" onclick="if(event.target===this)closeDedupModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>🔀 去重中心</h2>
+      <button class="modal-close" onclick="closeDedupModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dedupBody">
+      <p style="color:var(--slate-500);font-size:0.78rem;margin-bottom:0.6rem;">相同名稱 + 相同單位的物品被歸為一組，可選擇合併或刪除。</p>
+      <div id="dedupContent"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeDedupModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Mobile Bottom Nav -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="bn-btn" onclick="toggleGroupView()">
+    <span class="bn-icon">📂</span>
+    <span class="bn-label">分組</span>
+  </button>
+  <button class="bn-btn" onclick="toggleMobileSearch()">
+    <span class="bn-icon">🔍</span>
+    <span class="bn-label">搜尋</span>
+  </button>
+  <button class="bn-btn bn-primary" onclick="openAddModal()">
+    <span class="bn-icon">＋</span>
+    <span class="bn-label">新增</span>
+  </button>
+  <button class="bn-btn" onclick="openExportModal()">
+    <span class="bn-icon">📥</span>
+    <span class="bn-label">匯出</span>
+  </button>
+  <button class="bn-btn" onclick="openUploadModal()">
+    <span class="bn-icon">📤</span>
+    <span class="bn-label">上傳</span>
+  </button>
+</div>
+
+<script>
+// ============================================================
+// SheetJS CDN Loader (for .xlsx)
+// ============================================================
+(function loadXLSX() {
+  if (typeof XLSX !== 'undefined') return;
+  const s = document.createElement('script');
+  s.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+  s.onload = () => console.log('SheetJS loaded');
+  document.head.appendChild(s);
+})();
+
+// ============================================================
+// STORAGE
+// ============================================================
+const STORAGE_KEY = 'procurement_list_v1';
+const FILE_KEY = 'procurement_files_v1';
+
+const DEFAULT = [];
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      if (Array.isArray(d)) {
+        // Migrate old items to new schema
+        return d.map(migrateItem);
+      }
+    } catch(e) {}
+  }
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+
+/**
+ * Migrate an item from old schema to new schema.
+ * Old: id, name, category, location, buyer, deadline, quantity, unit, price, priority, status, source
+ * New: + tags, notes, priceHistory, currentBestPrice, lastUpdated, lastUpdatedSource, duplicateGroupId
+ */
+function migrateItem(item) {
+  if (!item) return item;
+  const now = new Date().toISOString();
+
+  // Build priceHistory from old price if not present
+  if (!item.priceHistory) {
+    item.priceHistory = [];
+    if (item.price && item.price > 0) {
+      item.priceHistory.push({
+        price: item.price,
+        date: item.lastUpdated || now,
+        source: item.source || '未知來源',
+        location: item.location || ''
+      });
+    }
+  }
+
+  // currentBestPrice
+  if (item.currentBestPrice === undefined) {
+    item.currentBestPrice = item.priceHistory.length > 0
+      ? Math.min(...item.priceHistory.map(p => p.price))
+      : (item.price || 0);
+  }
+
+  // lastUpdated
+  if (!item.lastUpdated) {
+    item.lastUpdated = now;
+  }
+
+  // lastUpdatedSource
+  if (!item.lastUpdatedSource) {
+    item.lastUpdatedSource = item.source || '';
+  }
+
+  // tags
+  if (item.tags === undefined) {
+    item.tags = '';
+  }
+
+  // notes
+  if (item.notes === undefined) {
+    item.notes = '';
+  }
+
+  // duplicateGroupId
+  if (item.duplicateGroupId === undefined) {
+    item.duplicateGroupId = '';
+  }
+
+  return item;
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+}
+
+let DATA = loadData();
+
+// Track loaded files
+let loadedFiles = [];
+function loadFiles() {
+  const raw = localStorage.getItem(FILE_KEY);
+  if (raw) { try { loadedFiles = JSON.parse(raw); } catch(e) { loadedFiles = []; } }
+}
+function saveFiles() {
+  localStorage.setItem(FILE_KEY, JSON.stringify(loadedFiles));
+}
+loadFiles();
+
+// ============================================================
+// FIELD MAPPING (auto-detect Chinese/English column names)
+// ============================================================
+const FIELD_ALIASES = {
+  name: ['name', '名稱', '名称', '物品', '物品名称', '物品名稱', '商品', '商品名称', '商品名稱', '品名', '項目', '项目'],
+  category: ['category', '類別', '类别', '分类', '分類', '種類', '种类', '組別', '组别'],
+  location: ['location', '地點', '地点', '位置', '場所', '场所', '購買地點', '购买地点', '店鋪', '店铺', '商店', '超市', '賣場', '卖场', 'place', 'store'],
+  buyer: ['buyer', '採購人', '采购人', '購買人', '购买人', '負責人', '负责人', '採購員', '采购员', '購買者', '购买者'],
+  deadline: ['deadline', '截止日期', '期限', '到期日', '到期', '截止日', '效期', '日期', '購買日期', '购买日期'],
+  quantity: ['quantity', '數量', '数量', '份量', '个数', '個數', '數目', '数目', '份數', '份数', 'qty', 'count'],
+  unit: ['unit', '單位', '单位', '計量單位', '计量单位', '規格', '规格'],
+  price: ['price', '價格', '价格', '單價', '单价', '預估價格', '预估价格', '費用', '费用', '金額', '金额', '單價(元)', '单价(元)'],
+  priority: ['priority', '優先級', '优先级', '级别', '級別', '優先', '优先', '重要程度', '重要性'],
+};
+
+function guessField(header) {
+  const h = String(header).trim().toLowerCase();
+  for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+    if (aliases.some(a => a.toLowerCase() === h || a === header.trim())) return field;
+  }
+  return null;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+let editingId = null;
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function getStats() {
+  const items = getFiltered();
+  const total = items.length;
+  const done = items.filter(i => i.status === 'done').length;
+  const cost = items.reduce((s, i) => s + (i.currentBestPrice || i.price || 0) * (i.quantity || 0), 0);
+  const urgent = items.filter(i => i.status === 'pending' && i.priority === 'high').length;
+  return { total, done, cost, urgent };
+}
+
+function getFiltered() {
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const tagFilter = document.getElementById('tagFilter').value;
+
+  let items = DATA;
+  if (q) {
+    items = items.filter(i =>
+      (i.name || '').toLowerCase().includes(q) ||
+      (i.category || '').toLowerCase().includes(q) ||
+      (i.location || '').toLowerCase().includes(q) ||
+      (i.buyer || '').toLowerCase().includes(q) ||
+      (i.notes || '').toLowerCase().includes(q)
+    );
+  }
+  if (tagFilter) {
+    items = items.filter(i => {
+      const tags = (i.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      return tags.includes(tagFilter.toLowerCase());
+    });
+  }
+  return items;
+}
+
+function getSorted(items) {
+  const sortMode = document.getElementById('sortSelect').value;
+  if (sortMode === 'updated') {
+    return [...items].sort((a, b) => {
+      const da = a.lastUpdated || '';
+      const db = b.lastUpdated || '';
+      return db.localeCompare(da);
+    });
+  }
+  return items;
+}
+
+// ============================================================
+// TAG HELPERS
+// ============================================================
+function getAllTags() {
+  const tagSet = new Set();
+  DATA.forEach(item => {
+    if (item.tags) {
+      item.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => tagSet.add(t));
+    }
+  });
+  return [...tagSet].sort();
+}
+
+function renderTagFilter() {
+  const sel = document.getElementById('tagFilter');
+  const current = sel.value;
+  const tags = getAllTags();
+  sel.innerHTML = '<option value="">🏷️ 全部標籤</option>' +
+    tags.map(t => `<option value="${escHtml(t)}">#${escHtml(t)}</option>`).join('');
+  sel.value = current;
+}
+
+function renderTagFilterMobile() {
+  // Keep mobile tag filter in sync (we hide it, but value matters for filtering)
+}
+
+// ============================================================
+// DUPLICATE DETECTION
+// ============================================================
+let pendingDuplicates = [];
+
+function findDuplicates(items) {
+  const groups = {};
+  const fuzzyOn = document.getElementById('fuzzyMergeToggle').checked;
+  items.forEach(item => {
+    const key = ((item.name || '') + '|||' + (item.unit || '')).toLowerCase().trim();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+  const dupEntries = Object.values(groups).filter(g => g.length > 1);
+
+  // Fuzzy matching
+  if (fuzzyOn) {
+    const names = [...new Set(items.map(i => (i.name || '').toLowerCase().trim()).filter(Boolean))];
+    for (let i = 0; i < names.length; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        if (similarity(names[i], names[j]) >= 0.9) {
+          const group = items.filter(it => {
+            const n = (it.name || '').toLowerCase().trim();
+            return n === names[i] || n === names[j];
+          });
+          // Only add if they're not already in an existing dup group
+          const existingIds = new Set(dupEntries.flat().map(x => x.id));
+          const newIds = new Set(group.map(x => x.id));
+          if ([...newIds].some(id => existingIds.has(id)) || group.length > 1) {
+            const allIds = [...new Set([...dupEntries.flat().map(x => x.id), ...group.map(x => x.id)])];
+            // If not already fully covered
+            const existingCombined = new Set(dupEntries.flat().map(x => x.id));
+            const hasNew = group.some(x => !existingCombined.has(x.id));
+            if (hasNew) {
+              dupEntries.push(group);
+            }
+          }
+        }
+      }
+    }
+  }
+  return dupEntries;
+}
+
+// Levenshtein-based similarity
+function similarity(a, b) {
+  if (!a || !b) return 0;
+  a = a.toLowerCase(); b = b.toLowerCase();
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.95;
+  const len = Math.max(a.length, b.length);
+  if (len === 0) return 1;
+  // Simple character overlap
+  const setA = new Set(a.replace(/\s/g, ''));
+  const setB = new Set(b.replace(/\s/g, ''));
+  const intersect = new Set([...setA].filter(x => setB.has(x)));
+  const union = new Set([...setA, ...setB]);
+  return intersect.size / union.size;
+}
+
+function checkDuplicatesOnImport(newItems) {
+  const allItems = [...DATA, ...newItems];
+  const groups = findDuplicates(allItems);
+  if (groups.length > 0) {
+    const count = groups.reduce((s, g) => s + g.length, 0);
+    pendingDuplicates = groups;
+    showDupNotification(count, groups.length);
+    return true;
+  }
+  return false;
+}
+
+function showDupNotification(count, groupCount) {
+  const bar = document.getElementById('dupNotification');
+  document.getElementById('dupMsg').textContent = `🔀 偵測到 ${count} 件物品（${groupCount} 組）可能重複`;
+  bar.classList.add('show');
+}
+
+function hideDupNotification() {
+  document.getElementById('dupNotification').classList.remove('show');
+  pendingDuplicates = [];
+}
+
+function mergeDuplicates() {
+  if (!pendingDuplicates.length) { hideDupNotification(); return; }
+  let mergedCount = 0;
+  pendingDuplicates.forEach(group => {
+    if (group.length < 2) return;
+    const keep = group[0];
+    const rest = group.slice(1);
+    // Merge quantity
+    keep.quantity = (parseFloat(keep.quantity) || 1) + rest.reduce((s, r) => s + (parseFloat(r.quantity) || 1), 0);
+    // Merge priceHistory
+    rest.forEach(r => {
+      if (r.priceHistory) {
+        r.priceHistory.forEach(ph => {
+          if (!keep.priceHistory) keep.priceHistory = [];
+          const exists = keep.priceHistory.some(kph => kph.price === ph.price && kph.source === ph.source);
+          if (!exists) keep.priceHistory.push(ph);
+        });
+      }
+    });
+    // Merge tags
+    const allTags = new Set();
+    [keep, ...rest].forEach(item => {
+      if (item.tags) item.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => allTags.add(t));
+    });
+    keep.tags = [...allTags].join(',');
+    // Merge notes
+    const allNotes = [keep, ...rest].map(item => item.notes).filter(Boolean);
+    if (allNotes.length > 1) keep.notes = allNotes.join('; ');
+    else if (allNotes.length === 1) keep.notes = allNotes[0];
+    // Keep sources
+    keep.sources = [keep.source, ...rest.map(r => r.source)].filter(Boolean);
+
+    // Remove rest from DATA
+    const restIds = new Set(rest.map(r => r.id));
+    DATA = DATA.filter(item => !restIds.has(item.id));
+    // Update kept item
+    const keepIdx = DATA.findIndex(item => item.id === keep.id);
+    if (keepIdx !== -1) DATA[keepIdx] = keep;
+    mergedCount += rest.length;
+  });
+  saveData();
+  renderAll();
+  hideDupNotification();
+  showToast(`✅ 已合併 ${mergedCount} 件重複物品`);
+}
+
+function keepDuplicates() {
+  // Flag duplicates visually
+  pendingDuplicates.forEach(group => {
+    group.forEach(item => {
+      const idx = DATA.findIndex(d => d.id === item.id);
+      if (idx !== -1) {
+        DATA[idx].duplicateGroupId = group[0].id;
+      }
+    });
+  });
+  saveData();
+  renderAll();
+  hideDupNotification();
+  showToast('已保持獨立，淡黃色邊框標記');
+}
+
+// ============================================================
+// DEDUP CENTER MODAL
+// ============================================================
+function openDedupModal() {
+  const dupGroups = findDuplicates(DATA);
+  const container = document.getElementById('dedupContent');
+  if (!dupGroups.length) {
+    container.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>目前沒有發現重複物品</p></div>';
+  } else {
+    container.innerHTML = dupGroups.map((group, gi) => {
+      const groupName = group[0].name || '未命名';
+      return `<div class="dup-group">
+        <div class="dup-group-title">📦 ${escHtml(groupName)} (${group.length} 項)</div>
+        ${group.map((item, ii) => `
+          <div class="dup-item-row">
+            <input type="checkbox" class="dup-check" checked id="dup_${gi}_${ii}" data-gi="${gi}" data-ii="${ii}">
+            <span>${escHtml(item.name || '')} — ${item.quantity || 1}${item.unit || ''} ¥${item.price || 0} (${escHtml(item.source || '')})</span>
+          </div>
+        `).join('')}
+        <div class="dup-actions">
+          <button class="btn btn-sm btn-primary" onclick="dedupMergeGroup(${gi})">合併選中項</button>
+          <button class="btn btn-sm btn-danger" onclick="dedupDeleteGroup(${gi})">刪除選中項</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('dedupModal').classList.add('active');
+}
+
+function closeDedupModal() {
+  document.getElementById('dedupModal').classList.remove('active');
+}
+
+function dedupMergeGroup(gi) {
+  const group = findDuplicates(DATA)[gi];
+  if (!group || group.length < 2) return;
+  const checkedIds = [];
+  group.forEach((item, ii) => {
+    const cb = document.getElementById(`dup_${gi}_${ii}`);
+    if (cb && cb.checked) checkedIds.push(item.id);
+  });
+  if (checkedIds.length < 2) { showToast('請至少勾選 2 項才能合併'); return; }
+
+  const keep = DATA.find(d => d.id === checkedIds[0]);
+  const rest = checkedIds.slice(1).map(id => DATA.find(d => d.id === id)).filter(Boolean);
+  if (!keep) return;
+
+  keep.quantity = (parseFloat(keep.quantity) || 1) + rest.reduce((s, r) => s + (parseFloat(r.quantity) || 1), 0);
+  rest.forEach(r => {
+    if (r.priceHistory) {
+      r.priceHistory.forEach(ph => {
+        if (!keep.priceHistory) keep.priceHistory = [];
+        const exists = keep.priceHistory.some(kph => kph.price === ph.price && kph.source === ph.source);
+        if (!exists) keep.priceHistory.push(ph);
+      });
+    }
+  });
+  const allTags = new Set();
+  [keep, ...rest].forEach(item => {
+    if (item.tags) item.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => allTags.add(t));
+  });
+  keep.tags = [...allTags].join(',');
+
+  const restIds = new Set(rest.map(r => r.id));
+  DATA = DATA.filter(item => !restIds.has(item.id));
+  const keepIdx = DATA.findIndex(item => item.id === keep.id);
+  if (keepIdx !== -1) DATA[keepIdx] = keep;
+
+  // Recalculate best price
+  recalcBestPrice(keep);
+
+  saveData();
+  renderAll();
+  openDedupModal();
+  showToast('✅ 已合併');
+}
+
+function dedupDeleteGroup(gi) {
+  const group = findDuplicates(DATA)[gi];
+  if (!group) return;
+  const checkedIds = [];
+  group.forEach((item, ii) => {
+    const cb = document.getElementById(`dup_${gi}_${ii}`);
+    if (cb && cb.checked) checkedIds.push(item.id);
+  });
+  if (!checkedIds.length) { showToast('請至少勾選 1 項'); return; }
+  const delIds = new Set(checkedIds);
+  DATA = DATA.filter(item => !delIds.has(item.id));
+  saveData();
+  renderAll();
+  openDedupModal();
+  showToast(`🗑️ 已刪除 ${checkedIds.length} 項`);
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderStats();
+  renderFileList();
+  renderTagFilter();
+  renderGroups();
+}
+
+function renderStats() {
+  const s = getStats();
+  document.getElementById('statTotal').textContent = s.total;
+  document.getElementById('statDone').textContent = s.done;
+  document.getElementById('statCost').textContent = `¥${s.cost.toFixed(s.cost % 1 === 0 ? 0 : 2)}`;
+  document.getElementById('statUrgent').textContent = s.urgent;
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  if (!loadedFiles.length) { el.innerHTML = ''; return; }
+  el.innerHTML = loadedFiles.map((f, i) =>
+    `<span class="file-tag">📄 ${f} <button class="file-del" onclick="removeFile(${i})">✕</button></span>`
+  ).join('');
+}
+
+function renderGroups() {
+  const container = document.getElementById('mainContent');
+  let items = getFiltered();
+  items = getSorted(items);
+  const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">📋</span>
+        <p>${query ? '沒有符合條件的採購項' : '還沒有採購項目<br>點擊「＋新增」或「📤 上傳檔案」開始吧'}</p>
+      </div>`;
+    return;
+  }
+
+  // Group by location
+  const byLocation = groupBy(items, 'location');
+  // Group by category
+  const byCategory = groupBy(items, 'category');
+
+  container.innerHTML = `
+    <div class="group-section">
+      <div class="group-section-header" onclick="toggleSection(this)">
+        <h3>📁 按地點分組</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="group-section-body">
+        ${renderCardGroup(byLocation, 'location')}
+      </div>
+    </div>
+    <div class="group-section">
+      <div class="group-section-header" onclick="toggleSection(this)">
+        <h3>📂 按類別分組</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="group-section-body">
+        ${renderCardGroup(byCategory, 'category')}
+      </div>
+    </div>
+  `;
+}
+
+function groupBy(arr, key) {
+  const map = {};
+  arr.forEach(item => {
+    const k = item[key] || '(未分類)';
+    if (!map[k]) map[k] = [];
+    map[k].push(item);
+  });
+  return Object.keys(map).sort().reduce((acc, k) => {
+    acc[k] = map[k];
+    return acc;
+  }, {});
+}
+
+function renderCardGroup(groups, groupKey) {
+  const groupIcon = groupKey === 'location' ? '🏪' : '📦';
+  return Object.entries(groups).map(([name, items]) => {
+    const done = items.filter(i => i.status === 'done').length;
+    const total = items.length;
+    const subtotal = items.reduce((s, i) => s + (i.currentBestPrice || i.price || 0) * (i.quantity || 0), 0);
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    const hasDup = items.some(i => i.duplicateGroupId);
+
+    return `<div class="group-card ${hasDup ? 'duplicate-flagged' : ''}">
+      <div class="group-card-header">
+        <div class="gc-name">${groupIcon} ${name}</div>
+        <div class="gc-meta">
+          <span>📦 ${total} 項</span>
+          <span>✅ ${done}/${total}</span>
+          <span>${pct}%</span>
+          <span>💰 ¥${subtotal.toFixed(subtotal % 1 === 0 ? 0 : 2)}</span>
+        </div>
+      </div>
+      <div class="group-card-body">
+        ${items.map(item => renderItemRow(item)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderItemRow(item) {
+  const pLabel = { high: '⚡高', medium: '🟡中', low: '🟢低' };
+  const pClass = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' };
+  const done = item.status === 'done';
+  const bestPrice = item.currentBestPrice || item.price || 0;
+  const isDup = item.duplicateGroupId ? 'duplicate-item' : '';
+
+  // Tags
+  let tagsHtml = '';
+  if (item.tags) {
+    const tags = item.tags.split(',').map(t => t.trim()).filter(Boolean);
+    if (tags.length) {
+      tagsHtml = `<span class="item-tags">${tags.map(t => `<span class="item-tag">#${escHtml(t)}</span>`).join('')}</span>`;
+    }
+  }
+
+  // Notes indicator
+  let notesHtml = '';
+  if (item.notes) {
+    notesHtml = `<span class="notes-indicator" onclick="showNotesTooltip(event, '${escHtml(item.notes).replace(/'/g, "\\'")}')" title="${escHtml(item.notes)}">💬</span>`;
+  }
+
+  // Update dot
+  let updateDot = '';
+  if (item.lastUpdated) {
+    const days = (Date.now() - new Date(item.lastUpdated).getTime()) / 86400000;
+    if (days <= 7) updateDot = '<span class="update-dot recent" title="最近更新"></span>';
+    else if (days > 30) updateDot = '<span class="update-dot warning" title="超過30天未更新"></span>';
+    else updateDot = '<span class="update-dot stale" title="已更新"></span>';
+  }
+
+  // Price history expand
+  const phCount = (item.priceHistory || []).length;
+
+  return `<div class="item-row ${isDup} ${phCount > 1 ? 'has-price-history' : ''}" data-id="${item.id}" onclick="${phCount > 1 ? `togglePriceHistory('${item.id}')` : ''}" style="cursor:${phCount > 1 ? 'pointer' : 'default'}">
+    <input type="checkbox" class="item-check" ${done ? 'checked' : ''} onchange="event.stopPropagation();toggleStatus('${item.id}')">
+    <div class="item-info ${done ? 'done' : ''}">
+      <span class="item-name" onclick="event.stopPropagation();openEditModal('${item.id}')" title="點擊編輯">${escHtml(item.name || '')}</span>
+      <span class="item-detail">
+        ${item.quantity ? item.quantity + (item.unit || '') : ''}
+        ${bestPrice > 0 ? `<span class="best-price">¥${bestPrice}</span>` : ''}
+        ${item.priority ? `<span class="priority-badge ${pClass[item.priority]||''}">${pLabel[item.priority]||''}</span>` : ''}
+        ${item.deadline ? `<span class="dot"></span> 📅${item.deadline}` : ''}
+        ${item.buyer ? `<span class="dot"></span> 👤${escHtml(item.buyer)}` : ''}
+        ${updateDot}
+        ${tagsHtml}
+        ${notesHtml}
+        ${phCount > 1 ? `<span style="font-size:0.6rem;color:var(--amber-500);">📊${phCount}</span>` : ''}
+      </span>
+    </div>
+    <div class="item-actions" onclick="event.stopPropagation()">
+      <button class="item-btn" onclick="openEditModal('${item.id}')" title="編輯">✏️</button>
+      <button class="item-btn item-btn-del" onclick="deleteItem('${item.id}')" title="刪除">🗑️</button>
+    </div>
+  </div>
+  ${phCount > 1 ? renderPriceHistoryPanel(item) : ''}`;
+}
+
+function renderPriceHistoryPanel(item) {
+  const ph = item.priceHistory || [];
+  const bestPrice = Math.min(...ph.map(p => p.price));
+  const worstPrice = Math.max(...ph.map(p => p.price));
+  const now = Date.now();
+
+  return `<div class="price-history-panel" id="ph_${item.id}">
+    <div class="ph-title">📊 歷史報價 (${ph.length})</div>
+    ${ph.map(p => {
+      const isBest = p.price === bestPrice;
+      const isWorst = p.price === worstPrice;
+      let cls = '';
+      if (isBest) cls = 'ph-best';
+      if (isWorst && !isBest) cls = 'ph-worst';
+
+      let dateDot = '';
+      if (p.date) {
+        const days = (now - new Date(p.date).getTime()) / 86400000;
+        if (days <= 7) dateDot = '<span class="update-dot recent" title="最近7天"></span>';
+        else if (days > 30) dateDot = '<span class="update-dot warning" title="超過30天"></span>';
+        else dateDot = '<span class="update-dot stale"></span>';
+      }
+
+      return `<div class="ph-row ${cls}">
+        <span class="ph-price">¥${p.price}</span>
+        <span class="ph-source">${escHtml(p.source || '')}${p.location ? ' · ' + escHtml(p.location) : ''}</span>
+        <span class="ph-date">${dateDot}${p.date ? new Date(p.date).toLocaleDateString('zh-CN') : ''}</span>
+        ${isBest ? '<span style="font-size:0.6rem;font-weight:700;color:var(--emerald-600);">最低</span>' : ''}
+        ${isWorst && !isBest ? '<span style="font-size:0.6rem;color:var(--rose-400);">最高</span>' : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function togglePriceHistory(id) {
+  const panel = document.getElementById('ph_' + id);
+  const row = panel ? panel.previousElementSibling : null;
+  if (row) {
+    row.classList.toggle('price-expanded');
+  }
+}
+
+function recalcBestPrice(item) {
+  if (item.priceHistory && item.priceHistory.length > 0) {
+    item.currentBestPrice = Math.min(...item.priceHistory.map(p => p.price));
+  } else if (item.price) {
+    item.currentBestPrice = item.price;
+  } else {
+    item.currentBestPrice = 0;
+  }
+}
+
+function showNotesTooltip(event, text) {
+  // Simple approach: just show in toast for now
+  showToast('💬 ' + text);
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleSection(header) {
+  header.classList.toggle('collapsed');
+}
+
+// ============================================================
+// CRUD
+// ============================================================
+function toggleStatus(id) {
+  const item = DATA.find(i => i.id === id);
+  if (item) {
+    item.status = item.status === 'done' ? 'pending' : 'done';
+    item.lastUpdated = new Date().toISOString();
+    saveData();
+    renderAll();
+  }
+}
+
+function deleteItem(id) {
+  const item = DATA.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm(`確定刪除「${item.name}」？`)) return;
+  DATA = DATA.filter(i => i.id !== id);
+  saveData();
+  renderAll();
+  showToast('🗑️ 已刪除');
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = '新增採購項';
+  document.getElementById('fName').value = '';
+  document.getElementById('fQty').value = 1;
+  document.getElementById('fUnit').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fLocation').value = '';
+  document.getElementById('fPrice').value = 0;
+  document.getElementById('fBuyer').value = '';
+  document.getElementById('fDeadline').value = '';
+  document.getElementById('fPriority').value = 'medium';
+  document.getElementById('fTags').value = '';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('charCount').textContent = '0';
+  document.getElementById('formModal').classList.add('active');
+  setTimeout(() => document.getElementById('fName').focus(), 200);
+}
+
+function openEditModal(id) {
+  const item = DATA.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = '編輯採購項';
+  document.getElementById('fName').value = item.name || '';
+  document.getElementById('fQty').value = item.quantity || 1;
+  document.getElementById('fUnit').value = item.unit || '';
+  document.getElementById('fCategory').value = item.category || '';
+  document.getElementById('fLocation').value = item.location || '';
+  document.getElementById('fPrice').value = item.price || 0;
+  document.getElementById('fBuyer').value = item.buyer || '';
+  document.getElementById('fDeadline').value = item.deadline || '';
+  document.getElementById('fPriority').value = item.priority || 'medium';
+  document.getElementById('fTags').value = item.tags || '';
+  document.getElementById('fNotes').value = item.notes || '';
+  document.getElementById('charCount').textContent = String(item.notes || '').length;
+  document.getElementById('formModal').classList.add('active');
+  setTimeout(() => document.getElementById('fName').focus(), 200);
+}
+
+function closeModal() {
+  document.getElementById('formModal').classList.remove('active');
+  editingId = null;
+}
+
+function updateCharCount() {
+  const val = document.getElementById('fNotes').value;
+  document.getElementById('charCount').textContent = val.length;
+}
+
+function confirmForm() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { showToast('❌ 請輸入物品名稱'); return; }
+
+  const now = new Date().toISOString();
+
+  const obj = {
+    name,
+    quantity: parseFloat(document.getElementById('fQty').value) || 1,
+    unit: document.getElementById('fUnit').value.trim(),
+    category: document.getElementById('fCategory').value.trim(),
+    location: document.getElementById('fLocation').value.trim(),
+    price: parseFloat(document.getElementById('fPrice').value) || 0,
+    buyer: document.getElementById('fBuyer').value.trim(),
+    deadline: document.getElementById('fDeadline').value,
+    priority: document.getElementById('fPriority').value,
+    tags: document.getElementById('fTags').value.trim(),
+    notes: document.getElementById('fNotes').value.trim().slice(0, 200),
+    status: 'pending',
+  };
+
+  if (editingId) {
+    const idx = DATA.findIndex(i => i.id === editingId);
+    if (idx !== -1) {
+      // Preserve source, id, priceHistory, lastUpdated, etc.
+      obj.id = DATA[idx].id;
+      obj.source = DATA[idx].source;
+      obj.status = DATA[idx].status;
+      obj.priceHistory = DATA[idx].priceHistory || [];
+      obj.lastUpdated = now;
+      obj.lastUpdatedSource = DATA[idx].source || '手動編輯';
+
+      // Update price history if price changed
+      const oldPrice = DATA[idx].price || 0;
+      if (obj.price > 0 && obj.price !== oldPrice) {
+        obj.priceHistory.push({
+          price: obj.price,
+          date: now,
+          source: '手動編輯',
+          location: obj.location
+        });
+      }
+
+      // Keep duplicateGroupId
+      obj.duplicateGroupId = DATA[idx].duplicateGroupId || '';
+
+      // Recalculate best price
+      obj.currentBestPrice = obj.priceHistory.length > 0
+        ? Math.min(...obj.priceHistory.map(p => p.price))
+        : obj.price;
+
+      DATA[idx] = obj;
+    }
+    showToast('✅ 已更新');
+  } else {
+    obj.id = genId();
+    obj.source = '手動添加';
+    obj.priceHistory = obj.price > 0 ? [{
+      price: obj.price,
+      date: now,
+      source: '手動添加',
+      location: obj.location
+    }] : [];
+    obj.currentBestPrice = obj.price;
+    obj.lastUpdated = now;
+    obj.lastUpdatedSource = '手動添加';
+    obj.duplicateGroupId = '';
+
+    // Check duplicates
+    const newItem = obj;
+    const dupCheck = findDuplicates([...DATA, newItem]);
+    if (dupCheck.length > 0) {
+      pendingDuplicates = dupCheck;
+      const count = dupCheck.reduce((s, g) => s + g.length, 0);
+      showDupNotification(count, dupCheck.length);
+    }
+
+    DATA.push(newItem);
+    showToast('✅ 已新增');
+  }
+
+  saveData();
+  renderAll();
+  closeModal();
+}
+
+// ============================================================
+// VOICE INPUT
+// ============================================================
+function startVoiceInput(fieldId) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('❌ 此瀏覽器不支援語音輸入');
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  const btn = document.getElementById('voiceBtn');
+  btn.classList.add('listening');
+  btn.textContent = '🔴';
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const input = document.getElementById(fieldId);
+    input.value = input.value ? input.value + ' ' + transcript : transcript;
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+  };
+
+  recognition.onerror = () => {
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+    showToast('❌ 語音識別失敗，請重試');
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+  };
+
+  recognition.start();
+}
+
+// ============================================================
+// FILE UPLOAD
+// ============================================================
+function openUploadModal() {
+  document.getElementById('uploadModal').classList.add('active');
+}
+
+function closeUploadModal() {
+  document.getElementById('uploadModal').classList.remove('active');
+}
+
+// Drag & drop
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('click', () => document.getElementById('fileInput').click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  if (!files || !files.length) return;
+  let processed = 0;
+  const total = files.length;
+
+  for (const file of files) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'json') {
+      parseJSON(file).then(data => {
+        mergeData(data, file.name);
+        processed++;
+        if (processed === total) finalizeUpload(total);
+      });
+    } else if (ext === 'csv') {
+      parseCSV(file).then(data => {
+        mergeData(data, file.name);
+        processed++;
+        if (processed === total) finalizeUpload(total);
+      });
+    } else if (ext === 'xlsx') {
+      parseXLSX(file).then(data => {
+        mergeData(data, file.name);
+        processed++;
+        if (processed === total) finalizeUpload(total);
+      });
+    } else {
+      showToast(`❌ 不支援的格式: .${ext}`);
+      processed++;
+      if (processed === total) finalizeUpload(total);
+    }
+  }
+}
+
+function finalizeUpload(count) {
+  saveData();
+  saveFiles();
+  closeUploadModal();
+  renderAll();
+  showToast(`✅ 已導入 ${count} 個檔案，共 ${DATA.length} 項`);
+}
+
+function mergeData(newItems, fileName) {
+  if (!newItems || !newItems.length) return;
+  loadedFiles.push(fileName);
+  loadedFiles = [...new Set(loadedFiles)];
+
+  const now = new Date().toISOString();
+  let freshItems = [];
+
+  for (const item of newItems) {
+    // Check for duplicate by name + unit
+    const existing = DATA.find(d =>
+      (d.name || '').toLowerCase().trim() === (item.name || '').toLowerCase().trim() &&
+      (d.unit || '').toLowerCase().trim() === (item.unit || '').toLowerCase().trim()
+    );
+
+    if (existing) {
+      // Merge into priceHistory
+      const newPrice = parseFloat(item.price) || 0;
+      if (newPrice > 0) {
+        if (!existing.priceHistory) existing.priceHistory = [];
+        const dup = existing.priceHistory.some(p =>
+          p.price === newPrice && p.source === fileName
+        );
+        if (!dup) {
+          existing.priceHistory.push({
+            price: newPrice,
+            date: now,
+            source: fileName,
+            location: item.location || existing.location || ''
+          });
+        }
+      }
+      // Update best price
+      recalcBestPrice(existing);
+      // Update lastUpdated
+      existing.lastUpdated = now;
+      existing.lastUpdatedSource = fileName;
+      // Merge quantity
+      if (parseFloat(item.quantity) > 0) {
+        existing.quantity = (parseFloat(existing.quantity) || 1) + (parseFloat(item.quantity) || 1);
+      }
+      // Merge tags
+      if (item.tags) {
+        const tags = item.tags.split(',').map(t => t.trim()).filter(Boolean);
+        const existingTags = (existing.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+        const allTags = new Set([...existingTags, ...tags]);
+        existing.tags = [...allTags].join(',');
+      }
+      // Merge notes
+      if (item.notes && existing.notes !== item.notes) {
+        existing.notes = existing.notes ? existing.notes + '; ' + item.notes : item.notes;
+      }
+    } else {
+      // New item
+      const newItem = {
+        id: genId(),
+        name: item.name || '未命名',
+        category: item.category || '',
+        location: item.location || '',
+        buyer: item.buyer || '',
+        deadline: item.deadline || '',
+        quantity: parseFloat(item.quantity) || 1,
+        unit: item.unit || '',
+        price: parseFloat(item.price) || 0,
+        priority: item.priority || 'medium',
+        status: item.status === 'done' || item.status === '已完成' ? 'done' : 'pending',
+        source: fileName,
+        tags: item.tags || '',
+        notes: item.notes || '',
+        priceHistory: [],
+        currentBestPrice: parseFloat(item.price) || 0,
+        lastUpdated: now,
+        lastUpdatedSource: fileName,
+        duplicateGroupId: '',
+      };
+      const p = parseFloat(item.price) || 0;
+      if (p > 0) {
+        newItem.priceHistory.push({
+          price: p,
+          date: now,
+          source: fileName,
+          location: item.location || ''
+        });
+      }
+      freshItems.push(newItem);
+    }
+  }
+
+  // Now add fresh items and check duplicates
+  const beforeCount = DATA.length;
+  DATA.push(...freshItems);
+  const allNew = freshItems;
+
+  // Check duplicates among fresh + existing
+  const dupCheck = findDuplicates(DATA);
+  if (dupCheck.length > 0) {
+    pendingDuplicates = dupCheck;
+    const count = dupCheck.reduce((s, g) => s + g.length, 0);
+    showDupNotification(count, dupCheck.length);
+  }
+}
+
+function removeFile(index) {
+  const fileName = loadedFiles[index];
+  if (!fileName) return;
+  if (!confirm(`移除檔案「${fileName}」及其所有數據？`)) return;
+  loadedFiles.splice(index, 1);
+  DATA = DATA.filter(i => i.source !== fileName);
+  saveData();
+  saveFiles();
+  renderAll();
+  showToast(`🗑️ 已移除「${fileName}」`);
+}
+
+// ============================================================
+// FILE PARSERS
+// ============================================================
+
+// --- JSON ---
+function parseJSON(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        let data = JSON.parse(e.target.result);
+        if (data && data.data && Array.isArray(data.data)) data = data.data;
+        if (!Array.isArray(data)) { resolve([]); return; }
+        resolve(data.map(normalizeItem));
+      } catch(_) { showToast(`❌ ${file.name}: JSON 解析失敗`); resolve([]); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// --- CSV ---
+function parseCSV(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) { resolve([]); return; }
+
+        const headers = parseCSVLine(lines[0]);
+        const fieldMap = headers.map(h => guessField(h) || h);
+
+        const results = [];
+        for (let i = 1; i < lines.length; i++) {
+          const vals = parseCSVLine(lines[i]);
+          const obj = {};
+          fieldMap.forEach((f, idx) => {
+            if (idx < vals.length) obj[f] = vals[idx].trim();
+          });
+          results.push(obj);
+        }
+        resolve(results.map(normalizeItem));
+      } catch(_) { showToast(`❌ ${file.name}: CSV 解析失敗`); resolve([]); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    if (inQuotes) {
+      if (line[i] === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = false;
+      } else current += line[i];
+    } else {
+      if (line[i] === '"') inQuotes = true;
+      else if (line[i] === ',') { result.push(current); current = ''; }
+      else current += line[i];
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// --- XLSX ---
+function parseXLSX(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        if (typeof XLSX === 'undefined') {
+          showToast('❌ Excel 解析庫未加載，請稍後重試');
+          resolve([]);
+          return;
+        }
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) { resolve([]); return; }
+
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (!json.length) { resolve([]); return; }
+
+        const headers = Object.keys(json[0]);
+        const fieldMap = headers.map(h => guessField(h) || h);
+
+        const results = json.map(row => {
+          const obj = {};
+          headers.forEach((h, idx) => {
+            obj[fieldMap[idx]] = row[h];
+          });
+          return obj;
+        });
+        resolve(results.map(normalizeItem));
+      } catch(_) { showToast(`❌ ${file.name}: Excel 解析失敗`); resolve([]); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// --- Normalize imported item ---
+function normalizeItem(raw) {
+  return {
+    name: String(raw.name || raw.名稱 || raw.名称 || raw.物品 || '').trim(),
+    category: String(raw.category || raw.類別 || raw.类别 || raw.分类 || raw.分類 || '').trim(),
+    location: String(raw.location || raw.地點 || raw.地点 || raw.位置 || '').trim(),
+    buyer: String(raw.buyer || raw.採購人 || raw.采购人 || raw.負責人 || raw.负责人 || '').trim(),
+    deadline: String(raw.deadline || raw.截止日期 || raw.期限 || raw.到期日 || raw.日期 || '').trim(),
+    quantity: parseFloat(raw.quantity || raw.數量 || raw.数量 || raw.qty || 1) || 1,
+    unit: String(raw.unit || raw.單位 || raw.单位 || raw.規格 || raw.规格 || '').trim(),
+    price: parseFloat(raw.price || raw.價格 || raw.价格 || raw.單價 || raw.单价 || 0) || 0,
+    priority: normalizePriority(raw.priority || raw.優先級 || raw.优先级 || raw.级别 || raw.級別 || 'medium'),
+    status: 'pending',
+    tags: String(raw.tags || raw.標籤 || raw.标签 || '').trim(),
+    notes: String(raw.notes || raw.備註 || raw.备注 || '').trim(),
+  };
+}
+
+function normalizePriority(p) {
+  const pStr = String(p).toLowerCase().trim();
+  if (pStr === 'high' || pStr === '高' || pStr === '⚡' || pStr === '3') return 'high';
+  if (pStr === 'low' || pStr === '低' || pStr === '🟢' || pStr === '1') return 'low';
+  return 'medium';
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function openExportModal() {
+  // Reset custom checkboxes
+  document.querySelectorAll('#exportFieldChecks input').forEach(cb => cb.checked = true);
+  document.querySelectorAll('input[name="exportScope"]').forEach(r => {
+    r.checked = r.value === 'all';
+  });
+  document.getElementById('exportModal').classList.add('active');
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.remove('active');
+}
+
+function getExportItems() {
+  const scope = document.querySelector('input[name="exportScope"]:checked');
+  if (!scope) return [];
+  const val = scope.value;
+  if (val === 'all') return DATA;
+  if (val === 'pending') return DATA.filter(i => i.status === 'pending');
+  if (val === 'high') return DATA.filter(i => i.priority === 'high' && i.status === 'pending');
+  if (val === 'custom') {
+    // Use currently filtered + visible items
+    return getFiltered();
+  }
+  return DATA;
+}
+
+function getExportFields() {
+  const fields = [];
+  document.querySelectorAll('#exportFieldChecks input').forEach(cb => {
+    if (cb.checked) fields.push(cb.getAttribute('data-field'));
+  });
+  return fields;
+}
+
+function doExport() {
+  const format = document.querySelector('input[name="exportFormat"]:checked');
+  if (!format) { showToast('❌ 請選擇匯出格式'); return; }
+  const fmt = format.value;
+
+  if (fmt === 'xlsx') return exportXLSX();
+  if (fmt === 'pdf') return exportPDF();
+  if (fmt === 'csv') return exportCSV();
+}
+
+function getExportData() {
+  const items = getExportItems();
+  const fields = getExportFields();
+  const fieldLabels = {
+    name: '物品名稱', category: '類別', location: '地點',
+    quantity: '數量', unit: '單位', price: '單價',
+    buyer: '採購人', deadline: '截止日期', priority: '優先級',
+    status: '狀態', tags: '標籤', notes: '備註'
+  };
+
+  return items.map(item => {
+    const row = {};
+    fields.forEach(f => {
+      if (f === 'priority') {
+        const pMap = { high: '高', medium: '中', low: '低' };
+        row[fieldLabels[f] || f] = pMap[item[f]] || item[f] || '';
+      } else if (f === 'status') {
+        row[fieldLabels[f] || f] = item[f] === 'done' ? '已完成' : '待辦';
+      } else if (f === 'price') {
+        row[fieldLabels[f] || f] = item[f] || 0;
+      } else {
+        row[fieldLabels[f] || f] = item[f] !== undefined ? item[f] : '';
+      }
+    });
+    return row;
+  });
+}
+
+function exportXLSX() {
+  if (typeof XLSX === 'undefined') {
+    showToast('❌ Excel 庫未加載，請稍後重試');
+    return;
+  }
+  const data = getExportData();
+  if (!data.length) { showToast('❌ 沒有數據可匯出'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+
+  // Column widths
+  const cols = Object.keys(data[0] || {});
+  const colWidths = cols.map(c => ({ wch: Math.max(8, c.length * 2) }));
+  ws['!cols'] = colWidths;
+
+  XLSX.utils.book_append_sheet(wb, ws, '採購清單');
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const fileName = `採購清單_${dateStr}.xlsx`;
+
+  XLSX.writeFile(wb, fileName);
+  closeExportModal();
+  showToast(`✅ 已匯出 ${fileName}`);
+}
+
+function exportPDF() {
+  const items = getExportData();
+  if (!items.length) { showToast('❌ 沒有數據可匯出'); return; }
+
+  // Use window.print() with a styled print view
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { showToast('❌ 請允許彈出視窗'); return; }
+
+  const fields = getExportFields();
+  const fieldLabels = {
+    name: '物品名稱', category: '類別', location: '地點',
+    quantity: '數量', unit: '單位', price: '單價',
+    buyer: '採購人', deadline: '截止日期', priority: '優先級',
+    status: '狀態', tags: '標籤', notes: '備註'
+  };
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN');
+
+  let tableRows = items.map(item => {
+    return '<tr>' + fields.map(f => {
+      let val = item[fieldLabels[f] || f];
+      if (val === undefined || val === null) val = '';
+      return `<td>${escHtml(String(val))}</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+
+  const headerCells = fields.map(f => `<th>${escHtml(fieldLabels[f] || f)}</th>`).join('');
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>採購清單</title>
+    <style>
+      body { font-family: 'Noto Sans SC', sans-serif; padding: 2rem; color: #333; }
+      h1 { color: #92400e; font-size: 1.5rem; margin-bottom: 0.3rem; }
+      .date { color: #d97706; font-size: 0.8rem; margin-bottom: 1rem; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+      th { background: #fef3c7; color: #92400e; padding: 0.5rem 0.6rem; text-align: left; border: 1px solid #f0e6d4; font-weight: 600; }
+      td { padding: 0.4rem 0.6rem; border: 1px solid #f0e6d4; }
+      tr:nth-child(even) { background: #fffbeb; }
+      .footer { margin-top: 1rem; font-size: 0.7rem; color: #d97706; text-align: center; }
+      @media print { body { padding: 0; } }
+    </style>
+    </head>
+    <body>
+      <h1>🛒 採購清單</h1>
+      <div class="date">匯出日期：${dateStr} | 共 ${items.length} 項</div>
+      <table><thead><tr>${headerCells}</tr></thead><tbody>${tableRows || '<tr><td colspan="99" style="text-align:center;color:#999;">無數據</td></tr>'}</tbody></table>
+      <div class="footer">採購清單 v2.0 — 自動生成</div>
+      <script>
+        window.onload = function() { window.print(); window.close(); }
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  closeExportModal();
+  showToast('🖨️ 正在開啟列印視窗');
+}
+
+function exportCSV() {
+  const data = getExportData();
+  if (!data.length) { showToast('❌ 沒有數據可匯出'); return; }
+
+  const headers = Object.keys(data[0]);
+  const csvRows = [headers.join(',')];
+
+  data.forEach(item => {
+    const vals = headers.map(h => {
+      let v = item[h];
+      if (v === undefined || v === null) v = '';
+      v = String(v).replace(/"/g, '""');
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v + '"';
+      return v;
+    });
+    csvRows.push(vals.join(','));
+  });
+
+  const csv = csvRows.join('\n');
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `採購清單_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  closeExportModal();
+  showToast('✅ 已匯出 CSV');
+}
+
+// ============================================================
+// EXAMPLE DATA & RESET
+// ============================================================
+function loadExampleData() {
+  if (DATA.length > 0 && !confirm('加載示例數據將清空當前數據，確認？')) return;
+
+  const now = new Date().toISOString();
+
+  DATA = [
+    { id: genId(), name: '雞胸肉', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-15', quantity: 2, unit: 'kg', price: 25.5, priority: 'high', status: 'pending', source: '示例', tags: '急需,冷鏈', notes: '要買去皮去骨的', priceHistory: [{price:25.5,date:now,source:'示例',location:'超市A'},{price:28,date:now,source:'市場B',location:'市場B'}], currentBestPrice: 25.5, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '牛奶', category: '飲品', location: '超市A', buyer: '小紅', deadline: '2026-06-12', quantity: 1, unit: 'L', price: 18, priority: 'medium', status: 'done', source: '示例', tags: '常溫', notes: '', priceHistory: [{price:18,date:now,source:'示例',location:'超市A'}], currentBestPrice: 18, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '雞蛋', category: '食材', location: '超市A', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '盒(30枚)', price: 32, priority: 'high', status: 'pending', source: '示例', tags: '急需', notes: '買有機的', priceHistory: [{price:32,date:now,source:'示例',location:'超市A'},{price:35,date:now,source:'市場B',location:'市場B'}], currentBestPrice: 32, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '蘋果', category: '水果', location: '市場B', buyer: '小紅', deadline: '2026-06-13', quantity: 3, unit: '斤', price: 8, priority: 'medium', status: 'pending', source: '示例', tags: '', notes: '要脆的富士蘋果', priceHistory: [{price:8,date:now,source:'示例',location:'市場B'}], currentBestPrice: 8, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '衛生紙', category: '日用品', location: '超市A', buyer: '小明', deadline: '2026-06-20', quantity: 2, unit: '提', price: 22, priority: 'low', status: 'pending', source: '示例', tags: '量販', notes: '', priceHistory: [{price:22,date:now,source:'示例',location:'超市A'},{price:20,date:now,source:'量販店',location:'量販店'}], currentBestPrice: 20, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '洗潔精', category: '日用品', location: '超市A', buyer: '小紅', deadline: '2026-06-18', quantity: 1, unit: '瓶', price: 15, priority: 'medium', status: 'done', source: '示例', tags: '', notes: '', priceHistory: [{price:15,date:now,source:'示例',location:'超市A'}], currentBestPrice: 15, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '鮭魚', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-15', quantity: 1, unit: '片', price: 45, priority: 'high', status: 'pending', source: '示例', tags: '冷鏈,進口', notes: '挪威鮭魚', priceHistory: [{price:45,date:now,source:'示例',location:'市場B'},{price:48,date:now,source:'超市A',location:'超市A'}], currentBestPrice: 45, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '醬油', category: '調味料', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '瓶', price: 12, priority: 'low', status: 'pending', source: '示例', tags: '', notes: '', priceHistory: [{price:12,date:now,source:'示例',location:'超市A'}], currentBestPrice: 12, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '紅蘿蔔', category: '食材', location: '市場B', buyer: '小明', deadline: '2026-06-14', quantity: 1, unit: '袋', price: 10, priority: 'medium', status: 'pending', source: '示例', tags: '有機', notes: '', priceHistory: [{price:10,date:now,source:'示例',location:'市場B'}], currentBestPrice: 10, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '燕麥片', category: '食材', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '包', price: 28, priority: 'medium', status: 'done', source: '示例', tags: '', notes: '', priceHistory: [{price:28,date:now,source:'示例',location:'超市A'}], currentBestPrice: 28, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '文具組', category: '文具', location: '文具店', buyer: '小明', deadline: '2026-06-22', quantity: 2, unit: '套', price: 35, priority: 'low', status: 'pending', source: '示例', tags: '', notes: '', priceHistory: [{price:35,date:now,source:'示例',location:'文具店'}], currentBestPrice: 35, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+    { id: genId(), name: '保鮮膜', category: '日用品', location: '超市A', buyer: '小紅', deadline: '', quantity: 1, unit: '卷', price: 8.5, priority: 'low', status: 'pending', source: '示例', tags: '', notes: '要寬版的', priceHistory: [{price:8.5,date:now,source:'示例',location:'超市A'}], currentBestPrice: 8.5, lastUpdated: now, lastUpdatedSource: '示例', duplicateGroupId: '' },
+  ];
+
+  loadedFiles = ['示例數據'];
+  saveData();
+  saveFiles();
+  renderAll();
+  showToast('📋 已加載示例數據 (12 項，含比價與標籤)');
+}
+
+function confirmReset() {
+  if (!confirm('⚠️ 確定重置所有數據？此操作無法恢復！')) return;
+  if (!confirm('再次確認：所有採購數據將被清空！')) return;
+  DATA = [];
+  loadedFiles = [];
+  saveData();
+  saveFiles();
+  renderAll();
+  showToast('🔄 數據已重置');
+}
+
+// ============================================================
+// 圖片識別（OpenRouter 多模態）
+// ============================================================
+
+const API_KEY_STORAGE='procur...ikey';
+let recognizedItems = [];
+let currentImageBase64 = '';
+let apiKeyLoaded = false;
+
+function loadApiKey() {
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if (key) {
+    document.getElementById('visionApiKey').value = key;
+    document.getElementById('apiKeyStatus').textContent = '✅ 已保存';
+    document.getElementById('apiKeyStatus').style.color = 'var(--emerald-500)';
+    apiKeyLoaded = true;
+  }
+}
+
+function saveApiKey() {
+  const key = document.getElementById('visionApiKey').value.trim();
+  if (!key) { showToast('❌ 請輸入 API Key'); return; }
+  localStorage.setItem(API_KEY_STORAGE, key);
+  document.getElementById('apiKeyStatus').textContent = '✅ 已保存';
+  document.getElementById('apiKeyStatus').style.color = 'var(--emerald-500)';
+  apiKeyLoaded = true;
+  showToast('💾 API Key 已保存至本地');
+}
+
+function switchUploadTab(tab) {
+  document.querySelectorAll('.upload-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'file') || (i === 1 && tab === 'image'));
+  });
+  document.getElementById('uploadPanelFile').classList.toggle('hidden', tab !== 'file');
+  document.getElementById('uploadPanelImage').classList.toggle('hidden', tab !== 'image');
+
+  if (tab === 'image') {
+    loadApiKey();
+    setupImageUploadZone();
+  }
+}
+
+function setupImageUploadZone() {
+  const zone = document.getElementById('imageUploadZone');
+  const newZone = zone.cloneNode(true);
+  zone.parentNode.replaceChild(newZone, zone);
+
+  const freshZone = document.getElementById('imageUploadZone');
+  freshZone.addEventListener('click', () => document.getElementById('imageInput').click());
+  freshZone.addEventListener('dragover', e => { e.preventDefault(); freshZone.classList.add('dragover'); });
+  freshZone.addEventListener('dragleave', () => freshZone.classList.remove('dragover'));
+  freshZone.addEventListener('drop', e => {
+    e.preventDefault();
+    freshZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length && e.dataTransfer.files[0].type.startsWith('image/')) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+function handleImageFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImageBase64 = e.target.result;
+    document.getElementById('imgPreview').src = e.target.result;
+    document.getElementById('imgPreviewWrap').style.display = 'block';
+    document.getElementById('recResultArea').style.display = 'none';
+    recognizedItems = [];
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  currentImageBase64 = '';
+  document.getElementById('imgPreview').src = '';
+  document.getElementById('imgPreviewWrap').style.display = 'none';
+  document.getElementById('imageInput').value = '';
+  document.getElementById('recResultArea').style.display = 'none';
+  recognizedItems = [];
+}
+
+function recognizeImage() {
+  if (!currentImageBase64) { showToast('❌ 請先上傳圖片'); return; }
+
+  let apiKey = document.getElementById('visionApiKey').value.trim();
+  if (!apiKey) {
+    apiKey = localStorage.getItem(API_KEY_STORAGE);
+    if (!apiKey) { showToast('❌ 請先配置 OpenRouter API Key'); return; }
+  }
+
+  const context = document.getElementById('visionContext').value.trim();
+
+  document.getElementById('recProgress').style.display = 'block';
+  document.getElementById('recResultArea').style.display = 'none';
+  document.getElementById('recognizeBtn').disabled = true;
+  document.getElementById('recognizeBtn').textContent = '⏳ 識別中…';
+
+  const prompt = `你是一個採購物品識別助手。請仔細分析這張圖片，識別出所有採購相關的物品。
+
+${context ? `補充信息：${context}` : ''}
+
+對每個物品，提取以下信息（盡力而為，不確定的字段留空）：
+- name: 物品名稱（必填）
+- quantity: 數量（數字，默認1）
+- unit: 單位（如 kg、個、箱、瓶）
+- category: 類別（如 食材、飲品、日用品、水果、調味料）
+- location: 地點或商店名稱（如果能從圖片推斷）
+- price: 預估單價（數字，不包含貨幣符號）
+- priority: 優先級（"high"、"medium" 或 "low"）
+
+請以 JSON 數組格式返回，嚴格按以下結構：
+[
+  {
+    "name": "雞胸肉",
+    "quantity": 2,
+    "unit": "kg",
+    "category": "食材",
+    "location": "",
+    "price": 25.5,
+    "priority": "medium"
+  }
+]
+
+只返回 JSON 數組，不要有任何其他文字說明。如果無法識別任何物品，返回空數組 []。`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+  fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    mode: 'cors',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'qwen/qwen3.6-flash',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: currentImageBase64 } }
+          ]
+        }
+      ],
+      max_tokens: 4096,
+      temperature: 0.1,
+    }),
+    signal: controller.signal,
+  })
+  .then(async res => {
+    if (!res.ok) {
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const errBody = await res.json();
+        errMsg = errBody.error?.message || JSON.stringify(errBody).slice(0, 200);
+      } catch(_) {
+        try { errMsg = (await res.text()).slice(0, 200); } catch(_2) {}
+      }
+      throw new Error(errMsg);
+    }
+    return res.json();
+  })
+  .then(data => {
+    const content = data.choices?.[0]?.message?.content || '';
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
+    if (!jsonMatch) { throw new Error('無法解析 AI 返回結果'); }
+    const items = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(items) || !items.length) {
+      showToast('❌ 未識別到任何採購項');
+      document.getElementById('recProgress').style.display = 'none';
+      document.getElementById('recognizeBtn').disabled = false;
+      document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
+      return;
+    }
+    recognizedItems = items.map((item, idx) => ({
+      id: genId(),
+      name: item.name || `項目${idx+1}`,
+      quantity: parseFloat(item.quantity) || 1,
+      unit: item.unit || '',
+      category: item.category || '',
+      location: item.location || '',
+      price: parseFloat(item.price) || 0,
+      priority: normalizePriority(item.priority || 'medium'),
+      status: 'pending',
+      _checked: true,
+    }));
+    showRecognitionResult();
+  })
+  .catch(err => {
+    clearTimeout(timeoutId);
+    console.error('Vision API error:', err);
+    const msg = err.name === 'AbortError' ? '請求超時，請檢查網絡或壓縮圖片大小' : err.message.slice(0, 80);
+    showToast(`❌ 識別失敗：${msg}`);
+    document.getElementById('recProgress').style.display = 'none';
+    document.getElementById('recognizeBtn').disabled = false;
+    document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
+  });
+}
+
+function showRecognitionResult() {
+  document.getElementById('recProgress').style.display = 'none';
+  document.getElementById('recognizeBtn').disabled = false;
+  document.getElementById('recognizeBtn').textContent = '🔍 識別圖片';
+
+  const list = document.getElementById('recResultList');
+  const pLabel = { high: '⚡高', medium: '🟡中', low: '🟢低' };
+  const pClass = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' };
+
+  list.innerHTML = `
+    <div class="rr-summary">✅ 識別到 ${recognizedItems.length} 項（可取消勾選後導入）</div>
+    ${recognizedItems.map((item, i) => `
+      <div class="rr-item" data-idx="${i}">
+        <input type="checkbox" class="rr-check" checked onchange="toggleRecItem(${i})">
+        <span class="rr-name">${escHtml(item.name)}</span>
+        <span class="rr-detail">
+          ${item.quantity}${item.unit ? ' ' + item.unit : ''}
+          ${item.price ? `× ¥${item.price} = ¥${(item.price * item.quantity).toFixed((item.price*item.quantity)%1===0?0:2)}` : ''}
+          ${item.category ? `<span class="dot"></span> ${escHtml(item.category)}` : ''}
+          ${item.location ? `<span class="dot"></span> 📍${escHtml(item.location)}` : ''}
+          <span class="priority-badge ${pClass[item.priority]||''}">${pLabel[item.priority]||''}</span>
+        </span>
+      </div>
+    `).join('')}`;
+
+  const checked = recognizedItems.filter(i => i._checked).length;
+  document.getElementById('recResultCount').textContent = `已選 ${checked}/${recognizedItems.length} 項`;
+  document.querySelector('#recResultArea .btn-primary').textContent = `📥 導入選中項 (${checked})`;
+  document.getElementById('recResultArea').style.display = 'block';
+}
+
+function toggleRecItem(idx) {
+  if (recognizedItems[idx]) {
+    recognizedItems[idx]._checked = !recognizedItems[idx]._checked;
+    const checked = recognizedItems.filter(i => i._checked).length;
+    document.getElementById('recResultCount').textContent = `已選 ${checked}/${recognizedItems.length} 項`;
+    document.querySelector('#recResultArea .btn-primary').textContent = `📥 導入選中項 (${checked})`;
+  }
+}
+
+function importRecognizedItems() {
+  const toImport = recognizedItems.filter(i => i._checked);
+  if (!toImport.length) { showToast('❌ 請至少選擇一項'); return; }
+
+  const now = new Date().toISOString();
+  const timestamp = now.slice(0, 16).replace('T', ' ');
+
+  for (const item of toImport) {
+    const newItem = {
+      id: genId(),
+      name: item.name,
+      category: item.category,
+      location: item.location,
+      buyer: '',
+      deadline: '',
+      quantity: item.quantity,
+      unit: item.unit,
+      price: item.price,
+      priority: item.priority,
+      status: 'pending',
+      source: `圖片識別 (${timestamp})`,
+      tags: '',
+      notes: '',
+      priceHistory: [],
+      currentBestPrice: item.price,
+      lastUpdated: now,
+      lastUpdatedSource: `圖片識別 (${timestamp})`,
+      duplicateGroupId: '',
+    };
+    if (item.price > 0) {
+      newItem.priceHistory.push({
+        price: item.price,
+        date: now,
+        source: `圖片識別 (${timestamp})`,
+        location: item.location || ''
+      });
+    }
+    DATA.push(newItem);
+  }
+
+  loadedFiles.push(`🖼️ 圖片識別 (${timestamp})`);
+  loadedFiles = [...new Set(loadedFiles)];
+
+  saveData();
+  saveFiles();
+  renderAll();
+  closeUploadModal();
+  showToast(`✅ 已導入 ${toImport.length} 項`);
+}
+
+// ============================================================
+// MOBILE HELPERS
+// ============================================================
+function toggleGroupView() {
+  const sections = document.querySelectorAll('.group-section-header');
+  const allCollapsed = sections.length > 0 && [...sections].every(s => s.classList.contains('collapsed'));
+  sections.forEach(s => {
+    s.classList.toggle('collapsed', !allCollapsed);
+  });
+}
+
+function toggleMobileSearch() {
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.focus();
+    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// ============================================================
+// SERVICE WORKER (Offline cache)
+// ============================================================
+(function registerSW() {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    // Register a simple cache-first service worker via a blob URL
+    const swCode = `
+      const CACHE = 'procurement-cache-v1';
+      const ASSETS = ['.', 'index.html'];
+      self.addEventListener('install', e => {
+        e.waitUntil(
+          caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+        );
+      });
+      self.addEventListener('activate', e => {
+        e.waitUntil(clients.claim());
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.match(e.request).then(r => r || fetch(e.request))
+        );
+      });
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    // We register from a scope that matches
+    try {
+      navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(() => {});
+    } catch(e) {}
+  }
+})();
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+  // Preload API key if exists
+  const savedKey = localStorage.getItem(API_KEY_STORAGE);
+  if (savedKey) apiKeyLoaded = true;
+});
+</script>
+</body>
+</html>
