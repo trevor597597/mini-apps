@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>工作日誌 — 輸入事項工具 v1.2</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --blue-900: #1e3a5f;
+  --blue-800: #2c5282;
+  --blue-700: #3498db;
+  --blue-600: #5dade2;
+  --blue-50: #ebf5fb;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
+  --green-600: #16a34a;
+  --green-500: #22c55e;
+  --green-50: #f0fdf4;
+  --orange-500: #f59e0b;
+  --orange-100: #fef3c7;
+  --red-500: #ef4444;
+  --red-50: #fef2f2;
+  --amber-500: #f59e0b;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+body {
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: var(--slate-50);
+  color: var(--slate-700);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 0;
+}
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--slate-700); color: white; padding: 10px 24px;
+  border-radius: 8px; font-size: 0.9rem; z-index: 9999;
+  opacity: 0; transition: all 0.3s ease; pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.header {
+  background: linear-gradient(135deg, var(--blue-900), var(--blue-800));
+  color: white; padding: 20px 24px; text-align: center;
+}
+.header h1 { font-size: 1.3rem; font-weight: 700; }
+.header .sub { font-size: 0.8rem; opacity: 0.8; margin-top: 4px; }
+.container { max-width: 900px; margin: 0 auto; padding: 16px; }
+.card {
+  background: white; border-radius: var(--radius);
+  box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--slate-200);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.card-header h2 { font-size: 1rem; font-weight: 600; color: var(--blue-800); }
+.card-body { padding: 16px 20px; }
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.menu-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 8px; border: 1.5px solid var(--slate-200);
+  border-radius: 10px; background: white; cursor: pointer;
+  font-family: inherit; font-size: 0.82rem; color: var(--slate-700);
+  transition: all 0.15s; min-height: 70px;
+}
+.menu-btn:hover { border-color: var(--blue-700); background: var(--blue-50); }
+.menu-btn:active { transform: scale(0.97); }
+.menu-btn .icon { font-size: 1.5rem; }
+.menu-btn .label { font-weight: 500; }
+.menu-btn .hint { font-size: 0.65rem; color: var(--slate-400); }
+.menu-btn.primary { border-color: var(--blue-700); background: var(--blue-50); color: var(--blue-800); }
+.menu-btn.primary:hover { background: var(--blue-600); color: white; }
+.menu-btn.settings { border-color: var(--slate-300); color: var(--slate-500); font-size: 0.75rem; }
+.menu-btn.settings:hover { background: var(--slate-100); }
+.task-empty { text-align: center; color: var(--slate-400); padding: 20px; font-size: 0.9rem; }
+.task-grid { display: flex; flex-direction: column; gap: 8px; }
+.task-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 70px 80px 70px 70px auto;
+  align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 8px;
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  font-size: 0.8rem;
+}
+.task-row .time { font-weight: 700; color: var(--slate-700); }
+.task-row .desc { font-weight: 500; }
+.task-row .status-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 0.65rem; font-weight: 600; text-align: center;
+}
+.task-row .status-badge.done { background: var(--green-50); color: var(--green-600); }
+.task-row .status-badge.progress { background: var(--orange-100); color: var(--orange-500); }
+.task-row .status-badge.pending { background: var(--slate-100); color: var(--slate-500); }
+.task-row .status-badge.cancel { background: var(--red-50); color: var(--red-500); }
+.task-row .loc { color: var(--slate-500); font-size: 0.75rem; }
+.task-row .type { color: var(--slate-500); font-size: 0.75rem; }
+.task-row .photo-indicator { font-size: 0.7rem; text-align: center; }
+.task-row .task-actions { display: flex; gap: 2px; }
+.task-row .task-actions button {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 0.85rem; padding: 2px 4px; border-radius: 4px;
+  min-height: 28px; min-width: 26px;
+}
+.task-row .task-actions button:hover { background: var(--slate-200); }
+.task-row .task-actions button.del:hover { background: var(--red-50); }
+.task-row .task-actions button.move-up:hover { background: var(--blue-50); color: var(--blue-700); }
+.task-row .task-actions button.move-down:hover { background: var(--blue-50); color: var(--blue-700); }
+.status-bar {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  padding: 12px 0;
+}
+.status-item { flex: 1; min-width: 100px; text-align: center; cursor: default; }
+.status-item.clickable { cursor: pointer; }
+.status-item.clickable:hover .num { color: var(--blue-600); }
+.status-item .num { font-size: 1.4rem; font-weight: 700; color: var(--blue-700); transition: color 0.15s; }
+.status-item .lbl { font-size: 0.7rem; color: var(--slate-400); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 1000;
+  justify-content: center; align-items: flex-end;
+}
+.modal-overlay.show { display: flex; }
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; }
+}
+.modal {
+  background: white; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 0; animation: slideUp 0.25s ease;
+}
+@media (min-width: 640px) {
+  .modal { border-radius: 20px; max-height: 80vh; }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px 12px; border-bottom: 1px solid var(--slate-200);
+  position: sticky; top: 0; background: white; z-index: 1;
+}
+.modal-header h3 { font-size: 1rem; font-weight: 600; color: var(--blue-800); }
+.modal-close {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 1.4rem; color: var(--slate-400); padding: 4px;
+  min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 16px 20px; }
+.modal-footer {
+  padding: 12px 20px 20px;
+  display: flex; gap: 10px; justify-content: flex-end;
+  position: sticky; bottom: 0; background: white;
+  border-top: 1px solid var(--slate-100);
+}
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 0.78rem; font-weight: 600;
+  color: var(--slate-600); margin-bottom: 4px;
+}
+.form-group .hint { font-size: 0.7rem; color: var(--slate-400); margin-left: 4px; font-weight: 400; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--slate-300);
+  border-radius: 8px; font-family: inherit; font-size: 0.85rem;
+  color: var(--slate-700); outline: none; transition: border-color 0.15s;
+  background: white;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--blue-700); box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+}
+.form-textarea { resize: vertical; min-height: 60px; }
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+.form-select { cursor: pointer; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border: none; border-radius: 8px;
+  font-family: inherit; font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; min-height: 44px;
+}
+.btn-primary { background: var(--blue-700); color: white; }
+.btn-primary:hover { background: var(--blue-800); }
+.btn-secondary { background: var(--slate-100); color: var(--slate-600); }
+.btn-secondary:hover { background: var(--slate-200); }
+.btn-success { background: var(--green-600); color: white; }
+.btn-success:hover { background: #15803d; }
+.btn-danger { background: var(--red-500); color: white; }
+.btn-danger:hover { background: #dc2626; }
+.btn-sm { padding: 6px 14px; font-size: 0.78rem; min-height: 36px; }
+.btn-full { width: 100%; justify-content: center; }
+.preview-box {
+  background: var(--slate-50); border: 1px solid var(--slate-300);
+  border-radius: 8px; padding: 16px; font-family: "Consolas","SF Mono",monospace;
+  font-size: 0.78rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap;
+  max-height: 400px; overflow-y: auto; margin: 10px 0;
+}
+.photo-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.photo-thumb {
+  width: 60px; height: 60px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--slate-200); cursor: pointer;
+}
+.photo-thumb:hover { opacity: 0.8; }
+@media print {
+  body { background: white; padding: 0; }
+  .header, .menu-grid, .menu-btn, .btn, .modal-overlay:not(#modalPDFPreview),
+  .modal-overlay:not(#modalPDFPreview) *,
+  .task-actions, #toast, .status-bar { display: none !important; }
+  @page { size: A4; margin: 2cm; }
+  .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+  .container { max-width: 100%; padding: 0; }
+  .task-row { grid-template-columns: 100px 1fr 60px 70px 60px 60px; }
+  .preview-box { max-height: none; overflow: visible; white-space: pre-wrap; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }
+.btn-xlsx { background: #27ae60; color: white; }
+.btn-xlsx:hover { background: #219a52; }
+.btn-xlsx-photo { background: #8e44ad; color: white; }
+.btn-xlsx-photo:hover { background: #7d3c98; }
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--slate-400);
+}
+.empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+.empty-state p { font-size: 0.9rem; }
+@media (max-width: 640px) {
+  .header { padding: 14px 16px; }
+  .header h1 { font-size: 1.1rem; }
+  .container { padding: 12px; }
+  .card-header { padding: 12px 16px; }
+  .card-body { padding: 12px 16px; }
+  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .task-row {
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: auto auto;
+    gap: 4px 8px;
+    padding: 10px;
+    position: relative;
+  }
+  .task-row .time { grid-column: 1; }
+  .task-row .desc { grid-column: 2; font-weight: 600; }
+  .task-row .status-badge { grid-column: 1; justify-self: start; }
+  .task-row .loc { grid-column: 2; font-size: 0.7rem; color: var(--slate-400); }
+  .task-row .type, .task-row .photo-indicator { display: none; }
+  .task-row .task-actions {
+    position: absolute; top: 6px; right: 6px;
+  }
+  .form-row { flex-direction: column; gap: 0; }
+  .modal { border-radius: 16px 16px 0 0; }
+  .status-item .num { font-size: 1.1rem; }
+}
+.split-card {
+  background: var(--blue-50); border: 1px solid var(--blue-600);
+  border-radius: 8px; padding: 12px; margin: 10px 0;
+}
+.split-card h4 { font-size: 0.85rem; color: var(--blue-800); margin-bottom: 8px; }
+.photo-assign {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid var(--slate-200);
+  font-size: 0.8rem;
+}
+.photo-assign:last-child { border-bottom: none; }
+.photo-assign select {
+  padding: 4px 8px; border: 1px solid var(--slate-300); border-radius: 6px;
+  font-family: inherit; font-size: 0.78rem;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 工作日誌 — 輸入事項工具 v1.2</h1>
+  <div class="sub">載入 XLSX · 順序調換 · 圖片匯出</div>
+</div>
+
+<div class="container" id="app">
+  <div class="card">
+    <div class="card-body" id="statusArea">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">📄</div>
+        <p>尚未開始今日記錄</p>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="startNewDay()">📝 開始新工作日誌（開工）</button>
+        <button class="btn btn-secondary" style="margin-top:8px" onclick="showTemplate()">📖 查看模板格式</button>
+      </div>
+      <div id="activeStatus" style="display:none">
+        <div class="status-bar">
+          <div class="status-item clickable" onclick="openSettings()"><div class="num" id="statDate">—</div><div class="lbl">📅 日期（點擊修改）</div></div>
+          <div class="status-item"><div class="num" id="statPerson">—</div><div class="lbl">👤 人員</div></div>
+          <div class="status-item"><div class="num" id="statTasks">0</div><div class="lbl">事項</div></div>
+          <div class="status-item"><div class="num" id="statPhotos">0</div><div class="lbl">照片</div></div>
+          <div class="status-item"><div class="num" id="statStatus">⚠</div><div class="lbl">狀態</div></div>
+        </div>
+        <div class="menu-grid" style="margin-top:12px">
+          <button class="menu-btn" onclick="addTask()"><span class="icon">➕</span><span class="label">新增事項</span></button>
+          <button class="menu-btn" onclick="viewEditTasks()"><span class="icon">📝</span><span class="label">檢視/編輯</span></button>
+          <button class="menu-btn" onclick="splitTask()"><span class="icon">✂️</span><span class="label">拆分事項</span></button>
+          <button class="menu-btn" onclick="addPhotos()"><span class="icon">📸</span><span class="label">添加照片</span></button>
+          <button class="menu-btn" onclick="fillNotes()"><span class="icon">📝</span><span class="label">填寫備註</span></button>
+          <button class="menu-btn primary" onclick="finishDay()"><span class="icon">🏁</span><span class="label">收工 &amp; 儲存</span></button>
+          <button class="menu-btn" onclick="exportXLSX()"><span class="icon">📊</span><span class="label">匯出 XLSX</span></button>
+          <button class="menu-btn settings" onclick="openSettings()"><span class="icon">⚙️</span><span class="label">設置</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="taskListCard" style="display:none">
+    <div class="card-header">
+      <h2>📋 時間軸記錄</h2>
+      <span id="taskCount" style="font-size:0.8rem;color:var(--slate-400)">0 項</span>
+    </div>
+    <div class="card-body" id="taskListBody">
+      <div class="task-empty">尚無事項</div>
+    </div>
+  </div>
+
+  <div class="card" id="notesCard" style="display:none">
+    <div class="card-header"><h2>📌 備註區塊</h2></div>
+    <div class="card-body" id="notesBody">
+      <div style="font-size:0.8rem;color:var(--slate-400)">尚未填寫</div>
+    </div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none">
+    <div class="card-header">
+      <h2>📄 Markdown 預覽</h2>
+      <button class="btn btn-sm btn-secondary" onclick="refreshPreview()">🔄 重新生成</button>
+    </div>
+    <div class="card-body">
+      <div class="preview-box" id="markdownPreview"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="copyMarkdown()">📋 複製</button>
+        <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
+        <button class="btn btn-sm btn-xlsx" onclick="exportXLSX()">📊 匯出 XLSX</button>
+        <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ 匯出 XLSX（含圖）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load XLSX Card -->
+  <div class="card">
+    <div class="card-header"><h2>📂 載入 XLSX 工作日誌</h2></div>
+    <div class="card-body">
+      <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:12px">
+        載入已有的 .xlsx 工作日誌檔案，繼續編輯
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label class="btn btn-primary" style="cursor:pointer">
+          📁 選擇 .xlsx 檔案
+          <input type="file" accept=".xlsx" id="xlsxFileInput"
+                 onchange="loadXLSX(event)" style="display:none">
+        </label>
+      </div>
+      <div id="xlsxLoadInfo" style="display:none;margin-top:14px;border-top:1px solid var(--slate-200);padding-top:14px">
+        <div id="xlsxLoadStatus" style="font-size:0.85rem;color:var(--green-600);font-weight:600"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ============ MODALS ============ -->
+
+<div class="modal-overlay" id="modalNewDay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📝 開工 — 新工作日誌</h3>
+      <button class="modal-close" onclick="closeModal('modalNewDay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>日期</label><input class="form-input" id="fDate" type="date"></div>
+      <div class="form-group"><label>人員</label><input class="form-input" id="fPerson" value="傑"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalNewDay')">取消</button>
+      <button class="btn btn-primary" onclick="confirmNewDay()">✅ 開始記錄</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalTask">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTaskTitle">➕ 新增事項</h3>
+      <button class="modal-close" onclick="closeModal('modalTask')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>開始時間</label><input class="form-input" id="fStart" type="time"></div>
+        <div class="form-group"><label>結束時間</label><input class="form-input" id="fEnd" type="time"></div>
+      </div>
+      <div class="form-group"><label>事項內容</label><input class="form-input" id="fDesc" placeholder="例如：更換消防閥門"></div>
+      <div class="form-group">
+        <label>完成度</label>
+        <select class="form-select" id="fStatus">
+          <option value="已完成">已完成</option>
+          <option value="進行中">進行中</option>
+          <option value="待辦">待辦</option>
+          <option value="已取消">已取消</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>地點</label>
+          <select class="form-select" id="fLocation">
+            <option value="君悅酒店">君悅酒店</option>
+            <option value="星際酒店">星際酒店</option>
+            <option value="雅辰酒店">雅辰酒店</option>
+            <option value="辨公室(文創園)">辨公室(文創園)</option>
+            <option value="辨公室(珠海永發大廈)">辨公室(珠海永發大廈)</option>
+            <option value="南光倉庫">南光倉庫</option>
+            <option value="—">—</option>
+            <option value="__custom__">其他（請輸入）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>工種 <span class="hint">可選</span></label>
+          <select class="form-select" id="fWorkType">
+            <option value="—">—</option>
+            <option value="維修">維修</option>
+            <option value="落貨">落貨</option>
+            <option value="助手">助手</option>
+            <option value="安裝">安裝</option>
+            <option value="檢查">檢查</option>
+            <option value="搬運">搬運</option>
+            <option value="焊接">焊接</option>
+            <option value="除銹">除銹</option>
+            <option value="__custom__">其他（請輸入）</option>
+          </select>
+        </div>
+      </div>
+      <div id="customLocationGroup" class="form-group" style="display:none">
+        <label>請輸入地點</label><input class="form-input" id="fCustomLocation" placeholder="輸入自訂地點">
+      </div>
+      <div id="customWorkTypeGroup" class="form-group" style="display:none">
+        <label>請輸入工種</label><input class="form-input" id="fCustomWorkType" placeholder="輸入自訂工種">
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="fHasPhoto" onchange="document.getElementById('fPhotoPathGroup').style.display=this.checked?'block':'none'"> 有拍照</label>
+      </div>
+      <div class="form-group" id="fPhotoPathGroup" style="display:none">
+        <label>添加照片</label>
+        <input class="form-input" id="fPhotoInput" type="file" accept="image/*" multiple style="padding:8px;font-size:0.78rem">
+        <div class="hint" style="margin-top:4px">照片儲存在 IndexedDB，無容量限制</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalTask')">取消</button>
+      <button class="btn btn-primary" onclick="confirmTask()">✅ 確定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalEditSelect">
+  <div class="modal">
+    <div class="modal-header"><h3>📝 檢視/編輯事項</h3><button class="modal-close" onclick="closeModal('modalEditSelect')">✕</button></div>
+    <div class="modal-body" id="editSelectBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalEditSelect')">關閉</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalEditTask">
+  <div class="modal">
+    <div class="modal-header"><h3>✏️ 編輯事項</h3><button class="modal-close" onclick="closeModal('modalEditTask')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label>時間範圍</label><input class="form-input" id="feTime" placeholder="09:00-10:00"></div></div>
+      <div class="form-group"><label>事項內容</label><input class="form-input" id="feDesc"></div>
+      <div class="form-group"><label>完成度</label><select class="form-select" id="feStatus"><option value="已完成">已完成</option><option value="進行中">進行中</option><option value="待辦">待辦</option><option value="已取消">已取消</option></select></div>
+      <div class="form-row"><div class="form-group"><label>地點</label><input class="form-input" id="feLocation"></div><div class="form-group"><label>工種</label><input class="form-input" id="feWorkType"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEditTask')">取消</button>
+      <button class="btn btn-danger" id="feDeleteBtn" onclick="feDeleteTask()">🗑️ 刪除</button>
+      <button class="btn btn-primary" onclick="feConfirmEdit()">✅ 儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSplit">
+  <div class="modal">
+    <div class="modal-header"><h3>✂️ 拆分事項</h3><button class="modal-close" onclick="closeModal('modalSplit')">✕</button></div>
+    <div class="modal-body" id="splitBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalSplit')">取消</button><button class="btn btn-primary" onclick="confirmSplit()">✅ 確認拆分</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPhotos">
+  <div class="modal">
+    <div class="modal-header"><h3>📸 添加照片</h3><button class="modal-close" onclick="closeModal('modalPhotos')">✕</button></div>
+    <div class="modal-body" id="photosBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalPhotos')">完成</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalNotes">
+  <div class="modal">
+    <div class="modal-header"><h3>📝 填寫底部區塊</h3><button class="modal-close" onclick="closeModal('modalNotes')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>問題（逐行輸入）</label><textarea class="form-textarea" id="fProblems" rows="3"></textarea></div>
+      <div class="form-group"><label>風險</label><textarea class="form-textarea" id="fRisks" rows="3"></textarea></div>
+      <div class="form-group"><label>待跟進</label><textarea class="form-textarea" id="fFollowups" rows="3"></textarea></div>
+      <div class="form-group"><label>小復盤</label><textarea class="form-textarea" id="fSummary" rows="4"></textarea></div>
+      <div class="form-group"><label>明日優先 TOP3</label><input class="form-input" id="fTop1" placeholder="TOP1" style="margin-bottom:6px"><input class="form-input" id="fTop2" placeholder="TOP2" style="margin-bottom:6px"><input class="form-input" id="fTop3" placeholder="TOP3"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalNotes')">取消</button><button class="btn btn-primary" onclick="confirmNotes()">✅ 儲存</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalFinish">
+  <div class="modal">
+    <div class="modal-header"><h3>🏁 收工 &amp; 儲存</h3><button class="modal-close" onclick="closeModal('modalFinish')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>收工時間</label><input class="form-input" id="fEndTime" type="time" value="17:00"></div>
+      <div class="form-group"><label>日誌預覽</label><div class="preview-box" id="finishPreview" style="max-height:300px"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalFinish')">取消</button><button class="btn btn-primary" onclick="confirmFinish()">💾 儲存日誌</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalTemplate">
+  <div class="modal">
+    <div class="modal-header"><h3>📖 工作日誌模板 v5.6 格式</h3><button class="modal-close" onclick="closeModal('modalTemplate')">✕</button></div>
+    <div class="modal-body"><div class="preview-box" style="max-height:none;font-size:0.78rem">
+| 時間 | 事項 | 完成度 | 地點 | 工種 | 照片 |
+|------|------|--------|------|------|------|
+| 09:00-09:04 | 開工 | 已完成 | — | — | 無照片 |
+| 09:04-10:11 | 更換零件 | 已完成 | 星際酒店 | 維修 | 有拍照 |
+| 17:00-17:00 | 收工 | 已完成 | — | — | 無照片 |
+
+底部區塊：問題／風險／待跟進（表格） 小復盤（文字） 明日優先 TOP3（列表）
+
+常用地點：君悅酒店 / 星際酒店 / 雅辰酒店 / 辨公室(文創園) / 辨公室(珠海永發大廈) / 南光倉庫
+常用工種：維修 / 落貨 / 助手 / 安裝 / 檢查 / 搬運 / 焊接 / 除銹
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalTemplate')">關閉</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>⚠️ 確認</h3><button class="modal-close" onclick="closeModal('modalConfirm')">✕</button></div>
+    <div class="modal-body"><p id="confirmText" style="font-size:0.9rem"></p></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalConfirm')">取消</button><button class="btn btn-danger" id="confirmBtn">確認</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalImageViewer">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header"><h3>🖼️ 圖片</h3><button class="modal-close" onclick="closeModal('modalImageViewer')">✕</button></div>
+    <div class="modal-body" style="text-align:center"><img id="viewerImage" src="" alt="照片" style="max-width:100%;max-height:70vh;border-radius:8px"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSettings">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>⚙️ 設置</h3><button class="modal-close" onclick="closeModal('modalSettings')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>日期</label><input class="form-input" id="sDate" type="date"></div>
+      <div class="form-group"><label>人員</label><input class="form-input" id="sPerson" value="傑"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalSettings')">取消</button><button class="btn btn-primary" onclick="confirmSettings()">✅ 儲存</button></div>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTS ──
+const STORAGE_KEY = 'worklog_input_v1';
+const DB_NAME = 'WorklogPhotos';
+const DB_VERSION = 1;
+const DB_STORE = 'photos';
+
+// ── INDEXEDDB PHOTO STORAGE ──
+let _photoDB = null;
+function initPhotoDB() {
+  return new Promise((resolve, reject) => {
+    if (_photoDB) { resolve(_photoDB); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id', autoIncrement: true });
+    };
+    req.onsuccess = (e) => { _photoDB = e.target.result; resolve(_photoDB); };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+function savePhotoToDB(dataUrl) {
+  return initPhotoDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const req = tx.objectStore(DB_STORE).add({ dataUrl, created: Date.now() });
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  }));
+}
+function savePhotosToDB(dataUrls) {
+  if (!dataUrls || dataUrls.length === 0) return Promise.resolve([]);
+  return Promise.all(dataUrls.map(url => savePhotoToDB(url)));
+}
+function getPhotoFromDB(id) {
+  return initPhotoDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).get(id);
+    req.onsuccess = e => resolve(e.target.result ? e.target.result.dataUrl : null);
+    req.onerror = e => reject(e.target.error);
+  }));
+}
+function getPhotosFromDB(ids) {
+  if (!ids || ids.length === 0) return Promise.resolve([]);
+  return Promise.all(ids.map(id => getPhotoFromDB(id)));
+}
+function deletePhotoFromDB(id) {
+  return initPhotoDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const req = tx.objectStore(DB_STORE).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = e => reject(e.target.error);
+  }));
+}
+
+// ── STORAGE ──
+let log = null;
+let toastTimer = null;
+let editIdx = -1;
+let splitTargetIdx = -1;
+let confirmCallback = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && data.dateStr) {
+        if (data.tasks) {
+          const migratePromises = [];
+          data.tasks.forEach(t => {
+            if (t.photos && Array.isArray(t.photos) && t.photos.length > 0) {
+              const first = t.photos[0];
+              if (typeof first === 'string' && first.startsWith('data:')) {
+                migratePromises.push(savePhotosToDB(t.photos).then(ids => { t.photos = ids; }));
+              } else if (typeof first === 'object' && first.dataUrl) {
+                migratePromises.push(savePhotosToDB(t.photos.map(p => p.dataUrl)).then(ids => { t.photos = ids; }));
+              } else if (typeof first === 'object' && first.src) {
+                migratePromises.push(savePhotosToDB(t.photos.map(p => p.src)).then(ids => { t.photos = ids; }));
+              }
+            }
+          });
+          if (migratePromises.length > 0) Promise.all(migratePromises).then(() => { saveData(); render(); });
+        }
+        log = data;
+      }
+    }
+  } catch(e) { console.error('loadData error:', e); }
+  render();
+}
+function saveData() {
+  if (log) localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+  else localStorage.removeItem(STORAGE_KEY);
+}
+
+// ── HELPERS ──
+function showToast(msg, d) { if (toastTimer) clearTimeout(toastTimer); const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); toastTimer = setTimeout(() => el.classList.remove('show'), d||2000); }
+function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
+function getWeekday(ds) { const d = new Date(ds); return ['週日','週一','週二','週三','週四','週五','週六'][d.getDay()]; }
+function formatDate(ds) { return ds.replace(/-/g, '/'); }
+function todayStr() { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function getLastEndTime() { if (!log||!log.tasks||!log.tasks.length) return '09:00'; const last=log.tasks[log.tasks.length-1]; const p=last.timeRange.split('-'); return p.length>1?p[1]:'09:00'; }
+
+// ── RENDER ──
+function render() {
+  if (!log) {
+    document.getElementById('emptyState').style.display='block';
+    document.getElementById('activeStatus').style.display='none';
+    document.getElementById('taskListCard').style.display='none';
+    document.getElementById('notesCard').style.display='none';
+    document.getElementById('previewCard').style.display='none';
+    return;
+  }
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('activeStatus').style.display='block';
+  document.getElementById('statDate').textContent=formatDate(log.dateStr);
+  document.getElementById('statPerson').textContent=log.person||'傑';
+  document.getElementById('statTasks').textContent=log.tasks.length;
+  document.getElementById('statPhotos').textContent=log.tasks.reduce((s,t)=>s+(t.photos?t.photos.length:0),0);
+  document.getElementById('statStatus').textContent=log.tasks.some(t=>t.desc==='收工')?'✅ 已收工':'🔄 進行中';
+  renderTaskList(); renderNotes(); refreshPreview();
+}
+
+function renderTaskList() {
+  const card=document.getElementById('taskListCard'), body=document.getElementById('taskListBody'), cnt=document.getElementById('taskCount');
+  if (!log||!log.tasks||!log.tasks.length) { card.style.display='none'; return; }
+  card.style.display='block'; cnt.textContent=log.tasks.length+' 項';
+  let html='<div class="task-grid">';
+  log.tasks.forEach((t,i)=>{
+    const sc=t.status==='已完成'?'done':t.status==='進行中'?'progress':t.status==='待辦'?'pending':'cancel';
+    const pc=t.photos?t.photos.length:0, pi=pc>0?'📸 '+pc:t.photoStatus==='有拍照'?'📸':'—';
+    const canUp=i>0, canDown=i<log.tasks.length-1;
+    html+=`<div class="task-row">
+      <div class="time">${escHtml(t.timeRange)}</div>
+      <div class="desc">${escHtml(t.desc)}</div>
+      <div><span class="status-badge ${sc}">${escHtml(t.status)}</span></div>
+      <div class="loc">${escHtml(t.location)}</div>
+      <div class="type">${escHtml(t.workType)}</div>
+      <div class="photo-indicator">${pi}</div>
+      <div class="task-actions">
+        ${canUp?`<button class="move-up" onclick="moveTask(${i},-1)" title="上移">↑</button>`:''}
+        <button onclick="openEditTask(${i})" title="編輯">✏️</button>
+        <button class="del" onclick="deleteTask(${i})" title="刪除">🗑️</button>
+        ${canDown?`<button class="move-down" onclick="moveTask(${i},1)" title="下移">↓</button>`:''}
+      </div>
+    </div>`;
+    if (pc>0) html+=`<div class="photo-thumbs" id="thumbs_${i}"><span style="color:var(--slate-400);font-size:0.7rem">載入照片...</span></div>`;
+  });
+  html+='</div>'; body.innerHTML=html;
+  log.tasks.forEach((t,i)=>{if(t.photos&&t.photos.length>0)loadTaskThumbnails(i,t.photos);});
+}
+
+function loadTaskThumbnails(ti,ids) {
+  const c=document.getElementById('thumbs_'+ti); if(!c) return;
+  getPhotosFromDB(ids).then(urls=>{
+    let h=''; urls.forEach((s,pi)=>{if(s)h+=`<img class="photo-thumb" src="${escHtml(s)}" onclick="viewImage('${escHtml(s)}')" title="照片 ${pi+1}">`;});
+    c.innerHTML=h||'<span style="color:var(--slate-400);font-size:0.7rem">照片不可用</span>';
+  }).catch(()=>{c.innerHTML='<span style="color:var(--slate-400);font-size:0.7rem">載入失敗</span>';});
+}
+
+function renderNotes() {
+  const card=document.getElementById('notesCard'), body=document.getElementById('notesBody');
+  if(!log){card.style.display='none';return;}
+  const hp=log.problems&&log.problems.length>0, hr=log.risks&&log.risks.length>0, hf=log.followups&&log.followups.length>0, hs=log.summary, ht=log.top3&&log.top3.some(Boolean);
+  if(!hp&&!hr&&!hf&&!hs&&!ht){card.style.display='none';return;}
+  card.style.display='block'; let html='';
+  if(hp)html+=`<div style="margin-bottom:6px"><strong>⚠️ 問題：</strong>${log.problems.map(p=>escHtml(p)).join('；')}</div>`;
+  if(hr)html+=`<div style="margin-bottom:6px"><strong>🔴 風險：</strong>${log.risks.map(r=>escHtml(r)).join('；')}</div>`;
+  if(hf)html+=`<div style="margin-bottom:6px"><strong>📌 待跟進：</strong>${log.followups.map(f=>escHtml(f)).join('；')}</div>`;
+  if(hs)html+=`<div style="margin-bottom:6px"><strong>📝 小復盤：</strong>${escHtml(log.summary)}</div>`;
+  if(ht){html+='<div><strong>🎯 明日優先：</strong>';log.top3.forEach((item,i)=>{if(item)html+=`<br>${i+1}. ${escHtml(item)}`;});html+='</div>';}
+  body.innerHTML=html;
+}
+
+function generateMarkdown() {
+  if(!log)return '# 無數據';
+  const dd=formatDate(log.dateStr), wd=getWeekday(log.dateStr);
+  let md=`# 工作日誌 ${dd}（${wd}）\n\n人員：${escHtml(log.person||'傑')}\n\n---\n\n## 時間軸\n\n| 時間 | 事項 | 完成度 | 地點 | 工種 | 照片 |\n|------|------|--------|------|------|------|\n`;
+  if(log.tasks)log.tasks.forEach(t=>{const l=t.location||'—', w=t.workType||'—', p=t.photoStatus||'無照片';md+=`| <strong>${escHtml(t.timeRange)}</strong> | ${escHtml(t.desc)} | ${escHtml(t.status)} | ${escHtml(l)} | ${escHtml(w)} | ${p} |\n`;});
+  md+='\n---\n\n## 問題／風險／待跟進\n\n| 問題 | 風險 | 待跟進 |\n|------|------|--------|\n';
+  const pr=log.problems||[], ri=log.risks||[], fl=log.followups||[], ml=Math.max(pr.length,ri.length,fl.length,1);
+  for(let i=0;i<ml;i++){const p=i<pr.length?pr[i]:'', r=i<ri.length?ri[i]:'', f=i<fl.length?fl[i]:'';md+=`| ${escHtml(p)} | ${escHtml(r)} | ${escHtml(f)} |\n`;}
+  md+='\n---\n\n## 小復盤\n\n'+(log.summary||'（無）')+'\n\n---\n\n## 明日優先 TOP3\n\n';
+  for(let i=0;i<3;i++){const item=log.top3&&log.top3[i]?log.top3[i]:'—';md+=`${i+1}. ${escHtml(item)}\n`;}
+  return md;
+}
+function refreshPreview(){if(!log){document.getElementById('previewCard').style.display='none';return;}document.getElementById('previewCard').style.display='block';document.getElementById('markdownPreview').textContent=generateMarkdown();}
+function copyMarkdown(){const t=generateMarkdown();navigator.clipboard.writeText(t).then(()=>showToast('✅ 已複製到剪貼簿')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ 已複製到剪貼簿');});}
+function downloadMarkdown(){const t=generateMarkdown(),ds=log.dateStr.replace(/-/g,''),b=new Blob([t],{type:'text/markdown;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`工作日誌_${ds}.md`;a.click();URL.revokeObjectURL(a.href);showToast('✅ 已下載 .md 檔案');}
+function viewImage(src){document.getElementById('viewerImage').src=src;openModal('modalImageViewer');}
+
+// ── FEATURE: Task Reordering ──
+function moveTask(idx, dir) {
+  if (!log || !log.tasks) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= log.tasks.length) return;
+  // Swap
+  const temp = log.tasks[idx];
+  log.tasks[idx] = log.tasks[newIdx];
+  log.tasks[newIdx] = temp;
+  saveData();
+  render();
+  showToast(`✅ 已${dir<0?'上':'下'}移：${temp.desc}`);
+}
+
+// ── FEATURE: Start New Day ──
+function startNewDay(){const t=todayStr();document.getElementById('fDate').value=t;document.getElementById('fPerson').value='傑';openModal('modalNewDay');}
+function confirmNewDay(){
+  const ds=document.getElementById('fDate').value, p=document.getElementById('fPerson').value.trim()||'傑';
+  if(!ds){showToast('⚠️ 請選擇日期');return;}
+  log={dateStr:ds,person:p,tasks:[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[]}],problems:[],risks:[],followups:[],summary:'',top3:['','','']};
+  saveData();closeModal('modalNewDay');render();showToast(`✅ 已建立 ${formatDate(ds)}（${getWeekday(ds)}）工作日誌`);
+  setTimeout(()=>addTask(),300);
+}
+
+// ── FEATURE: Add Task ──
+function addTask(){
+  if(!log){showToast('⚠️ 請先開工');return;}
+  editIdx=-1;document.getElementById('modalTaskTitle').textContent='➕ 新增事項';
+  const def=getLastEndTime();
+  document.getElementById('fStart').value=def;document.getElementById('fEnd').value='';
+  document.getElementById('fDesc').value='';document.getElementById('fStatus').value='已完成';
+  document.getElementById('fLocation').value='—';document.getElementById('fWorkType').value='—';
+  document.getElementById('fHasPhoto').checked=false;document.getElementById('fPhotoPathGroup').style.display='none';
+  document.getElementById('fPhotoInput').value='';document.getElementById('customLocationGroup').style.display='none';document.getElementById('customWorkTypeGroup').style.display='none';
+  openModal('modalTask');
+}
+function confirmTask(){
+  const s=document.getElementById('fStart').value,e=document.getElementById('fEnd').value,d=document.getElementById('fDesc').value.trim(),st=document.getElementById('fStatus').value;
+  let loc=document.getElementById('fLocation').value;if(loc==='__custom__')loc=document.getElementById('fCustomLocation').value.trim()||'—';
+  let wt=document.getElementById('fWorkType').value;if(wt==='__custom__')wt=document.getElementById('fCustomWorkType').value.trim()||'—';
+  if(!s||!e){showToast('⚠️ 請填寫時間');return;} if(!d){showToast('⚠️ 請填寫事項內容');return;}
+  const hp=document.getElementById('fHasPhoto').checked, ps=hp?'有拍照':'無照片', fi=document.getElementById('fPhotoInput');
+  if(hp&&fi.files&&fi.files.length>0){
+    const files=Array.from(fi.files);
+    Promise.all(files.map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(f);}))).then(results=>{
+      const urls=results.filter(x=>x);
+      savePhotosToDB(urls).then(ids=>{log.tasks.push({timeRange:`${s}-${e}`,desc:d,status:st,location:loc,workType:wt,photoStatus:ids.length>0?'有拍照':'無照片',photos:ids});saveData();closeModal('modalTask');render();showToast(`✅ 已新增：${d}（${s}-${e}）`);});
+    });return;
+  }
+  log.tasks.push({timeRange:`${s}-${e}`,desc:d,status:st,location:loc,workType:wt,photoStatus:ps,photos:[]});
+  saveData();closeModal('modalTask');render();showToast(`✅ 已新增：${d}（${s}-${e}）`);
+}
+
+// ── FEATURE: Edit Tasks ──
+function viewEditTasks(){
+  if(!log||!log.tasks||!log.tasks.length){showToast('尚無事項');return;}
+  const b=document.getElementById('editSelectBody');let h='<div style="font-size:0.85rem">點擊事項以編輯：</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">';
+  log.tasks.forEach((t,i)=>{h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;cursor:pointer" onclick="openEditTask(${i})"><span style="color:var(--slate-400);font-size:0.75rem;min-width:20px">[${i}]</span><span style="font-weight:600;min-width:80px">${escHtml(t.timeRange)}</span><span style="flex:1">${escHtml(t.desc)}</span><span style="color:var(--slate-400);font-size:0.75rem">${escHtml(t.status)}</span></div>`;});
+  h+='</div>';b.innerHTML=h;openModal('modalEditSelect');
+}
+function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];editIdx=i;document.getElementById('feTime').value=t.timeRange;document.getElementById('feDesc').value=t.desc;document.getElementById('feStatus').value=t.status;document.getElementById('feLocation').value=t.location;document.getElementById('feWorkType').value=t.workType;document.getElementById('feDeleteBtn').onclick=function(){feDeleteTask(i);};openModal('modalEditTask');}
+function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];t.timeRange=document.getElementById('feTime').value||t.timeRange;t.desc=document.getElementById('feDesc').value.trim()||t.desc;t.status=document.getElementById('feStatus').value;t.location=document.getElementById('feLocation').value.trim()||'—';t.workType=document.getElementById('feWorkType').value.trim()||'—';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
+function feDeleteTask(i){const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{(log.tasks[i].photos||[]).forEach(id=>deletePhotoFromDB(id));log.tasks.splice(i,1);saveData();closeModal('modalEditTask');render();showToast(`✅ 已刪除：${d}`);});}
+function deleteTask(i){const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{(log.tasks[i].photos||[]).forEach(id=>deletePhotoFromDB(id));log.tasks.splice(i,1);saveData();render();showToast(`✅ 已刪除：${d}`);});}
+
+// ── FEATURE: Split Task ──
+function splitTask(){
+  if(!log||!log.tasks){showToast('⚠️ 請先開工');return;}
+  const sp=log.tasks.map((t,i)=>({idx:i,task:t})).filter(x=>x.task.desc!=='開工'&&x.task.desc!=='收工');
+  if(!sp.length){showToast('無事項可拆分');return;}
+  let h='<div style="font-size:0.85rem;margin-bottom:10px">選擇要拆分的事項：</div>';
+  sp.forEach((s,i)=>{h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;cursor:pointer" onclick="selectSplitTask(${i})"><span style="font-weight:600;min-width:80px">${escHtml(s.task.timeRange)}</span><span>${escHtml(s.task.desc)}</span>${s.task.photos&&s.task.photos.length>0?`<span style="color:var(--slate-400)">📸 ${s.task.photos.length}</span>`:''}</div>`;});
+  document.getElementById('splitBody').innerHTML=h;splitTargetIdx=-1;openModal('modalSplit');
+}
+function selectSplitTask(ch){
+  const sp=log.tasks.map((t,i)=>({idx:i,task:t})).filter(x=>x.task.desc!=='開工'&&x.task.desc!=='收工');
+  const o=sp[ch];splitTargetIdx=ch;
+  let h=`<div class="split-card"><h4>✂️ 拆分：${escHtml(o.task.desc)}</h4><div style="font-size:0.8rem;color:var(--slate-500)">原時間：${o.task.timeRange}</div></div>`;
+  h+='<div class="form-group"><label>拆分邊界時間 <span class="hint">HH:MM</span></label><input class="form-input" id="splitBoundary" type="time"></div>';
+  h+=`<div class="form-row"><div class="form-group"><label>子事項 1 名稱</label><input class="form-input" id="splitName1" value="${escHtml(o.task.desc)}"></div><div class="form-group"><label>子事項 2 名稱</label><input class="form-input" id="splitName2" value="${escHtml(o.task.desc)}（續）"></div></div>`;
+  if(o.task.photos&&o.task.photos.length>0){
+    h+='<div style="margin-top:12px"><strong style="font-size:0.85rem">📸 照片重新分配：</strong></div>';
+    o.task.photos.forEach((pid,pi)=>{h+=`<div class="photo-assign" id="splitPhotoRow_${pi}"><span id="splitPhotoThumb_${pi}" style="width:36px;height:36px;border-radius:4px;background:var(--slate-100);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem">載入中</span><span style="flex:1">照片 ${pi+1}</span><span>歸屬：</span><select id="splitPhoto_${pi}"><option value="1">子事項 1</option><option value="2">子事項 2</option></select></div>`;
+      getPhotoFromDB(pid).then(url=>{const t=document.getElementById('splitPhotoThumb_'+pi);if(t&&url)t.innerHTML=`<img src="${escHtml(url)}" style="width:36px;height:36px;object-fit:cover;border-radius:4px">`;else if(t)t.textContent='📷';});
+    });
+  }
+  document.getElementById('splitBody').innerHTML=h;
+}
+function confirmSplit(){
+  const sp=log.tasks.map((t,i)=>({idx:i,task:t})).filter(x=>x.task.desc!=='開工'&&x.task.desc!=='收工');
+  if(splitTargetIdx<0||splitTargetIdx>=sp.length){showToast('⚠️ 請先選擇要拆分的事項');return;}
+  const oi=sp[splitTargetIdx].idx, ot=log.tasks[oi], b=document.getElementById('splitBoundary').value;
+  if(!b){showToast('⚠️ 請輸入拆分邊界時間');return;}
+  const n1=document.getElementById('splitName1').value.trim()||ot.desc, n2=document.getElementById('splitName2').value.trim()||ot.desc+'（續）';
+  const parts=ot.timeRange.split('-'), start=parts[0], end=parts[1];
+  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[]};
+  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[]};
+  if(ot.photos&&ot.photos.length>0){ot.photos.forEach((pid,pi)=>{const s=document.getElementById('splitPhoto_'+pi);if(s&&s.value==='2')t2.photos.push(pid);else t1.photos.push(pid);});t1.photoStatus=t1.photos.length>0?'有拍照':'無照片';t2.photoStatus=t2.photos.length>0?'有拍照':'無照片';}
+  log.tasks[oi]=t1;log.tasks.splice(oi+1,0,t2);saveData();closeModal('modalSplit');render();showToast(`✅ 已拆分：${ot.desc}`);
+}
+
+// ── FEATURE: Add Photos ──
+function addPhotos(){
+  if(!log||!log.tasks){showToast('⚠️ 請先開工');return;}
+  const pt=log.tasks.map((t,i)=>({idx:i,task:t})).filter(x=>x.task.desc!=='開工'&&x.task.desc!=='收工');
+  if(!pt.length){showToast('尚無可添加照片的事項');return;}
+  let h='<div style="font-size:0.85rem;margin-bottom:10px">選擇要附加照片的事項：</div>';
+  pt.forEach((s,i)=>{const pc=s.task.photos?s.task.photos.length:0;h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px"><span style="flex:1">[${i}] ${escHtml(s.task.timeRange)} | ${escHtml(s.task.desc)}</span><span style="color:var(--slate-400);font-size:0.75rem">已有 ${pc} 張</span><input type="file" accept="image/*" multiple id="photoFile_${i}" style="display:none" onchange="confirmPhotoUpload(${s.idx})"><button class="btn btn-sm btn-primary" onclick="document.getElementById('photoFile_${i}').click()">📸 選擇照片</button></div>`;});
+  document.getElementById('photosBody').innerHTML=h;openModal('modalPhotos');
+}
+function confirmPhotoUpload(ti){
+  let fi=null;document.querySelectorAll('#photosBody input[type="file"]').forEach(inp=>{if(inp.files&&inp.files.length>0)fi=inp;});
+  if(!fi)return;const files=Array.from(fi.files),task=log.tasks[ti];if(!task){showToast('⚠️ 找不到事項');return;}
+  if(!task.photos)task.photos=[];
+  Promise.all(files.map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(f);}))).then(results=>{
+    const urls=results.filter(x=>x);
+    savePhotosToDB(urls).then(ids=>{ids.forEach(id=>task.photos.push(id));task.photoStatus=ids.length>0?'有拍照':task.photoStatus;saveData();addPhotos();showToast(`✅ 已添加 ${ids.length} 張照片`);});
+  });
+}
+
+// ── FEATURE: Fill Notes ──
+function fillNotes(){if(!log){showToast('⚠️ 請先開工');return;}
+document.getElementById('fProblems').value=(log.problems||[]).join('\n');document.getElementById('fRisks').value=(log.risks||[]).join('\n');document.getElementById('fFollowups').value=(log.followups||[]).join('\n');document.getElementById('fSummary').value=log.summary||'';document.getElementById('fTop1').value=log.top3&&log.top3[0]||'';document.getElementById('fTop2').value=log.top3&&log.top3[1]||'';document.getElementById('fTop3').value=log.top3&&log.top3[2]||'';openModal('modalNotes');}
+function confirmNotes(){const pt=document.getElementById('fProblems').value.trim(),rt=document.getElementById('fRisks').value.trim(),ft=document.getElementById('fFollowups').value.trim(),sm=document.getElementById('fSummary').value.trim();log.problems=pt?pt.split('\n').map(s=>s.trim()).filter(Boolean):[];log.risks=rt?rt.split('\n').map(s=>s.trim()).filter(Boolean):[];log.followups=ft?ft.split('\n').map(s=>s.trim()).filter(Boolean):[];log.summary=sm;log.top3=[document.getElementById('fTop1').value.trim(),document.getElementById('fTop2').value.trim(),document.getElementById('fTop3').value.trim()];saveData();closeModal('modalNotes');render();showToast('✅ 備註已更新');}
+
+// ── FEATURE: Finish Day ──
+function finishDay(){if(!log){showToast('⚠️ 請先開工');return;}document.getElementById('fEndTime').value=log.tasks.some(t=>t.desc==='收工')?'':'17:00';document.getElementById('finishPreview').textContent=generateMarkdown();openModal('modalFinish');}
+function confirmFinish(){if(!log.tasks.some(t=>t.desc==='收工')){const e=document.getElementById('fEndTime').value||'17:00';log.tasks.push({timeRange:`${e}-${e}`,desc:'收工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[]});}saveData();render();closeModal('modalFinish');showToast('✅ 工作日誌已完成！可複製 Markdown、下載 .md 或匯出 XLSX');}
+
+// ── FEATURE: Show Template ──
+function showTemplate(){openModal('modalTemplate');}
+
+// ── FEATURE: Settings ──
+function openSettings(){if(!log){showToast('⚠️ 請先開工');return;}document.getElementById('sDate').value=log.dateStr;document.getElementById('sPerson').value=log.person||'傑';openModal('modalSettings');}
+function confirmSettings(){const nd=document.getElementById('sDate').value,np=document.getElementById('sPerson').value.trim()||'傑';if(!nd){showToast('⚠️ 請選擇日期');return;}log.dateStr=nd;log.person=np;saveData();closeModal('modalSettings');render();showToast('✅ 設置已更新');}
+
+// ── FEATURE: Load XLSX (取代載入 Markdown) ──
+function loadXLSX(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      // Parse 時間軸 sheet
+      const sheet1 = workbook.Sheets['時間軸'];
+      if (!sheet1) { showToast('⚠️ 找不到「時間軸」工作表'); return; }
+
+      const json = XLSX.utils.sheet_to_json(sheet1, { header: 1 });
+      if (json.length < 3) { showToast('⚠️ 工作表數據不足'); return; }
+
+      // Row 0: title, Row 2: header, Row 3+: data
+      const titleRow = json[0];
+      let dateStr = '', person = '傑';
+
+      // Try to extract date from title: 工作日誌 YYYY/MM/DD（週X）
+      if (titleRow && titleRow[0]) {
+        const m = String(titleRow[0]).match(/(\d{4}\/\d{2}\/\d{2})/);
+        if (m) dateStr = m[1].replace(/\//g, '-');
+      }
+      // Try to find person row
+      for (let r = 0; r < Math.min(json.length, 5); r++) {
+        const row = json[r];
+        if (row && row[0] && String(row[0]).includes('人員')) {
+          const pm = String(row[0]).match(/人員[：:]\s*(.+)/);
+          if (pm) person = pm[1].trim();
+        }
+      }
+      if (!dateStr) dateStr = todayStr();
+
+      // Parse tasks
+      const tasks = [];
+      for (let r = 3; r < json.length; r++) {
+        const row = json[r];
+        if (!row || !row[0] || !row[1]) continue;
+        const timeRange = String(row[0]).trim();
+        const desc = String(row[1]).trim();
+        if (!timeRange || !desc || timeRange === '—' || desc === '—') continue;
+        tasks.push({
+          timeRange: timeRange.replace(/<\/?strong>/g, ''),
+          desc: desc,
+          status: String(row[2]||'已完成').trim(),
+          location: String(row[3]||'—').trim(),
+          workType: String(row[4]||'—').trim(),
+          photoStatus: String(row[5]||'無照片').trim(),
+          photos: []
+        });
+      }
+
+      // Parse 備註 sheet
+      let problems=[], risks=[], followups=[], summary='', top3=['','',''];
+      const sheet2 = workbook.Sheets['備註'];
+      if (sheet2) {
+        const json2 = XLSX.utils.sheet_to_json(sheet2, { header: 1 });
+        let currentSection = '';
+        const top3list = [];
+        for (let r = 2; r < json2.length; r++) {
+          const row = json2[r];
+          if (!row || !row[0]) continue;
+          const cell = String(row[0]).trim();
+          const val = row[1] ? String(row[1]).trim() : '';
+          if (cell.includes('問題')) { currentSection = 'problems'; continue; }
+          if (cell.includes('風險')) { currentSection = 'risks'; continue; }
+          if (cell.includes('待跟進')) { currentSection = 'followups'; continue; }
+          if (cell.includes('復盤') || cell.includes('小復盤')) { currentSection = 'summary'; continue; }
+          if (cell.includes('TOP')) { currentSection = 'top3'; if (val) top3list.push(val); continue; }
+          if (currentSection === 'problems' && val) problems.push(val);
+          else if (currentSection === 'risks' && val) risks.push(val);
+          else if (currentSection === 'followups' && val) followups.push(val);
+          else if (currentSection === 'summary' && val) summary = val;
+        }
+        top3 = top3list.length >= 3 ? top3list : [...top3list, '', ''];
+      }
+
+      log = {
+        dateStr: dateStr,
+        person: person,
+        tasks: tasks,
+        problems: problems,
+        risks: risks,
+        followups: followups,
+        summary: summary,
+        top3: top3
+      };
+
+      saveData();
+      render();
+      document.getElementById('xlsxLoadInfo').style.display = 'block';
+      document.getElementById('xlsxLoadStatus').textContent = `✅ 已載入 ${file.name}（${tasks.length} 項事項）`;
+      showToast(`✅ 已載入 XLSX：${file.name}`);
+    } catch(err) {
+      showToast('⚠️ XLSX 解析失敗：' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+}
+
+// ── FEATURE: XLSX Export with Photos (via exceljs) ──
+function exportXLSXWithPhotos() {
+  if (!log) { showToast('⚠️ 請先開工'); return; }
+  if (typeof ExcelJS === 'undefined') { showToast('⚠️ ExcelJS 庫未載入'); return; }
+
+  showToast('🔄 正在生成含照片的 XLSX...', 5000);
+
+  const dateStr = log.dateStr.replace(/-/g, '');
+  const dateDisplay = formatDate(log.dateStr);
+  const weekday = getWeekday(log.dateStr);
+  const title = `工作日誌 ${dateDisplay}（${weekday}）`;
+
+  // Collect all photo IDs from all tasks
+  const allPhotoIds = [];
+  const taskPhotoMap = {};
+  (log.tasks || []).forEach((t, i) => {
+    if (t.photos && t.photos.length > 0) {
+      taskPhotoMap[i] = t.photos;
+      t.photos.forEach(id => { if (!allPhotoIds.includes(id)) allPhotoIds.push(id); });
+    }
+  });
+
+  // Load all photos from IndexedDB, then build XLSX
+  getPhotosFromDB(allPhotoIds).then(allPhotoUrls => {
+    // Build id -> dataUrl map
+    const photoMap = {};
+    allPhotoIds.forEach((id, i) => { photoMap[id] = allPhotoUrls[i]; });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = log.person || '傑';
+    workbook.created = new Date();
+
+    // ── Sheet 1: 時間軸 ──
+    const ws1 = workbook.addWorksheet('時間軸', {
+      views: [{ state: 'frozen', ySplit: 3 }]
+    });
+
+    // Title row
+    ws1.mergeCells('A1:F1');
+    const titleCell = ws1.getCell('A1');
+    titleCell.value = title;
+    titleCell.font = { bold: true, size: 14, color: { argb: 'FF1E3A5F' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws1.getRow(1).height = 35;
+
+    // Empty row
+    ws1.getRow(2).height = 8;
+
+    // Header row
+    const headers = ['時間', '事項', '完成度', '地點', '工種', '照片'];
+    const headerRow = ws1.getRow(3);
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = h;
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2C5282' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+      };
+    });
+    headerRow.height = 24;
+
+    // Column widths
+    ws1.getColumn(1).width = 14;  // 時間
+    ws1.getColumn(2).width = 22;  // 事項
+    ws1.getColumn(3).width = 10;  // 完成度
+    ws1.getColumn(4).width = 14;  // 地點
+    ws1.getColumn(5).width = 10;  // 工種
+    ws1.getColumn(6).width = 16;  // 照片
+
+    // Data rows + photos
+    (log.tasks || []).forEach((t, i) => {
+      const rowNum = i + 4;
+      const row = ws1.getRow(rowNum);
+      row.getCell(1).value = t.timeRange || '';
+      row.getCell(2).value = t.desc || '';
+      row.getCell(3).value = t.status || '';
+      row.getCell(4).value = t.location || '—';
+      row.getCell(5).value = t.workType || '—';
+      row.getCell(6).value = t.photoStatus || '無照片';
+
+      // Style
+      [1,2,3,4,5,6].forEach(c => {
+        const cell = row.getCell(c);
+        cell.font = { size: 10 };
+        cell.alignment = { vertical: 'middle', horizontal: c === 2 ? 'left' : 'center', wrapText: true };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
+
+      // Set row height for photos
+      const photoIds = taskPhotoMap[i];
+      if (photoIds && photoIds.length > 0) {
+        row.height = 80;
+
+        // Add photo images in column F (col 6)
+        const dataUrls = photoIds.map(id => photoMap[id]).filter(Boolean);
+        dataUrls.forEach((dataUrl, pi) => {
+          try {
+            // Determine extension
+            let ext = 'png';
+            if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) ext = 'jpeg';
+            else if (dataUrl.startsWith('data:image/gif')) ext = 'gif';
+            else if (dataUrl.startsWith('data:image/webp')) ext = 'png'; // convert webp to png
+
+            const imageId = workbook.addImage({
+              base64: dataUrl.split(',')[1],
+              extension: ext
+            });
+
+            // Position photos side by side in the photo column
+            const col = 6; // F column
+            const xOffset = pi * 70; // pixels offset for multiple photos
+            ws1.addImage(imageId, {
+              tl: { col: col - 1, row: rowNum - 1, dx: xOffset, dy: 5 },
+              ext: { width: 60, height: 60 }
+            });
+          } catch(e) {
+            console.warn('Failed to add image to XLSX:', e);
+          }
+        });
+      } else {
+        row.height = 22;
+      }
+
+      // Alternate row coloring
+      if (i % 2 === 1) {
+        [1,2,3,4,5,6].forEach(c => {
+          row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        });
+      }
+    });
+
+    // ── Sheet 2: 備註 ──
+    const ws2 = workbook.addWorksheet('備註');
+    ws2.getColumn(1).width = 16;
+    ws2.getColumn(2).width = 50;
+
+    ws2.mergeCells('A1:B1');
+    const tCell = ws2.getCell('A1');
+    tCell.value = title;
+    tCell.font = { bold: true, size: 14, color: { argb: 'FF1E3A5F' } };
+    ws2.getRow(1).height = 30;
+
+    let r = 3;
+    (log.problems||[]).forEach(n => { ws2.getCell(`A${r}`).value = '⚠️ 問題'; ws2.getCell(`B${r}`).value = n; r++; });
+    r++;
+    (log.risks||[]).forEach(n => { ws2.getCell(`A${r}`).value = '🔴 風險'; ws2.getCell(`B${r}`).value = n; r++; });
+    r++;
+    (log.followups||[]).forEach(n => { ws2.getCell(`A${r}`).value = '📌 待跟進'; ws2.getCell(`B${r}`).value = n; r++; });
+    r++;
+    if (log.summary) { ws2.getCell(`A${r}`).value = '💡 小復盤'; ws2.getCell(`B${r}`).value = log.summary; r++; r++; }
+    (log.top3||[]).forEach((item, i) => { if (item) { ws2.getCell(`A${r}`).value = `TOP${i+1}`; ws2.getCell(`B${r}`).value = item; r++; } });
+
+    workbook.xlsx.writeBuffer().then(buffer => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `工作日誌_${dateStr}_含圖.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('✅ 已輸出含照片的 XLSX');
+    }).catch(err => {
+      showToast('⚠️ XLSX 生成失敗：' + err.message);
+      console.error(err);
+    });
+  }).catch(err => {
+    showToast('⚠️ 照片讀取失敗：' + err.message);
+    console.error(err);
+  });
+}
+
+// ── FEATURE: Basic XLSX Export (SheetJS) ──
+function exportXLSX() {
+  if (!log) { showToast('⚠️ 請先開工'); return; }
+  const data = {
+    dateStr: formatDate(log.dateStr), weekday: getWeekday(log.dateStr),
+    person: log.person || '傑',
+    tasks: (log.tasks||[]).map(t => ({
+      timeRange: t.timeRange, desc: t.desc, status: t.status,
+      location: t.location||'—', workType: t.workType||'—', photoStatus: t.photoStatus||'無照片'
+    })),
+    problems: log.problems||[], risks: log.risks||[], followups: log.followups||[],
+    summary: log.summary||'', top3: log.top3||[]
+  };
+  const ds = log.dateStr.replace(/-/g, '');
+  _buildXLSX(data, '工作日誌_' + ds);
+}
+
+function _buildXLSX(data, filename) {
+  if (typeof XLSX === 'undefined') { showToast('⚠️ SheetJS 庫未載入'); return; }
+  const wb = XLSX.utils.book_new();
+  const ws1Data = [];
+  const title = '工作日誌 ' + (data.dateStr||'') + (data.weekday ? '（'+data.weekday+'）' : '');
+  ws1Data.push([title]);
+  ws1Data.push([]);
+  ws1Data.push(['時間','事項','完成度','地點','工種','照片']);
+  (data.tasks||[]).forEach(t => ws1Data.push([t.timeRange||'',t.desc||'',t.status||'',t.location||'—',t.workType||'—',t.photoStatus||'無照片']));
+  const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+  ws1['!cols'] = [{wch:10},{wch:20},{wch:7},{wch:10},{wch:7},{wch:8}];
+  ws1['!rows'] = [{hpx:30},{},{hpx:22}];
+  ws1['!freeze'] = {xSplit:0,ySplit:3};
+  XLSX.utils.book_append_sheet(wb, ws1, '時間軸');
+
+  const ws2Data = [];
+  ws2Data.push([title,'']); ws2Data.push([]);
+  if(data.problems&&data.problems.length>0){ws2Data.push(['⚠️ 問題','']);data.problems.forEach(n=>ws2Data.push(['問題',n]));ws2Data.push([]);}
+  if(data.risks&&data.risks.length>0){ws2Data.push(['⚠️ 風險','']);data.risks.forEach(r=>ws2Data.push(['風險',r]));ws2Data.push([]);}
+  if(data.followups&&data.followups.length>0){ws2Data.push(['🔁 待跟進','']);data.followups.forEach(f=>ws2Data.push(['待跟進',f]));ws2Data.push([]);}
+  if(data.summary){ws2Data.push(['💡 小復盤','']);ws2Data.push(['復盤',data.summary]);ws2Data.push([]);}
+  if(data.top3&&data.top3.length>0){ws2Data.push(['📋 明日優先 TOP3','']);data.top3.forEach((item,i)=>ws2Data.push(['TOP'+(i+1),item]));}
+  const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+  ws2['!cols'] = [{wch:14},{wch:42}];
+  XLSX.utils.book_append_sheet(wb, ws2, '備註');
+
+  const wbout = XLSX.write(wb, {bookType:'xlsx',type:'array'});
+  const blob = new Blob([wbout], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '.xlsx';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ 已輸出 ' + filename + '.xlsx');
+}
+
+// ── FEATURE: Custom location/work type handling ──
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('fLocation').addEventListener('change', function() {
+    document.getElementById('customLocationGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
+  });
+  document.getElementById('fWorkType').addEventListener('change', function() {
+    document.getElementById('customWorkTypeGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
+  });
+  loadData();
+});
+
+// ── Confirm Dialog ──
+function showConfirm(text, callback) {
+  document.getElementById('confirmText').textContent = text;
+  const btn = document.getElementById('confirmBtn');
+  confirmCallback = callback;
+  btn.onclick = function() {
+    if (confirmCallback) confirmCallback();
+    closeModal('modalConfirm');
+  };
+  openModal('modalConfirm');
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+  }
+});
+</script>
+</body>
+</html>
