@@ -196,11 +196,13 @@ body {
 .status-item .num { font-size: 1.4rem; font-weight: 700; color: var(--blue-700); transition: color 0.15s; }
 .status-item .lbl { font-size: 0.7rem; color: var(--slate-400); }
 .modal-overlay {
-  display: none; position: fixed; inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,0,0,0.4); z-index: 1000;
   justify-content: center; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
 }
-.modal-overlay.show { display: flex; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
 @media (min-width: 640px) {
   .modal-overlay { align-items: center; }
 }
@@ -978,7 +980,7 @@ function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').
 function getWeekday(ds) { const d = new Date(ds); return ['週日','週一','週二','週三','週四','週五','週六'][d.getDay()]; }
 function formatDate(ds) { return ds.replace(/-/g, '/'); }
 function todayStr() { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function openModal(id) { document.getElementById(id).classList.add('show'); }
+function openModal(id) { const el=document.getElementById(id);el.classList.add('show');void el.offsetHeight; }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 function getLastEndTime() { if (!log||!log.tasks||!log.tasks.length) return '09:00'; const last=log.tasks[log.tasks.length-1]; const p=last.timeRange.split('-'); return p.length>1?p[1]:'09:00'; }
 
