@@ -183,7 +183,7 @@ body {
   min-height: 28px; min-width: 26px;
 }
 .task-row .task-actions button:hover { background: var(--slate-200); }
-.task-row .task-actions button.del:hover { background: var(--red-50); }
+
 .task-row .task-actions button.move-up:hover { background: var(--blue-50); color: var(--blue-700); }
 .task-row .task-actions button.move-down:hover { background: var(--blue-50); color: var(--blue-700); }
 .status-bar {
@@ -289,7 +289,7 @@ body {
   body { background: white; padding: 0; }
   .header, .inline-actions, .btn, .modal-overlay:not(#modalPDFPreview),
   .modal-overlay:not(#modalPDFPreview) *,
-  .task-actions, #toast, .status-bar, #settingsCard { display: none !important; }
+  .task-actions, #toast, .status-bar, #settingsCard, .tab-bar { display: none !important; }
   @page { size: A4; margin: 2cm; }
   .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
   .container { max-width: 100%; padding: 0; }
@@ -301,6 +301,51 @@ body {
 .btn-xlsx:hover { background: #219a52; }
 .btn-xlsx-photo { background: #8e44ad; color: white; }
 .btn-xlsx-photo:hover { background: #7d3c98; }
+
+/* ── Tab Navigation ── */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow);
+  padding: 8px 8px 0;
+  margin-bottom: 0;
+}
+.tab-bar .tab-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--slate-400);
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.15s;
+  position: relative;
+  min-height: 44px;
+}
+.tab-bar .tab-btn:hover { color: var(--slate-600); background: var(--slate-50); }
+.tab-bar .tab-btn.active {
+  color: var(--blue-700);
+  background: var(--slate-50);
+  font-weight: 600;
+}
+.tab-bar .tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  background: var(--blue-700);
+  border-radius: 3px 3px 0 0;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
 .empty-state {
   text-align: center; padding: 40px 20px; color: var(--slate-400);
 }
@@ -344,6 +389,7 @@ body {
   .form-row { flex-direction: column; gap: 0; }
   .modal { border-radius: 16px 16px 0 0; }
   .status-item .num { font-size: 1.1rem; }
+  .tab-bar .tab-btn { font-size: 0.78rem; padding: 8px 6px; }
 }
 .split-card {
   background: var(--blue-50); border: 1px solid var(--blue-600);
@@ -365,11 +411,20 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v1.5</h1>
-  <div class="sub">3卡設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v1.6</h1>
+  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存</div>
 </div>
 
 <div class="container" id="app">
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="schedule" onclick="switchTab('schedule')">📋 行程</button>
+    <button class="tab-btn" data-tab="info" onclick="switchTab('info')">📄 資訊</button>
+    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ 設置</button>
+  </div>
+
+  <!-- Tab: 行程 -->
+  <div class="tab-content active" id="tab-schedule">
   <!-- 主要時間軸 Card（整合狀態、操作按鈕、事項列表、備註） -->
   <div class="card" id="mainCard">
     <div class="card-body" id="statusArea">
@@ -417,7 +472,10 @@ body {
       </div>
     </div>
   </div>
+  </div><!-- /tab-schedule -->
 
+  <!-- Tab: 設置 -->
+  <div class="tab-content" id="tab-settings">
   <!-- Card 1: 設置 -->
   <div class="card" id="settingsCard">
     <div class="card-header"><h2>⚙️ 設置</h2></div>
@@ -429,7 +487,7 @@ body {
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑️ 清除所有事項及備註</button>
+        <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置行程</button>
         <button class="btn btn-secondary btn-sm" onclick="showTemplate()">📖 查看模板格式</button>
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
@@ -480,7 +538,10 @@ body {
       </div>
     </div>
   </div>
+  </div><!-- /tab-settings -->
 
+  <!-- Tab: 資訊 -->
+  <div class="tab-content" id="tab-info">
   <!-- Card 2: 導入 -->
   <div class="card">
     <div class="card-header"><h2>📂 導入</h2></div>
@@ -513,7 +574,8 @@ body {
         <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ XLSX（含圖）</button>
       </div>
     </div>
-  </div>
+  </div><!-- /outputCard -->
+  </div><!-- /tab-info -->
 </div>
 
 <div id="toast"></div>
@@ -707,7 +769,7 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalEditTask')">取消</button>
-      <button class="btn btn-danger" id="feDeleteBtn" onclick="feDeleteTask()">🗑️ 刪除</button>
+      <button class="btn btn-danger" onclick="deleteTaskFromEdit()">🗑️ 刪除</button>
       <button class="btn btn-primary" onclick="feConfirmEdit()">✅ 儲存</button>
     </div>
   </div>
@@ -780,14 +842,6 @@ body {
   </div>
 </div>
 
-<div class="modal-overlay" id="modalConfirm">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header"><h3>⚠️ 確認</h3><button class="modal-close" onclick="closeModal('modalConfirm')">✕</button></div>
-    <div class="modal-body"><p id="confirmText" style="font-size:0.9rem"></p></div>
-    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalConfirm')">取消</button><button class="btn btn-danger" id="confirmBtn">確認</button></div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="modalImageViewer">
   <div class="modal" style="max-width:700px">
     <div class="modal-header"><h3>🖼️ 圖片</h3><button class="modal-close" onclick="closeModal('modalImageViewer')">✕</button></div>
@@ -857,7 +911,7 @@ let log = null;
 let toastTimer = null;
 let editIdx = -1;
 let splitTargetIdx = -1;
-let confirmCallback = null;
+
 
 function loadData() {
   try {
@@ -982,7 +1036,6 @@ function renderTaskList() {
       <div class="task-actions">
         ${canUp?`<button class="move-up" onclick="moveTask(${i},-1)" title="上移">↑</button>`:''}
         <button onclick="openEditTask(${i})" title="編輯">✏️</button>
-        <button class="del" onclick="deleteTask(${i})" title="刪除">🗑️</button>
         ${canDown?`<button class="move-down" onclick="moveTask(${i},1)" title="下移">↓</button>`:''}
       </div>
     </div>`;
@@ -1378,7 +1431,7 @@ function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];edit
     feProj.value = '—';
     feCustomProj.style.display = 'none';
   }
-  document.getElementById('feDeleteBtn').onclick=function(){feDeleteTask(i);};feRenderPhotos(i);openModal('modalEditTask');}
+  feRenderPhotos(i);openModal('modalEditTask');}
 function feRenderPhotos(i){
   const t=log.tasks[i], area=document.getElementById('fePhotosArea'), grp=document.getElementById('fePhotosGroup');
   if(!t.photos||!t.photos.length){grp.style.display='none';return;}
@@ -1424,8 +1477,8 @@ function feDeletePhoto(ti,pi){
   showToast('✅ 已刪除照片');
 }
 function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];const s=document.getElementById('feStart').value,e=document.getElementById('feEnd').value;if(s&&e){if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;}t.timeRange=`${s}-${e}`;}t.desc=document.getElementById('feDesc').value.trim()||t.desc;t.personnel=document.getElementById('fePersonnel').value.trim()||(log.person||'傑');t.status=document.getElementById('feStatus').value;let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.category=document.getElementById('feCategory').value||'維護';t.itemCategory=document.getElementById('feItemCategory').value||'';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
-function feDeleteTask(i){const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{(log.tasks[i].photos||[]).forEach(id=>deletePhotoFromDB(id));log.tasks.splice(i,1);saveData();closeModal('modalEditTask');render();showToast(`✅ 已刪除：${d}`);});}
-function deleteTask(i){const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{(log.tasks[i].photos||[]).forEach(id=>deletePhotoFromDB(id));log.tasks.splice(i,1);saveData();render();showToast(`✅ 已刪除：${d}`);});}
+
+
 
 // ── FEATURE: Split Task ──
 function splitTask(){
@@ -1714,14 +1767,7 @@ function deleteItemCategoryItem(i){
   renderItemCategoryDropdowns();
 }
 
-function clearAllData(){
-  if(!log){showToast('⚠️ 冇數據可清除');return;}
-  showConfirm('確定清除所有事項及備註？呢個動作無法還原。',()=>{
-log.tasks=[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
-    log.problems=[];log.attendance=[];log.followups=[];log.summary='';log.top3=['','',''];
-    saveData();render();showToast('✅ 已清除所有事項及備註');
-  });
-}
+
 
 // ── FEATURE: Load XLSX (取代載入 Markdown) ──
 function loadXLSX(event) {
@@ -2093,16 +2139,34 @@ ws1Data.push(['時間','事項','完成度','分類','項位分類','項目','�
 // ── FEATURE: Custom location/work type handling ──
 // (Moved to main DOMContentLoaded handler below)
 
-// ── Confirm Dialog ──
-function showConfirm(text, callback) {
-  document.getElementById('confirmText').textContent = text;
-  const btn = document.getElementById('confirmBtn');
-  confirmCallback = callback;
-  btn.onclick = function() {
-    if (confirmCallback) confirmCallback();
-    closeModal('modalConfirm');
-  };
-  openModal('modalConfirm');
+
+
+
+// ── Tab Switching ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+  try { localStorage.setItem('worklog_active_tab', tab); } catch(e) {}
+}
+
+// ── Delete Task from Edit ──
+function deleteTaskFromEdit(){
+  if(editIdx<0)return;
+  const t=log.tasks[editIdx];
+  if(!confirm(`確定刪除「${t.desc}」？`))return;
+  (t.photos||[]).forEach(id=>deletePhotoFromDB(id));
+  log.tasks.splice(editIdx,1);
+  saveData();closeModal('modalEditTask');render();showToast(`✅ 已刪除：${t.desc}`);
+  editIdx=-1;
+}
+
+// ── Reset Schedule ──
+function resetSchedule(){
+  if(!log||!log.tasks){showToast('⚠️ 請先開工');return;}
+  if(!confirm('確定重置行程？所有事項、備註、出勤記錄將被清空，只保留開工記錄。'))return;
+  log.tasks=[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
+  log.problems=[];log.attendance=[];log.followups=[];log.summary='';log.top3=['','',''];
+  saveData();render();showToast('✅ 行程已重置');
 }
 
 // ── KEYBOARD SHORTCUTS ──
@@ -2253,6 +2317,11 @@ document.addEventListener('DOMContentLoaded', function() {
     this.value = '';
   });
   loadData();
+  // Restore last active tab
+  try {
+    const savedTab = localStorage.getItem('worklog_active_tab');
+    if (savedTab && savedTab !== 'schedule') switchTab(savedTab);
+  } catch(e) {}
 });</script>
 </body>
 </html>
