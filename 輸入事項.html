@@ -1057,28 +1057,25 @@ function restoreTab(){
   }catch(e){}
 }
 
-// ── 事件代理：手機／桌面 click（避免 inline onclick 兼容問題）──
+// ── 事件代理：純 click（Android 手機 tap 會自動轉 click，唔用 touchstart 避免 blocking）──
 (function(){
+  function delHandler(e){
+    const target=e.target.closest('.task-actions button');
+    if(!target)return;
+    const idx=parseInt(target.dataset.idx);
+    if(isNaN(idx))return;
+    if(target.classList.contains('del'))deleteTask(idx);
+    else if(target.classList.contains('edit-btn'))openEditTask(idx);
+    else if(target.classList.contains('move-up'))moveTask(idx,-1);
+    else if(target.classList.contains('move-down'))moveTask(idx,1);
+  }
   function setupDelegation(){
     const body=document.getElementById('taskListBody');
     if(!body)return;
-    // 用 mousedown + touchstart 確保手機 touch 都捕捉
-    function handler(e){
-      const target=e.target.closest('.task-actions button');
-      if(!target)return;
-      const idx=parseInt(target.dataset.idx);
-      if(isNaN(idx))return;
-      if(target.classList.contains('del')){e.preventDefault();deleteTask(idx);}
-      else if(target.classList.contains('edit-btn')){e.preventDefault();openEditTask(idx);}
-      else if(target.classList.contains('move-up')){e.preventDefault();moveTask(idx,-1);}
-      else if(target.classList.contains('move-down')){e.preventDefault();moveTask(idx,1);}
-    }
-    body.removeEventListener('click',handler);
-    body.removeEventListener('touchstart',handler);
-    body.addEventListener('click',handler);
-    body.addEventListener('touchstart',handler,{passive:false});
+    body.removeEventListener('click',delHandler);
+    body.addEventListener('click',delHandler);
   }
-  // 每次 render 完重新註冊（或者用 MutationObserver）
+  // 每次 render 完重新註冊
   const origRender=render;
   render=function(){origRender();setTimeout(setupDelegation,0);};
   document.addEventListener('DOMContentLoaded',setupDelegation);
