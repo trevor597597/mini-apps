@@ -297,6 +297,30 @@ body {
   .print-only { display: block !important; }
 }
 .print-only { display: none; }
+/* ── Tab Navigation ── */
+.tab-bar {
+  display: flex; gap: 0; background: white;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow); margin-bottom: 0;
+  overflow: hidden; position: sticky; top: 0; z-index: 100;
+}
+.tab-bar .tab-btn {
+  flex: 1; border: none; background: var(--slate-100);
+  padding: 12px 8px; font-family: inherit; font-size: 0.85rem;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+  color: var(--slate-500); border-bottom: 3px solid transparent;
+  min-height: 48px;
+}
+.tab-bar .tab-btn.active {
+  background: white; color: var(--blue-800);
+  border-bottom-color: var(--blue-700);
+}
+.tab-bar .tab-btn:hover:not(.active) { background: var(--slate-200); color: var(--slate-700); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+@media (max-width: 640px) {
+  .tab-bar .tab-btn { font-size: 0.78rem; padding: 10px 4px; }
+}
 .btn-xlsx { background: #27ae60; color: white; }
 .btn-xlsx:hover { background: #219a52; }
 .btn-xlsx-photo { background: #8e44ad; color: white; }
@@ -365,12 +389,21 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v1.5</h1>
-  <div class="sub">3卡設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v1.6</h1>
+  <div class="sub">3卡設計 | 時間×分類矩陣 | 人員分配 | 分頁展示</div>
 </div>
 
 <div class="container" id="app">
-  <!-- 主要時間軸 Card（整合狀態、操作按鈕、事項列表、備註） -->
+  <!-- Tab Navigation -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-tab="行程" onclick="switchTab('行程')">📅 行程</button>
+    <button class="tab-btn" data-tab="資訊" onclick="switchTab('資訊')">📋 資訊</button>
+    <button class="tab-btn" data-tab="設置" onclick="switchTab('設置')">⚙️ 設置</button>
+  </div>
+
+  <!-- ═══ Tab: 行程 ═══ -->
+  <div class="tab-content active" id="tab-行程">
+  <!-- 主要時間軸 Card（整合狀態、操作按鈕、事項列表） -->
   <div class="card" id="mainCard">
     <div class="card-body" id="statusArea">
       <div class="empty-state" id="emptyState">
@@ -410,16 +443,39 @@ body {
         <div id="taskListBody" style="margin-top:12px">
           <div class="task-empty" id="taskEmpty">尚無事項，點擊「新增事項」開始記錄</div>
         </div>
-        <!-- 備註區塊（嵌入時間軸下方） -->
-        <div id="notesBody" style="margin-top:12px;border-top:1px solid var(--slate-200);padding-top:12px;display:none">
+      </div>
+    </div>
+  </div>
+  </div><!-- /tab-行程 -->
+
+  <!-- ═══ Tab: 資訊 ═══ -->
+  <div class="tab-content" id="tab-資訊">
+    <div class="card">
+      <div class="card-header"><h2>📋 備註</h2></div>
+      <div class="card-body">
+        <div id="notesBody">
           <div style="font-size:0.8rem;color:var(--slate-400)">尚未填寫備註</div>
         </div>
       </div>
     </div>
-  </div>
+    <div class="card" id="outputCard">
+      <div class="card-header"><h2>📄 輸出</h2></div>
+      <div class="card-body">
+        <div class="preview-box" id="markdownPreview" style="max-height:220px">尚未開工或無數據</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-primary" onclick="copyMarkdown()">📋 複製</button>
+          <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
+          <button class="btn btn-sm btn-xlsx" onclick="exportXLSX()">📊 XLSX</button>
+          <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ XLSX（含圖）</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-資訊 -->
 
-  <!-- Card 1: 設置 -->
-  <div class="card" id="settingsCard">
+  <!-- ═══ Tab: 設置 ═══ -->
+  <div class="tab-content" id="tab-設置">
+    <!-- 設置 -->
+    <div class="card" id="settingsCard">
     <div class="card-header"><h2>⚙️ 設置</h2></div>
     <div class="card-body">
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
@@ -500,21 +556,7 @@ body {
       </div>
     </div>
   </div>
-
-  <!-- Card 3: 輸出 -->
-  <div class="card" id="outputCard">
-    <div class="card-header"><h2>📄 輸出</h2></div>
-    <div class="card-body">
-      <div class="preview-box" id="markdownPreview" style="max-height:220px">尚未開工或無數據</div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-        <button class="btn btn-sm btn-primary" onclick="copyMarkdown()">📋 複製</button>
-        <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
-        <button class="btn btn-sm btn-xlsx" onclick="exportXLSX()">📊 XLSX</button>
-        <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ XLSX（含圖）</button>
-      </div>
-    </div>
-  </div>
-</div>
+</div><!-- /tab-設置 -->
 
 <div id="toast"></div>
 
@@ -995,6 +1037,24 @@ function renderTaskList() {
   });
   html+='</div>'; body.innerHTML=html;
   log.tasks.forEach((t,i)=>{if(t.photos&&t.photos.length>0)loadTaskThumbnails(i,t.photos);});
+}
+
+// ── Tab 切換 ──
+function switchTab(tab){
+  const TAB_KEY='worklog_activeTab';
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  const content=document.getElementById('tab-'+tab);
+  const btn=document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if(content)content.classList.add('active');
+  if(btn)btn.classList.add('active');
+  try{localStorage.setItem(TAB_KEY,tab);}catch(e){}
+}
+function restoreTab(){
+  try{
+    const saved=localStorage.getItem('worklog_activeTab');
+    if(saved&&['行程','資訊','設置'].includes(saved))switchTab(saved);
+  }catch(e){}
 }
 
 // ── 事件代理：手機／桌面 click（避免 inline onclick 兼容問題）──
@@ -2283,6 +2343,7 @@ document.addEventListener('DOMContentLoaded', function() {
     this.value = '';
   });
   loadData();
+  restoreTab();
 });</script>
 </body>
 </html>
