@@ -1027,10 +1027,10 @@ function renderTaskList() {
       <div class="type">${escHtml(t.workType)}</div>
       <div class="photo-indicator">${pi}</div>
       <div class="task-actions">
-        ${canUp?`<button class="move-up" data-idx="${i}" title="上移">↑</button>`:''}
-        <button class="edit-btn" data-idx="${i}" title="編輯">✏️</button>
-        <button class="del" data-idx="${i}" title="刪除">🗑️</button>
-        ${canDown?`<button class="move-down" data-idx="${i}" title="下移">↓</button>`:''}
+        ${canUp?`<button class="move-up" onclick="moveTask(${i},-1)" title="上移">↑</button>`:''}
+        <button class="edit-btn" onclick="openEditTask(${i})" title="編輯">✏️</button>
+        <button class="del" onclick="deleteTask(${i})" title="刪除">🗑️</button>
+        ${canDown?`<button class="move-down" onclick="moveTask(${i},1)" title="下移">↓</button>`:''}
       </div>
     </div>`;
     if (pc>0) html+=`<div class="photo-thumbs" id="thumbs_${i}"><span style="color:var(--slate-400);font-size:0.7rem">載入照片...</span></div>`;
@@ -1057,29 +1057,7 @@ function restoreTab(){
   }catch(e){}
 }
 
-// ── 事件代理：純 click（Android 手機 tap 會自動轉 click，唔用 touchstart 避免 blocking）──
-(function(){
-  function delHandler(e){
-    const target=e.target.closest('.task-actions button');
-    if(!target)return;
-    const idx=parseInt(target.dataset.idx);
-    if(isNaN(idx))return;
-    if(target.classList.contains('del'))deleteTask(idx);
-    else if(target.classList.contains('edit-btn'))openEditTask(idx);
-    else if(target.classList.contains('move-up'))moveTask(idx,-1);
-    else if(target.classList.contains('move-down'))moveTask(idx,1);
-  }
-  function setupDelegation(){
-    const body=document.getElementById('taskListBody');
-    if(!body)return;
-    body.removeEventListener('click',delHandler);
-    body.addEventListener('click',delHandler);
-  }
-  // 每次 render 完重新註冊
-  const origRender=render;
-  render=function(){origRender();setTimeout(setupDelegation,0);};
-  document.addEventListener('DOMContentLoaded',setupDelegation);
-})();
+// ── 刪除事件代理：改用 inline onclick（Android 兼容性最佳）──
 var _matrixView=true;
 function toggleMatrixView(){
   _matrixView=!_matrixView;
