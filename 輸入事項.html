@@ -888,8 +888,13 @@ function loadData() {
   render();
 }
 function saveData() {
-  if (log) localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
-  else localStorage.removeItem(STORAGE_KEY);
+  try {
+    if (log) localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch(e) {
+    console.error('saveData error:',e);
+    // 某啲瀏覽器（特別是手機 file://）可能唔支援 localStorage，唔好阻斷流程
+  }
 }
 
 // ── 項位分類管理 ──
@@ -1424,8 +1429,8 @@ function feDeletePhoto(ti,pi){
   showToast('✅ 已刪除照片');
 }
 function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];const s=document.getElementById('feStart').value,e=document.getElementById('feEnd').value;if(s&&e){if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;}t.timeRange=`${s}-${e}`;}t.desc=document.getElementById('feDesc').value.trim()||t.desc;t.personnel=document.getElementById('fePersonnel').value.trim()||(log.person||'傑');t.status=document.getElementById('feStatus').value;let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.category=document.getElementById('feCategory').value||'維護';t.itemCategory=document.getElementById('feItemCategory').value||'';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
-function feDeleteTask(i){const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{(log.tasks[i].photos||[]).forEach(id=>deletePhotoFromDB(id));log.tasks.splice(i,1);saveData();closeModal('modalEditTask');render();showToast(`✅ 已刪除：${d}`);});}
-function deleteTask(i){const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{(log.tasks[i].photos||[]).forEach(id=>deletePhotoFromDB(id));log.tasks.splice(i,1);saveData();render();showToast(`✅ 已刪除：${d}`);});}
+function feDeleteTask(i){try{if(i===undefined&&editIdx>=0)i=editIdx;if(i===undefined||i<0||!log||!log.tasks||i>=log.tasks.length){console.error('feDeleteTask: invalid index',i,editIdx);showToast('⚠️ 刪除失敗：無效嘅事項索引');return;}const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{try{(log.tasks[i].photos||[]).forEach(id=>{try{deletePhotoFromDB(id);}catch(e){}});log.tasks.splice(i,1);saveData();closeModal('modalEditTask');render();showToast(`✅ 已刪除：${d}`);}catch(e){console.error('delete callback error:',e);showToast('⚠️ 刪除出錯：'+e.message);}});}catch(e){console.error('feDeleteTask error:',e);showToast('⚠️ 刪除出錯');}}
+function deleteTask(i){try{if(i===undefined||i<0||!log||!log.tasks||i>=log.tasks.length){console.error('deleteTask: invalid index',i);showToast('⚠️ 刪除失敗：無效嘅事項索引');return;}const d=log.tasks[i].desc;showConfirm(`確定刪除「${d}」？`,()=>{try{(log.tasks[i].photos||[]).forEach(id=>{try{deletePhotoFromDB(id);}catch(e){}});log.tasks.splice(i,1);saveData();render();showToast(`✅ 已刪除：${d}`);}catch(e){console.error('delete callback error:',e);showToast('⚠️ 刪除出錯：'+e.message);}});}catch(e){console.error('deleteTask error:',e);showToast('⚠️ 刪除出錯');}}
 
 // ── FEATURE: Split Task ──
 function splitTask(){
