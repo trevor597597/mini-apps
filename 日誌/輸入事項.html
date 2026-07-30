@@ -491,58 +491,51 @@ body {
         <button class="btn btn-secondary btn-sm" onclick="showTemplate()">📖 查看模板格式</button>
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
-      <!-- 人員管理 -->
+      <!-- 統一常用資料輸入 -->
       <div style="margin-top:14px">
-        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">👥 常用人員清單</label>
-        <div style="display:flex;gap:6px;margin-top:4px">
-          <input class="form-input" id="sPersonnelList" value="傑,千軍破蒼冥" placeholder="輸入人員名稱，逗號可批量新增" style="flex:1;min-width:100px">
-          <button class="btn btn-sm btn-primary" onclick="addPersonnelItem()" title="新增人員">➕</button>
+        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">📦 常用資料管理</label>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+          <input class="form-input" id="sCommonInput" placeholder="輸入名稱（逗號分隔可批量新增）" style="flex:1;min-width:120px">
+          <select class="form-select" id="sCommonType" style="width:120px;flex-shrink:0">
+            <option value="personnel">👥 人員</option>
+            <option value="locations">📍 地點</option>
+            <option value="projects">🏷️ 項目</option>
+            <option value="workTypes">🛠️ 工種</option>
+            <option value="itemCategories">🏗️ 項位分類</option>
+          </select>
+          <button class="btn btn-sm btn-primary" onclick="addCommonData()" title="新增">➕</button>
         </div>
-        <div id="sPersonnelChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
       </div>
-      <!-- 常用項目 -->
-      <div style="margin-top:14px">
-        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">🏷️ 常用項目</label>
-        <div style="display:flex;gap:6px;margin-top:4px">
-          <input class="form-input" id="sProjectsList" value="" placeholder="輸入項目名稱，逗號可批量新增" style="flex:1;min-width:100px">
-          <button class="btn btn-sm btn-primary" onclick="addProjectItem()" title="新增項目">➕</button>
+      <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">👥 人員</label>
+          <div id="sPersonnelChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
-        <div id="sProjectsChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
-      </div>
-      <!-- 常用地點 -->
-      <div style="margin-top:14px">
-        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">📍 常用地點</label>
-        <div style="display:flex;gap:6px;margin-top:4px">
-          <input class="form-input" id="sLocationsList" value="君悅酒店,星際酒店,雅辰酒店,辨公室(文創園),辨公室(珠海永發大廈),南光倉庫" placeholder="輸入地點名稱，逗號可批量新增" style="flex:1;min-width:100px">
-          <button class="btn btn-sm btn-primary" onclick="addLocationItem()" title="新增地點">➕</button>
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">📍 地點</label>
+          <div id="sLocationsChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
-        <div id="sLocationsChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
-      </div>
-      <!-- 常用工種 -->
-      <div style="margin-top:14px">
-        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">🛠️ 常用工種</label>
-        <div style="display:flex;gap:6px;margin-top:4px">
-          <input class="form-input" id="sWorkTypesList" value="維修,落貨,助手,安裝,檢查,搬運,焊接,除銹" placeholder="輸入工種名稱，逗號可批量新增" style="flex:1;min-width:100px">
-          <button class="btn btn-sm btn-primary" onclick="addWorkTypeItem()" title="新增工種">➕</button>
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">🏷️ 項目</label>
+          <div id="sProjectsChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
-        <div id="sWorkTypesChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
-      </div>
-      <!-- 項位分類 -->
-      <div style="margin-top:14px">
-        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">🏗️ 項位分類 <span class="hint">工程對象</span></label>
-        <div style="display:flex;gap:6px;margin-top:4px">
-          <input class="form-input" id="sItemCategories" value="" placeholder="水泵,水塔,鍋爐,管道（逗號批量新增）" style="flex:1;min-width:100px">
-          <button class="btn btn-sm btn-primary" onclick="addItemCategoryItem()" title="新增項位分類">➕</button>
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">🛠️ 工種</label>
+          <div id="sWorkTypesChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
-        <div id="sItemChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">🏗️ 項位分類</label>
+          <div id="sItemChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
+        </div>
       </div>
     </div>
   </div>
+
   </div><!-- /tab-settings -->
 
   <!-- Tab: 資訊 -->
   <div class="tab-content" id="tab-info">
-  <!-- Card 2: 導入 -->
   <div class="card">
     <div class="card-header"><h2>📂 導入</h2></div>
     <div class="card-body">
@@ -574,7 +567,7 @@ body {
         <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ XLSX（含圖）</button>
       </div>
     </div>
-  </div><!-- /outputCard -->
+  </div>
   </div><!-- /tab-info -->
 </div>
 
@@ -1620,19 +1613,6 @@ function showTemplate(){openModal('modalTemplate');}
 function refreshSettingsInputs(){
   const sd=document.getElementById('sDate'), sp=document.getElementById('sPerson');
   if(log){sd.value=log.dateStr;sp.value=log.person||'傑';}
-  // Load saved presets into comma-separated inputs
-  const presets = getPresets();
-  const pl = document.getElementById('sPersonnelList');
-  if (pl) pl.value = (presets.personnel||[]).join(',');
-  const proj = document.getElementById('sProjectsList');
-  if (proj) proj.value = (presets.projects||[]).join(',');
-  const loc = document.getElementById('sLocationsList');
-  if (loc) loc.value = (presets.locations||['君悅酒店','星際酒店','雅辰酒店','辨公室(文創園)','辨公室(珠海永發大廈)','南光倉庫']).join(',');
-  const wt = document.getElementById('sWorkTypesList');
-  if (wt) wt.value = (presets.workTypes||['維修','落貨','助手','安裝','檢查','搬運','焊接','除銹']).join(',');
-  // Load item categories
-  const ic = document.getElementById('sItemCategories');
-  if (ic) ic.value = getItemCategories().join(', ');
   // Render all chips
   renderPersonnelChips();
   renderProjectsChips();
@@ -1646,40 +1626,7 @@ function confirmSettings(){
   if(!log){showToast('⚠️ 請先開工');return;}
   if(!nd){showToast('⚠️ 請選擇日期');return;}
   log.dateStr=nd;log.person=np;saveData();
-  // 儲存整個區塊：人員列表、項目、地點、工種、項位分類
-  const presets = getPresets();
-  // Merge: 保留已用➕掣新增嘅，合併 input 內新加嘅
-  const mergeList = (key, inputId) => {
-    const existing = presets[key] || [];
-    const newItems = document.getElementById(inputId).value.split(',').map(s=>s.trim()).filter(Boolean);
-    const merged = [...existing];
-    newItems.forEach(item => { if (!merged.includes(item)) merged.push(item); });
-    document.getElementById(inputId).value = merged.join(',');
-    presets[key] = merged;
-  };
-  mergeList('personnel', 'sPersonnelList');
-  mergeList('projects', 'sProjectsList');
-  mergeList('locations', 'sLocationsList');
-  mergeList('workTypes', 'sWorkTypesList');
-  savePresets(presets);
-  // 儲存項位分類（保留已用➕掣新增嘅項目，再合併 input 內新加嘅）
-  const icInput = document.getElementById('sItemCategories');
-  if (icInput) {
-    const existing = getItemCategories();
-    const newItems = icInput.value.split(',').map(s => s.trim()).filter(Boolean);
-    newItems.forEach(item => { if (!existing.includes(item)) existing.push(item); });
-    localStorage.setItem(IC_KEY, JSON.stringify(existing));
-    icInput.value = '';
-    renderItemCategoryChips();
-    renderItemCategoryDropdowns();
-  }
-  refreshPersonnelDropdown();
-  // Render chips after save
-  renderPersonnelChips();
-  renderProjectsChips();
-  renderLocationsChips();
-  renderWorkTypesChips();
-  render();showToast('✅ 設置已更新');
+  render();showToast('✅ 已儲存設定');
 }
 
 // ── SETTINGS CHIPS: Add / Render / Delete ──
@@ -1739,6 +1686,33 @@ function renderPersonnelChips(){ const p=getPresets().personnel||[]; _renderChip
 function renderProjectsChips(){ const p=getPresets().projects||[]; _renderChips('sProjectsChips',p,'🏷️',function(i){deleteProjectItem(i);}); }
 function renderLocationsChips(){ const p=getPresets().locations||[]; _renderChips('sLocationsChips',p,'📍',function(i){deleteLocationItem(i);}); }
 function renderWorkTypesChips(){ const p=getPresets().workTypes||[]; _renderChips('sWorkTypesChips',p,'🛠️',function(i){deleteWorkTypeItem(i);}); }
+
+// ── Unified Common Data Input ──
+function addCommonData(){
+  const type = document.getElementById('sCommonType').value;
+  const map = {
+    personnel: { listKey: 'personnel', chipsFn: renderPersonnelChips, label: '人員' },
+    locations: { listKey: 'locations', chipsFn: renderLocationsChips, label: '地點' },
+    projects: { listKey: 'projects', chipsFn: renderProjectsChips, label: '項目' },
+    workTypes: { listKey: 'workTypes', chipsFn: renderWorkTypesChips, label: '工種' },
+    itemCategories: null
+  };
+  if (type === 'itemCategories') {
+    const val = document.getElementById('sCommonInput').value.trim();
+    if (!val) { showToast('⚠️ 請輸入項位分類'); return; }
+    const items = val.split(',').map(s => s.trim()).filter(Boolean);
+    const list = getItemCategories(); let added = 0;
+    items.forEach(item => { if (!list.includes(item)) { list.push(item); added++; } });
+    if (!added) { showToast('⚠️ 已存在，冇新項目'); return; }
+    localStorage.setItem(IC_KEY, JSON.stringify(list));
+    document.getElementById('sCommonInput').value = '';
+    renderItemCategoryChips(); renderItemCategoryDropdowns();
+    showToast('✅ 已新增項位分類：' + items.join('、'));
+  } else {
+    _addPresetItem(map[type].listKey, 'sCommonInput', map[type].chipsFn, map[type].label);
+  }
+}
+
 function deletePersonnelItem(i){ _deletePresetItem('personnel',i,renderPersonnelChips); }
 function deleteProjectItem(i){ _deletePresetItem('projects',i,renderProjectsChips); }
 function deleteLocationItem(i){ _deletePresetItem('locations',i,renderLocationsChips); }
@@ -2056,7 +2030,7 @@ function exportXLSXWithPhotos() {
     let r = 3;
     (log.problems||[]).forEach(n => { ws2.getCell(`A${r}`).value = '⚠️ 問題'; ws2.getCell(`B${r}`).value = n; r++; });
     r++;
-    (log.attendance||[]).forEach(a => { ws2.getCell(`A${r}`).value = '👥 考勤'; ws2.getCell(`B${r}`).value = a.name+'：'+a.status; r++; });
+    (log.attendance||[]).forEach(a => { ws2.getCell(`A${r}`).value = a.name; ws2.getCell(`B${r}`).value = a.status; r++; });
     r++;
     (log.followups||[]).forEach(n => { const txt = typeof n === 'string' ? n : (n.text||''); if(txt) { ws2.getCell(`A${r}`).value = '📌 待跟進'; ws2.getCell(`B${r}`).value = txt; r++; } });
     r++;
@@ -2118,7 +2092,7 @@ ws1Data.push(['時間','事項','完成度','分類','項位分類','項目','�
   const ws2Data = [];
   ws2Data.push([title,'']); ws2Data.push([]);
   if(data.problems&&data.problems.length>0){ws2Data.push(['⚠️ 問題','']);data.problems.forEach(n=>ws2Data.push(['問題',n]));ws2Data.push([]);}
-  if(data.attendance&&data.attendance.length>0){ws2Data.push(['👥 考勤','']);data.attendance.forEach(a=>ws2Data.push(['考勤',a.name+'：'+a.status]));ws2Data.push([]);}
+  if(data.attendance&&data.attendance.length>0){ws2Data.push(['👥 考勤','']);ws2Data.push(['人員','狀態']);data.attendance.forEach(a=>ws2Data.push([a.name,a.status]));ws2Data.push([]);}
   if(data.followups&&data.followups.length>0){ws2Data.push(['🔁 待跟進','']);data.followups.forEach(f=>{const txt=typeof f==='string'?f:(f.text||'');if(txt)ws2Data.push(['待跟進',txt]);});ws2Data.push([]);}
   if(data.summary){ws2Data.push(['💡 小復盤','']);ws2Data.push(['復盤',data.summary]);ws2Data.push([]);}
   if(data.top3&&data.top3.length>0){ws2Data.push(['📋 明日優先 TOP3','']);data.top3.forEach((item,i)=>ws2Data.push(['TOP'+(i+1),item]));}
@@ -2138,6 +2112,7 @@ ws1Data.push(['時間','事項','完成度','分類','項位分類','項目','�
 
 // ── FEATURE: Custom location/work type handling ──
 // (Moved to main DOMContentLoaded handler below)
+
 
 
 
@@ -2276,28 +2251,16 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   // ── All settings saved via ✅ 儲存 button (confirmSettings) ──
   refreshPersonnelDropdown();
-  // Initialize presets from HTML defaults if empty
+  // Initialize presets with defaults if empty
   const initPresets = getPresets();
-  const sLoc = document.getElementById('sLocationsList');
-  if (sLoc && (!initPresets.locations || initPresets.locations.length === 0)) {
-    initPresets.locations = sLoc.value.split(',').map(s => s.trim()).filter(Boolean);
-    savePresets(initPresets);
-  }
-  const sProj = document.getElementById('sProjectsList');
-  if (sProj && (!initPresets.projects || initPresets.projects.length === 0)) {
-    initPresets.projects = sProj.value.split(',').map(s => s.trim()).filter(Boolean);
-    savePresets(initPresets);
-  }
-  const sPers = document.getElementById('sPersonnelList');
-  if (sPers && (!initPresets.personnel || initPresets.personnel.length === 0)) {
-    initPresets.personnel = sPers.value.split(',').map(s => s.trim()).filter(Boolean);
-    savePresets(initPresets);
-  }
-  const sWt = document.getElementById('sWorkTypesList');
-  if (sWt && (!initPresets.workTypes || initPresets.workTypes.length === 0)) {
-    initPresets.workTypes = sWt.value.split(',').map(s => s.trim()).filter(Boolean);
-    savePresets(initPresets);
-  }
+  const defaultLocations = ['君悅酒店','星際酒店','雅辰酒店','辨公室(文創園)','辨公室(珠海永發大廈)','南光倉庫'];
+  const defaultPersonnel = ['傑','千軍破蒼冥'];
+  const defaultWorkTypes = ['維修','落貨','助手','安裝','檢查','搬運','焊接','除銹'];
+  if (!initPresets.locations || initPresets.locations.length === 0) initPresets.locations = defaultLocations;
+  if (!initPresets.personnel || initPresets.personnel.length === 0) initPresets.personnel = defaultPersonnel;
+  if (!initPresets.projects) initPresets.projects = [];
+  if (!initPresets.workTypes || initPresets.workTypes.length === 0) initPresets.workTypes = defaultWorkTypes;
+  savePresets(initPresets);
   // Follow-up photo upload handler
   document.getElementById('fuPhotoInput').addEventListener('change', function() {
     const file = this.files && this.files[0];
