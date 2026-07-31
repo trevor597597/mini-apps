@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v1.5</title>
+<title>工作日誌 — 輸入事項工具 v1.7</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -196,7 +196,7 @@ body {
 .status-item .num { font-size: 1.4rem; font-weight: 700; color: var(--blue-700); transition: color 0.15s; }
 .status-item .lbl { font-size: 0.7rem; color: var(--slate-400); }
 .modal-overlay {
-  display: none; position: fixed; inset: 0;
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.4); z-index: 1000;
   justify-content: center; align-items: flex-end;
 }
@@ -208,14 +208,10 @@ body {
   background: white; border-radius: 20px 20px 0 0;
   width: 100%; max-width: 560px;
   max-height: 90vh; overflow-y: auto;
-  padding: 0; animation: slideUp 0.25s ease;
+  padding: 0;
 }
 @media (min-width: 640px) {
   .modal { border-radius: 20px; max-height: 80vh; }
-}
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
 }
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -346,6 +342,66 @@ body {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* ── 進度評估（列表式）── */
+.pv-input-wrap {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+}
+.pv-input-wrap input[type="range"] { width: 100%; accent-color: var(--blue-600); }
+.pv-pct-label {
+  display: inline-block; min-width: 42px; text-align: center;
+  font-weight: 700; color: var(--blue-700);
+  background: var(--blue-50); border-radius: 8px; padding: 0 6px;
+}
+.pv-list { display: flex; flex-direction: column; gap: 6px; }
+.pv-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.pv-loc {
+  font-size: 0.72rem; font-weight: 600; color: var(--blue-700);
+  background: var(--blue-50); padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+}
+.pv-proj {
+  font-size: 0.72rem; font-weight: 600; color: var(--green-700);
+  background: var(--green-50); padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+}
+.pv-desc { flex: 1; font-size: 0.85rem; color: var(--slate-700); min-width: 110px; }
+.pv-pct { font-size: 0.7rem; color: var(--slate-500); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.pv-mini-bar { width: 56px; height: 6px; background: var(--slate-200); border-radius: 3px; overflow: hidden; }
+.pv-mini-bar > div { height: 100%; background: linear-gradient(90deg, var(--blue-500), var(--blue-700)); }
+.pv-mini-bar.full > div { background: linear-gradient(90deg, var(--green-500), var(--green-600)); }
+.pv-row .pv-actions { display: flex; gap: 4px; white-space: nowrap; }
+.pv-row .pv-edit {
+  border: 1px solid var(--slate-300);
+  background: white;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  cursor: pointer;
+  color: var(--slate-600);
+  min-height: 26px;
+}
+.pv-row .pv-edit:hover { background: var(--slate-100); }
+.pv-row .pv-edit.danger:hover { background: var(--red-50); color: var(--red-500); border-color: var(--red-200); }
+.pv-status { font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+.pv-status.st-進行中 { background: var(--orange-100); color: var(--orange-500); }
+.pv-status.st-已完成 { background: var(--green-50); color: var(--green-600); }
+.pv-status.st-待辦 { background: var(--slate-100); color: var(--slate-500); }
+.pv-status.st-已取消 { background: var(--red-50); color: var(--red-500); }
+.pv-note {
+  font-size: 0.75rem; color: var(--slate-600);
+  background: #fffbe6; border: 1px solid #fde68a;
+  border-radius: 6px; padding: 4px 8px;
+  margin: -2px 10px 4px; align-self: stretch;
+}
+
 .empty-state {
   text-align: center; padding: 40px 20px; color: var(--slate-400);
 }
@@ -455,7 +511,6 @@ body {
           <button class="btn btn-sm btn-secondary" onclick="viewEditTasks()">📝 編輯</button>
           <button class="btn btn-sm btn-secondary" onclick="splitTask()">✂️ 拆分</button>
           <button class="btn btn-sm btn-secondary" onclick="addPhotos()">📸 照片</button>
-          <button class="btn btn-sm btn-secondary" onclick="fillNotes()">📋 備註</button>
           <button class="btn btn-sm btn-success" onclick="finishDay()">🏁 收工</button>
           <button class="btn btn-sm" id="viewToggleBtn" style="border:1.5px solid var(--slate-300);background:var(--slate-50)" onclick="toggleMatrixView()">📋 列表</button>
         </div>
@@ -464,10 +519,6 @@ body {
         <!-- 時間軸事項列表 -->
         <div id="taskListBody" style="margin-top:12px">
           <div class="task-empty" id="taskEmpty">尚無事項，點擊「新增事項」開始記錄</div>
-        </div>
-        <!-- 備註區塊（嵌入時間軸下方） -->
-        <div id="notesBody" style="margin-top:12px;border-top:1px solid var(--slate-200);padding-top:12px;display:none">
-          <div style="font-size:0.8rem;color:var(--slate-400)">尚未填寫備註</div>
         </div>
       </div>
     </div>
@@ -536,6 +587,62 @@ body {
 
   <!-- Tab: 資訊 -->
   <div class="tab-content" id="tab-info">
+  <!-- Card: 備註 -->
+  <div class="card" id="notesCard">
+    <div class="card-header">
+      <h2>📋 備註</h2>
+      <button class="btn btn-sm btn-secondary" onclick="fillNotes()">✏️ 編輯備註</button>
+    </div>
+    <div class="card-body">
+      <div id="notesBody">
+        <div style="font-size:0.8rem;color:var(--slate-400)">尚未填寫備註</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: 進度評估 -->
+  <div class="card" id="progressCard">
+    <div class="card-header">
+      <h2>📊 進度評估</h2>
+    </div>
+    <div class="card-body">
+      <!-- 常駐輸入區 -->
+      <div class="pv-input-wrap">
+        <div class="form-row">
+          <div class="form-group"><label>📍 地點</label>
+            <select class="form-select" id="pvLocation"></select>
+          </div>
+          <div class="form-group"><label>🏷️ 項目</label>
+            <select class="form-select" id="pvProject"></select>
+          </div>
+        </div>
+        <div class="form-group"><label>📋 事項</label><input class="form-input" id="pvDesc" placeholder="例如：更換水泵零件"></div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1.2">
+            <label>📈 完成度 <span id="pvPctLabel" class="pv-pct-label">0%</span></label>
+            <input type="range" id="pvPct" min="0" max="100" step="5" value="0" oninput="updatePvPctLabel()">
+          </div>
+          <div class="form-group"><label>狀態</label>
+            <select class="form-select" id="pvStatus">
+              <option value="待辦">⏳ 待辦</option>
+              <option value="進行中">🔄 進行中</option>
+              <option value="已完成">✅ 已完成</option>
+              <option value="已取消">❌ 已取消</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label>備註</label><input class="form-input" id="pvNote" placeholder="備註（可留空）"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary" id="pvSaveBtn" onclick="saveProgressEntry()">✅ 儲存</button>
+          <button class="btn btn-secondary" id="pvCancelBtn" onclick="resetProgressForm()" style="display:none">↩️ 取消編輯</button>
+        </div>
+      </div>
+      <div id="progressEvalBody" style="margin-top:14px">
+        <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄</div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header"><h2>📂 導入</h2></div>
     <div class="card-body">
@@ -804,37 +911,6 @@ body {
   </div>
 </div>
 
-<div class="modal-overlay" id="modalFinish">
-  <div class="modal">
-    <div class="modal-header"><h3>🏁 收工 &amp; 儲存</h3><button class="modal-close" onclick="closeModal('modalFinish')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label>收工時間</label><input class="form-input" id="fEndTime" type="time" step="60" value="17:00"></div>
-      <div class="form-group"><label>日誌預覽</label><div class="preview-box" id="finishPreview" style="max-height:300px"></div></div>
-    </div>
-    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalFinish')">取消</button><button class="btn btn-primary" onclick="confirmFinish()">💾 儲存日誌</button></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modalTemplate">
-  <div class="modal">
-    <div class="modal-header"><h3>📖 工作日誌模板 v5.6 格式</h3><button class="modal-close" onclick="closeModal('modalTemplate')">✕</button></div>
-    <div class="modal-body"><div class="preview-box" style="max-height:none;font-size:0.78rem">
-| 時間 | 事項 | 完成度 | 分類 | 項位分類 | 人員 | 地點 | 工種 | 照片 |
-|------|------|--------|------|----------|------|------|------|------|
-| 09:00-09:04 | 開工 | 已完成 | 個人 | — | 傑 | — | — | 無照片 |
-| 09:04-10:11 | 更換零件 | 已完成 | 維護 | 水泵 | 傑 | 星際酒店 | 維修 | 有拍照 |
-| 17:00-17:00 | 收工 | 已完成 | 個人 | — | 傑 | — | — | 無照片 |
-
-4類分類：🔧維護 · 🔍檢查 · 🤝助手 · 👤個人
-底部區塊：問題／考勤／待跟進（表格） 小復盤（文字） 明日優先 TOP3（列表）
-
-常用地點：君悅酒店 / 星際酒店 / 雅辰酒店 / 辨公室(文創園) / 辨公室(珠海永發大廈) / 南光倉庫
-常用工種：維修 / 落貨 / 助手 / 安裝 / 檢查 / 搬運 / 焊接 / 除銹
-    </div></div>
-    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalTemplate')">關閉</button></div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="modalImageViewer">
   <div class="modal" style="max-width:700px">
     <div class="modal-header"><h3>🖼️ 圖片</h3><button class="modal-close" onclick="closeModal('modalImageViewer')">✕</button></div>
@@ -851,6 +927,12 @@ const IC_KEY = 'worklog_itemCategories_v2';
 const DB_NAME = 'WorklogPhotos';
 const DB_VERSION = 1;
 const DB_STORE = 'photos';
+
+// ── SAFE STORAGE（file:// 或 Firefox 下 localStorage 會拋 SecurityError，全部包 try-catch）──
+let memLogBackup = null;
+function lsGet(key){ try { return localStorage.getItem(key); } catch(e) { return null; } }
+function lsSet(key, val){ try { localStorage.setItem(key, val); } catch(e) {} }
+function lsRemove(key){ try { localStorage.removeItem(key); } catch(e) {} }
 
 // ── INDEXEDDB PHOTO STORAGE ──
 let _photoDB = null;
@@ -908,7 +990,8 @@ let splitTargetIdx = -1;
 
 function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = lsGet(STORAGE_KEY);
+    if (raw === null && memLogBackup) raw = memLogBackup;
     if (raw) {
       const data = JSON.parse(raw);
       if (data && data.dateStr) {
@@ -935,19 +1018,25 @@ function loadData() {
   render();
 }
 function saveData() {
-  if (log) localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
-  else localStorage.removeItem(STORAGE_KEY);
+  if (log) {
+    const json = JSON.stringify(log);
+    lsSet(STORAGE_KEY, json);
+    memLogBackup = json;
+  } else {
+    lsRemove(STORAGE_KEY);
+    memLogBackup = null;
+  }
 }
 
 // ── 項位分類管理 ──
 function getItemCategories() {
-  try { const raw = localStorage.getItem(IC_KEY); if (raw) return JSON.parse(raw); } catch(e) {}
+  const raw = lsGet(IC_KEY); if (raw) { try { return JSON.parse(raw); } catch(e) {} }
   return [];
 }
 function saveItemCategories() {
   const input = document.getElementById('sItemCategories');
   const list = input.value.split(',').map(s => s.trim()).filter(Boolean);
-  localStorage.setItem(IC_KEY, JSON.stringify(list));
+  lsSet(IC_KEY, JSON.stringify(list));
   renderItemCategoryChips();
   renderItemCategoryDropdowns();
   showToast('✅ 項位分類已儲存');
@@ -978,8 +1067,8 @@ function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').
 function getWeekday(ds) { const d = new Date(ds); return ['週日','週一','週二','週三','週四','週五','週六'][d.getDay()]; }
 function formatDate(ds) { return ds.replace(/-/g, '/'); }
 function todayStr() { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function openModal(id) { document.getElementById(id).classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openModal(id) { const el = document.getElementById(id); if(!el) return; el.classList.add('show'); el.style.display = 'flex'; }
+function closeModal(id) { const el = document.getElementById(id); if(!el) return; el.classList.remove('show'); el.style.display = 'none'; }
 function getLastEndTime() { if (!log||!log.tasks||!log.tasks.length) return '09:00'; const last=log.tasks[log.tasks.length-1]; const p=last.timeRange.split('-'); return p.length>1?p[1]:'09:00'; }
 
 // ── RENDER ──
@@ -997,7 +1086,7 @@ function render() {
   document.getElementById('statTasks').textContent=log.tasks.length;
   document.getElementById('statPhotos').textContent=log.tasks.reduce((s,t)=>s+(t.photos?t.photos.length:0),0);
   document.getElementById('statStatus').textContent=log.tasks.some(t=>t.desc==='收工')?'✅ 已收工':'🔄 進行中';
-  renderProgressSummary(); renderCategoryMatrix(); renderNotes(); refreshPreview(); refreshSettingsInputs();
+  renderProgressSummary(); renderCategoryMatrix(); renderNotes(); refreshPreview(); refreshSettingsInputs(); renderProgressEval();
 }
 
 function renderTaskList() {
@@ -1208,10 +1297,11 @@ function renderProgressSummary() {
 
 function renderNotes() {
   const body=document.getElementById('notesBody');
-  if(!log||!log.tasks||!log.tasks.length){body.style.display='none';return;}
+  if(!body) return;
+  if(!log||!log.tasks||!log.tasks.length){body.innerHTML='<div style="font-size:0.8rem;color:var(--slate-400)">尚未開工，冇備註資料</div>';return;}
   const hp=log.problems&&log.problems.length>0, ha=log.attendance&&log.attendance.length>0, hf=log.followups&&log.followups.length>0, hs=log.summary, ht=log.top3&&log.top3.some(Boolean);
-  if(!hp&&!ha&&!hf&&!hs&&!ht){body.style.display='none';return;}
-  body.style.display='block'; let html='<div style="font-size:0.8rem;font-weight:600;color:var(--slate-500);margin-bottom:8px">📌 備註</div>';
+  if(!hp&&!ha&&!hf&&!hs&&!ht){body.innerHTML='<div style="font-size:0.8rem;color:var(--slate-400)">尚未填寫備註，按「✏️ 編輯備註」開始</div>';return;}
+  body.style.display='block'; let html='';
   if(hp)html+=`<div style="margin-bottom:6px"><strong>⚠️ 問題：</strong>${log.problems.map(p=>escHtml(p)).join('；')}</div>`;
   if(log.attendance&&log.attendance.length>0){const si={'出勤':'✅','缺勤':'❌','遲到':'⏰','請假':'🏖️'};html+=`<div style="margin-bottom:6px"><strong>👥 考勤：</strong>${log.attendance.map(a=>(si[a.status]||'❓')+escHtml(a.name)).join(' ')}</div>`;}
   if(hf){
@@ -1275,9 +1365,10 @@ function saveAttendanceCheckboxes() {
 
 function generateMarkdown() {
   if(!log)return '# 無數據';
-  const dd=formatDate(log.dateStr), wd=getWeekday(log.dateStr);
+  const ds0 = log.dateStr || todayStr();
+  const dd=formatDate(ds0), wd=getWeekday(ds0);
   let md=`# 工作日誌 ${dd}（${wd}）\n\n人員：${escHtml(log.person||'傑')}\n\n---\n\n## 時間軸\n\n| 時間 | 事項 | 完成度 | 分類 | 項位分類 | 人員 | 地點 | 工種 | 照片 |\n|------|------|--------|------|----------|------|------|------|------|\n`;
-  if(log.tasks)log.tasks.forEach(t=>{const c=t.category||'—', ic=t.itemCategory||'—', pnl=t.personnel||(log.person||'傑'), l=t.location||'—', w=t.workType||'—', p=t.photoStatus||'無照片';md+=`| <strong>${escHtml(t.timeRange)}</strong> | ${escHtml(t.desc)} | ${escHtml(t.status)} | ${escHtml(c)} | ${escHtml(ic)} | ${escHtml(pnl)} | ${escHtml(l)} | ${escHtml(w)} | ${p} |\n`;});
+  if(log.tasks)log.tasks.forEach(t=>{if(!t)return;const c=t.category||'—', ic=t.itemCategory||'—', pnl=t.personnel||(log.person||'傑'), l=t.location||'—', w=t.workType||'—', p=t.photoStatus||'無照片';md+=`| <strong>${escHtml(t.timeRange)}</strong> | ${escHtml(t.desc)} | ${escHtml(t.status)} | ${escHtml(c)} | ${escHtml(ic)} | ${escHtml(pnl)} | ${escHtml(l)} | ${escHtml(w)} | ${p} |\n`;});
   md+='\n---\n\n## 問題／考勤／待跟進\n\n| 問題 | 考勤 | 待跟進 |\n|------|------|--------|\n';
   const pr=log.problems||[], ri=(log.attendance||[]).map(a=>a.name+':'+a.status), fl=(log.followups||[]).map(f => typeof f === 'string' ? {text:f} : f), ml=Math.max(pr.length,ri.length,fl.length,1);
   for(let i=0;i<ml;i++){const p=i<pr.length?pr[i]:'', r=i<ri.length?ri[i]:'', f=i<fl.length?fl[i].text||'':'';md+=`| ${escHtml(p)} | ${escHtml(r)} | ${escHtml(f)} |\n`;}
@@ -1313,7 +1404,7 @@ function startNewDay(){const t=todayStr();document.getElementById('fDate').value
 function confirmNewDay(){
   const ds=document.getElementById('fDate').value, p=document.getElementById('fPerson').value.trim()||'傑';
   if(!ds){showToast('⚠️ 請選擇日期');return;}
-  log={dateStr:ds,person:p,tasks:[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:p}],problems:[],risks:[],followups:[],summary:'',top3:['','','']};
+  log={dateStr:ds,person:p,tasks:[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:p}],problems:[],risks:[],followups:[],summary:'',top3:['','',''],progress:[]};
   saveData();closeModal('modalNewDay');render();showToast(`✅ 已建立 ${formatDate(ds)}（${getWeekday(ds)}）工作日誌`);
   setTimeout(()=>addTask(),300);
 }
@@ -1602,12 +1693,39 @@ function confirmNotes(){
   saveData();closeModal('modalNotes');render();showToast('✅ 備註已更新');
 }
 
-// ── FEATURE: Finish Day ──
-function finishDay(){if(!log){showToast('⚠️ 請先開工');return;}document.getElementById('fEndTime').value=log.tasks.some(t=>t.desc==='收工')?'':'17:00';document.getElementById('finishPreview').textContent=generateMarkdown();openModal('modalFinish');}
-function confirmFinish(){if(!log.tasks.some(t=>t.desc==='收工')){const e=document.getElementById('fEndTime').value||'17:00';log.tasks.push({timeRange:`${e}-${e}`,desc:'收工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'});}saveData();render();closeModal('modalFinish');showToast('✅ 工作日誌已完成！可複製 Markdown、下載 .md 或匯出 XLSX');}
+// ── FEATURE: Finish Day（默認彈窗版）──
+function finishDay(){
+  if(!log){showToast('⚠️ 請先開工');return;}
+  const hasFinish = (log.tasks||[]).some(t=>t&&t.desc==='收工');
+  const tasks = log.tasks||[];
+  const done = tasks.filter(t=>t&&t.status==='已完成').length;
+  const sum = `📊 任務 ${tasks.length} 項｜已完成 ${done} 項`;
+  const def = hasFinish ? '' : '17:00';
+  const t = prompt('🏁 收工時間（HH:MM）\n\n' + sum + '\n\n（留空 = 17:00）', def);
+  if(t === null) return; // 取消
+  const time = t.trim() || '17:00';
+  if(!confirm('確定收工？\n\n收工時間：' + time + '\n' + sum)) return;
+  if(!hasFinish){
+    log.tasks.push({timeRange:`${time}-${time}`,desc:'收工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'});
+  }
+  saveData(); render();
+  showToast('✅ 工作日誌已完成！可複製 Markdown、下載 .md 或匯出 XLSX');
+}
+function confirmFinish(){ finishDay(); }
 
-// ── FEATURE: Show Template ──
-function showTemplate(){openModal('modalTemplate');}
+// ── FEATURE: Show Template（默認彈窗版）──
+function showTemplate(){
+  alert('📖 工作日誌模板 v5.6 格式\n\n' +
+'| 時間 | 事項 | 完成度 | 分類 | 項位分類 | 人員 | 地點 | 工種 | 照片 |\n' +
+'|------|------|--------|------|----------|------|------|------|------|\n' +
+'| 09:00-09:04 | 開工 | 已完成 | 個人 | — | 傑 | — | — | 無照片 |\n' +
+'| 09:04-10:11 | 更換零件 | 已完成 | 維護 | 水泵 | 傑 | 星際酒店 | 維修 | 有拍照 |\n' +
+'| 17:00-17:00 | 收工 | 已完成 | 個人 | — | 傑 | — | — | 無照片 |\n' +
+'\n4類分類：🔧維護 · 🔍檢查 · 🤝助手 · 👤個人\n' +
+'底部區塊：問題／考勤／待跟進（表格） 小復盤（文字） 明日優先 TOP3（列表）\n' +
+'\n常用地點：君悅酒店 / 星際酒店 / 雅辰酒店 / 辨公室(文創園) / 辨公室(珠海永發大廈) / 南光倉庫\n' +
+'常用工種：維修 / 落貨 / 助手 / 安裝 / 檢查 / 搬運 / 焊接 / 除銹');
+}
 
 // ── FEATURE: Settings (Inline Card) ──
 function refreshSettingsInputs(){
@@ -1704,7 +1822,7 @@ function addCommonData(){
     const list = getItemCategories(); let added = 0;
     items.forEach(item => { if (!list.includes(item)) { list.push(item); added++; } });
     if (!added) { showToast('⚠️ 已存在，冇新項目'); return; }
-    localStorage.setItem(IC_KEY, JSON.stringify(list));
+    lsSet(IC_KEY, JSON.stringify(list));
     document.getElementById('sCommonInput').value = '';
     renderItemCategoryChips(); renderItemCategoryDropdowns();
     showToast('✅ 已新增項位分類：' + items.join('、'));
@@ -1727,7 +1845,7 @@ function addItemCategoryItem(){
   let added = 0;
   items.forEach(item => { if (!list.includes(item)) { list.push(item); added++; } });
   if (!added) { showToast('⚠️ 已存在，冇新項目'); return; }
-  localStorage.setItem(IC_KEY, JSON.stringify(list));
+  lsSet(IC_KEY, JSON.stringify(list));
   input.value = '';
   renderItemCategoryChips();
   renderItemCategoryDropdowns();
@@ -1736,7 +1854,7 @@ function addItemCategoryItem(){
 function deleteItemCategoryItem(i){
   const list = getItemCategories();
   list.splice(i, 1);
-  localStorage.setItem(IC_KEY, JSON.stringify(list));
+  lsSet(IC_KEY, JSON.stringify(list));
   renderItemCategoryChips();
   renderItemCategoryDropdowns();
 }
@@ -1849,7 +1967,8 @@ function loadXLSX(event) {
         attendance: attendance,
         followups: followups,
         summary: summary,
-        top3: top3
+        top3: top3,
+        progress: []
       };
 
       saveData();
@@ -2117,6 +2236,127 @@ ws1Data.push(['時間','事項','完成度','分類','項位分類','項目','�
 
 
 
+// ── FEATURE: Progress Evaluation (常駐輸入框) ──
+var progressEditId = null;
+
+function getProgressEntries(){ return (log && log.progress) || []; }
+
+function refreshProgressSelects(){
+  const presets = getPresets();
+  const locSel = document.getElementById('pvLocation');
+  const projSel = document.getElementById('pvProject');
+  if(!locSel || !projSel) return;
+  const curLoc = locSel.value, curProj = projSel.value;
+  const locs = presets.locations || [];
+  locSel.innerHTML = '<option value="">— 揀地點 —</option>' + locs.map(l=>`<option value="${escHtml(l)}">${escHtml(l)}</option>`).join('');
+  const projs = presets.projects || [];
+  projSel.innerHTML = '<option value="">— 揀項目 —</option>' + projs.map(p=>`<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('');
+  if(curLoc) locSel.value = curLoc;
+  if(curProj) projSel.value = curProj;
+}
+
+function updatePvPctLabel(){
+  const el = document.getElementById('pvPct');
+  const lb = document.getElementById('pvPctLabel');
+  if(el && lb) lb.textContent = el.value + '%';
+}
+
+function resetProgressForm(){
+  progressEditId = null;
+  refreshProgressSelects();
+  const locSel = document.getElementById('pvLocation'); if(locSel) locSel.value = '';
+  const projSel = document.getElementById('pvProject'); if(projSel) projSel.value = '';
+  const desc = document.getElementById('pvDesc'); if(desc) desc.value = '';
+  const pct = document.getElementById('pvPct'); if(pct) pct.value = 0;
+  updatePvPctLabel();
+  const st = document.getElementById('pvStatus'); if(st) st.value = '待辦';
+  const note = document.getElementById('pvNote'); if(note) note.value = '';
+  const cb = document.getElementById('pvCancelBtn'); if(cb) cb.style.display = 'none';
+  const sb = document.getElementById('pvSaveBtn'); if(sb) sb.textContent = '✅ 儲存';
+}
+
+function saveProgressEntry(){
+  if(!log){ showToast('⚠️ 未開工'); return; }
+  const location = document.getElementById('pvLocation').value;
+  const project = document.getElementById('pvProject').value;
+  const desc = document.getElementById('pvDesc').value.trim();
+  if(!location && !project){ showToast('⚠️ 地點或項目至少要揀一個'); return; }
+  if(!desc){ showToast('⚠️ 請寫事項'); return; }
+  const pct = Number(document.getElementById('pvPct').value) || 0;
+  const status = document.getElementById('pvStatus').value;
+  const note = document.getElementById('pvNote').value.trim();
+  if(!log.progress) log.progress = [];
+  if(progressEditId){
+    const e = log.progress.find(x => String(x.id) === String(progressEditId));
+    if(e){ e.location=location; e.project=project; e.desc=desc; e.pct=pct; e.status=status; e.note=note; }
+  } else {
+    log.progress.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), location, project, desc, pct, status, note });
+  }
+  saveData(); renderProgressEval(); resetProgressForm();
+  showToast('✅ 已儲存進度');
+}
+
+function editProgressEntry(id){
+  const e = getProgressEntries().find(x => String(x.id) === String(id));
+  if(!e) return;
+  progressEditId = e.id;
+  refreshProgressSelects();
+  document.getElementById('pvLocation').value = e.location || '';
+  document.getElementById('pvProject').value = e.project || '';
+  document.getElementById('pvDesc').value = e.desc || '';
+  document.getElementById('pvPct').value = (e.pct!=null && e.pct!=='') ? e.pct : 0;
+  updatePvPctLabel();
+  document.getElementById('pvStatus').value = e.status || '待辦';
+  document.getElementById('pvNote').value = e.note || '';
+  document.getElementById('pvCancelBtn').style.display = '';
+  document.getElementById('pvSaveBtn').textContent = '💾 更新';
+  const card = document.getElementById('progressCard');
+  if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
+  const desc = document.getElementById('pvDesc'); if(desc) desc.focus();
+}
+
+function deleteProgressEntryById(id){
+  if(!confirm('確定刪除呢條進度記錄？')) return;
+  if(log && log.progress) log.progress = log.progress.filter(x => String(x.id) !== String(id));
+  saveData(); renderProgressEval();
+  if(progressEditId && String(progressEditId) === String(id)) resetProgressForm();
+  showToast('🗑️ 已刪除進度');
+}
+
+function renderProgressEval(){
+  const body=document.getElementById('progressEvalBody');
+  if(!body) return;
+  refreshProgressSelects();
+  const entries = getProgressEntries().filter(e => e && e.desc);
+  if(!entries.length){
+    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄，喺上面輸入後撳「✅ 儲存」</div>';
+    return;
+  }
+  const pvStatusCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
+  let html = '<div class="pv-list">';
+  entries.forEach(e=>{
+    const pct = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
+    const status = e.status || '待辦';
+    const stCls = pvStatusCls(status);
+    const idAttr = String(e.id).replace(/'/g,"\\'");
+    const pctTxt = (e.pct!=null && e.pct!=='') ? pct+'%' : '—';
+    html += `<div class="pv-row">
+      ${e.location?`<span class="pv-loc">📍 ${escHtml(e.location)}</span>`:''}
+      ${e.project?`<span class="pv-proj">🏷️ ${escHtml(e.project)}</span>`:''}
+      <span class="pv-desc">${escHtml(e.desc||'')}</span>
+      <span class="pv-status ${stCls}">${escHtml(status)}</span>
+      <span class="pv-pct"><span class="pv-mini-bar ${pct>=100?'full':''}"><div style="width:${pct}%"></div></span>${pctTxt}</span>
+      <span class="pv-actions">
+        <button class="pv-edit" onclick="editProgressEntry('${idAttr}')" title="編輯">✏️</button>
+        <button class="pv-edit danger" onclick="deleteProgressEntryById('${idAttr}')" title="刪除">🗑️</button>
+      </span>
+    </div>`;
+    if(e.note) html += `<div class="pv-note">📝 ${escHtml(e.note)}</div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
 // ── Tab Switching ──
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -2140,7 +2380,7 @@ function resetSchedule(){
   if(!log||!log.tasks){showToast('⚠️ 請先開工');return;}
   if(!confirm('確定重置行程？所有事項、備註、出勤記錄將被清空，只保留開工記錄。'))return;
   log.tasks=[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
-  log.problems=[];log.attendance=[];log.followups=[];log.summary='';log.top3=['','',''];
+  log.problems=[];log.attendance=[];log.followups=[];log.summary='';log.top3=['','',''];log.progress=[];
   saveData();render();showToast('✅ 行程已重置');
 }
 
@@ -2154,10 +2394,11 @@ document.addEventListener('keydown', function(e) {
 // ── PERSONNEL DROPDOWN HELPERS ──
 const PRESET_KEY = 'worklog_presets_v1';
 function getPresets() {
-  try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || {personnel:[], projects:[], locations:[]}; }
+  const raw = lsGet(PRESET_KEY);
+  try { return JSON.parse(raw) || {personnel:[], projects:[], locations:[]}; }
   catch(e){ return {personnel:[], projects:[], locations:[]}; }
 }
-function savePresets(p) { localStorage.setItem(PRESET_KEY, JSON.stringify(p)); }
+function savePresets(p) { lsSet(PRESET_KEY, JSON.stringify(p)); }
 
 function refreshPersonnelDropdown() {
   const sel = document.getElementById('fPersonnel');
