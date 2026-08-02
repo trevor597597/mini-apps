@@ -191,7 +191,28 @@
     .data-grid { grid-template-columns: 1fr; }
     .cmd-grid { grid-template-columns: 1fr; }
     .header h1 { font-size: 1.1rem; }
+    .mgrid { grid-template-columns: 1fr !important; }
   }
+
+  /* Form inputs for data management */
+  .form-input {
+    font-family: 'Noto Sans SC', sans-serif; font-size: 0.78rem;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 0.45rem 0.7rem; border-radius: 8px; outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+  .chip-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0.25rem 0.6rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    transition: all 0.15s;
+  }
+  .chip-tag:hover { border-color: var(--blue); }
+  .chip-tag .chip-del {
+    cursor: pointer; opacity: 0.5; font-size: 0.65rem; padding: 0 2px;
+    transition: opacity 0.15s;
+  }
+  .chip-tag .chip-del:hover { opacity: 1; color: var(--red); }
 </style>
 </head>
 <body>
@@ -282,6 +303,41 @@
     </a>
   </div>
 
+  <!-- Projects & Locations Management -->
+  <div class="section-title">
+    📂 資料登記 <span class="badge">v1</span>
+  </div>
+  <div class="mgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem">
+    <!-- 項目管理 -->
+    <div class="data-card" style="border-color:var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <span class="src">🏷️ 項目管理</span>
+        <span class="size" id="projectCount">0 項</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-bottom:0.5rem;flex-wrap:wrap">
+        <input class="form-input" id="newProject" placeholder="輸入項目名稱" style="flex:1;min-width:80px">
+        <button class="action-btn primary" onclick="addProject()" style="padding:0.4rem 0.8rem;font-size:0.72rem">➕ 新增</button>
+      </div>
+      <div id="projectList" style="display:flex;flex-wrap:wrap;gap:0.35rem">
+        <span style="font-size:0.7rem;color:var(--text2)">尚未添加項目</span>
+      </div>
+    </div>
+    <!-- 地點管理 -->
+    <div class="data-card" style="border-color:var(--orange)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <span class="src">📍 地點管理</span>
+        <span class="size" id="locationCount">0 項</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-bottom:0.5rem;flex-wrap:wrap">
+        <input class="form-input" id="newLocation" placeholder="輸入地點名稱" style="flex:1;min-width:80px">
+        <button class="action-btn primary" onclick="addLocation()" style="padding:0.4rem 0.8rem;font-size:0.72rem">➕ 新增</button>
+      </div>
+      <div id="locationList" style="display:flex;flex-wrap:wrap;gap:0.35rem">
+        <span style="font-size:0.7rem;color:var(--text2)">尚未添加地點</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Data Sources -->
   <div class="section-title">
     🗄️ 資料狀態
@@ -365,7 +421,92 @@ document.getElementById('dataGrid').innerHTML = `
   </div>
 `;
 
-// Total records (approximate from known data)
+// ── 項目 & 地點管理（獨立儲存）──
+const PROJECTS_KEY = 'ctrl_projects';
+const LOCATIONS_KEY = 'ctrl_locations';
+
+function getProjects() {
+  try { return JSON.parse(localStorage.getItem(PROJECTS_KEY)) || []; }
+  catch(e) { return []; }
+}
+function getLocations() {
+  try { return JSON.parse(localStorage.getItem(LOCATIONS_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveProjects(list) {
+  localStorage.setItem(PROJECTS_KEY, JSON.stringify(list));
+  renderProjects();
+}
+function saveLocations(list) {
+  localStorage.setItem(LOCATIONS_KEY, JSON.stringify(list));
+  renderLocations();
+}
+
+function renderProjects() {
+  const list = getProjects();
+  document.getElementById('projectCount').textContent = `${list.length} 項`;
+  const el = document.getElementById('projectList');
+  if (list.length === 0) {
+    el.innerHTML = '<span style="font-size:0.7rem;color:var(--text2)">尚未添加項目</span>';
+    return;
+  }
+  el.innerHTML = list.map((p, i) =>
+    `<span class="chip-tag">🏷️ ${p} <span class="chip-del" onclick="removeProject(${i})">✕</span></span>`
+  ).join('');
+}
+function renderLocations() {
+  const list = getLocations();
+  document.getElementById('locationCount').textContent = `${list.length} 項`;
+  const el = document.getElementById('locationList');
+  if (list.length === 0) {
+    el.innerHTML = '<span style="font-size:0.7rem;color:var(--text2)">尚未添加地點</span>';
+    return;
+  }
+  el.innerHTML = list.map((l, i) =>
+    `<span class="chip-tag">📍 ${l} <span class="chip-del" onclick="removeLocation(${i})">✕</span></span>`
+  ).join('');
+}
+function addProject() {
+  const v = document.getElementById('newProject').value.trim();
+  if (!v) return;
+  const list = getProjects();
+  if (list.includes(v)) { document.getElementById('newProject').value = ''; return; }
+  list.push(v);
+  saveProjects(list);
+  document.getElementById('newProject').value = '';
+}
+function addLocation() {
+  const v = document.getElementById('newLocation').value.trim();
+  if (!v) return;
+  const list = getLocations();
+  if (list.includes(v)) { document.getElementById('newLocation').value = ''; return; }
+  list.push(v);
+  saveLocations(list);
+  document.getElementById('newLocation').value = '';
+}
+// Enter key support
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('newProject').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addProject();
+  });
+  document.getElementById('newLocation').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addLocation();
+  });
+});
+function removeProject(i) {
+  const list = getProjects();
+  list.splice(i, 1);
+  saveProjects(list);
+}
+function removeLocation(i) {
+  const list = getLocations();
+  list.splice(i, 1);
+  saveLocations(list);
+}
+
+// Init
+renderProjects();
+renderLocations();
 document.getElementById('totalRecords').textContent = '6,438+';
 
 // Countdown to next cron job

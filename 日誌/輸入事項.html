@@ -203,8 +203,12 @@ body {
   display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.4); z-index: 1000;
   justify-content: center; align-items: flex-end;
+  animation: modalFadeIn 0.18s ease-out;
 }
 .modal-overlay.show { display: flex; }
+.modal-overlay .modal { animation: modalSlideUp 0.22s ease-out; }
+@keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalSlideUp { from { transform: translateY(24px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
 @media (min-width: 640px) {
   .modal-overlay { align-items: center; }
 }
@@ -674,7 +678,9 @@ body {
 
   <!-- Card 3: 輸出 -->
   <div class="card" id="outputCard">
-    <div class="card-header"><h2>📄 輸出</h2></div>
+    <div class="card-header"><h2>📄 輸出</h2>
+      <button class="btn btn-sm btn-secondary" onclick="openOutTemplate()">⚙️ 輸出模板</button>
+    </div>
     <div class="card-body">
       <div class="preview-box" id="markdownPreview" style="max-height:220px">尚未開工或無數據</div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -899,6 +905,7 @@ body {
       <div class="form-group"><label>👥 人員考勤</label>
         <div id="attendanceContainer" style="margin-top:4px"></div>
         <div style="font-size:0.72rem;color:var(--slate-400);margin-top:4px">從👥常用人員清單選擇需要記錄嘅人員</div>
+      </div>
       <div class="form-group"><label>待跟進（列表式，每項可附圖片）</label>
         <div id="followupContainer" style="margin-top:4px"></div>
         <button class="btn btn-sm btn-secondary" style="margin-top:6px" onclick="addFollowupItem()" type="button">➕ 新增跟進項</button>
@@ -918,6 +925,22 @@ body {
   </div>
 </div>
 
+<div class="modal-overlay" id="modalOutputTmpl">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3>⚙️ 輸出模板</h3><button class="modal-close" onclick="closeModal('modalOutputTmpl')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:0.82rem;color:var(--slate-500);margin-bottom:12px">揀選時間軸輸出嘅欄位 — Markdown / XLSX / XLSX（含圖）一齊生效</div>
+      <div id="outTmplFields" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-secondary" onclick="outTmplSelectAll(true)">✅ 全選</button>
+      <button class="btn btn-sm btn-secondary" onclick="outTmplSelectAll(false)">⬜ 全唔揀</button>
+      <button class="btn btn-sm btn-secondary" onclick="outTmplReset()">↩️ 預設</button>
+      <button class="btn btn-sm btn-primary" onclick="saveOutTemplate()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- settings moved to inline card above -->
 
 <script>
@@ -927,6 +950,20 @@ const IC_KEY = 'worklog_itemCategories_v2';
 const DB_NAME = 'WorklogPhotos';
 const DB_VERSION = 1;
 const DB_STORE = 'photos';
+// 輸出模板欄位定義（放最頂，避免 const 提升順序問題）
+const OUT_TMPL_KEY = 'worklog_output_template_v1';
+const OUT_FIELDS = [
+  {key:'timeRange', label:'時間', wch:10},
+  {key:'desc', label:'事項', wch:22},
+  {key:'status', label:'完成度', wch:7},
+  {key:'category', label:'分類', wch:7},
+  {key:'itemCategory', label:'項位分類', wch:10},
+  {key:'project', label:'項目', wch:14},
+  {key:'personnel', label:'人員', wch:8},
+  {key:'location', label:'地點', wch:10},
+  {key:'workType', label:'工種', wch:7},
+  {key:'photos', label:'照片', wch:8}
+];
 
 // ── SAFE STORAGE（file:// 或 Firefox 下 localStorage 會拋 SecurityError，全部包 try-catch）──
 let memLogBackup = null;
@@ -1420,12 +1457,71 @@ function saveAttendanceCheckboxes() {
 }
 
 
+// ── 輸出模板（揀選時間軸欄位）──
+function getOutTemplate(){
+  const raw = lsGet(OUT_TMPL_KEY);
+  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p) && p.length) return p.filter(k => OUT_FIELDS.some(f => f.key === k)); } catch(e) {} }
+  return OUT_FIELDS.map(f => f.key);
+}
+function outFieldLabel(key){ const f = OUT_FIELDS.find(x => x.key === key); return f ? f.label : key; }
+function outFieldWch(key){ const f = OUT_FIELDS.find(x => x.key === key); return f ? f.wch : 10; }
+function taskFieldVal(t, key, log){
+  switch(key){
+    case 'timeRange': return t.timeRange || '';
+    case 'desc': return t.desc || '';
+    case 'status': return t.status || '';
+    case 'category': return t.category || firstCategory();
+    case 'itemCategory': return t.itemCategory || '';
+    case 'project': return t.project || '—';
+    case 'personnel': return t.personnel || (log.person || '傑');
+    case 'location': return t.location || '—';
+    case 'workType': return t.workType || '—';
+    case 'photos': return t.photoStatus || '無照片';
+  }
+  return '';
+}
+function openOutTemplate(){
+  const box = document.getElementById('outTmplFields');
+  const tpl = getOutTemplate();
+  try {
+    box.innerHTML = OUT_FIELDS.map(f =>
+      `<label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;cursor:pointer;font-size:0.85rem">
+        <input type="checkbox" value="${f.key}" ${tpl.includes(f.key)?'checked':''} style="width:16px;height:16px;accent-color:var(--blue-700)">
+        <span>${escHtml(f.label)}</span>
+      </label>`
+    ).join('');
+  } catch(e) { console.error('輸出模板渲染失敗', e); }
+  openModal('modalOutputTmpl');
+}
+function outTmplSelectAll(on){
+  document.querySelectorAll('#outTmplFields input[type=checkbox]').forEach(c => { c.checked = on; });
+}
+function outTmplReset(){
+  document.querySelectorAll('#outTmplFields input[type=checkbox]').forEach(c => {
+    c.checked = OUT_FIELDS.some(f => f.key === c.value);
+  });
+}
+function saveOutTemplate(){
+  const keys = Array.from(document.querySelectorAll('#outTmplFields input[type=checkbox]:checked')).map(c => c.value);
+  if(!keys.length){ showToast('⚠️ 至少要揀一個欄位'); return; }
+  lsSet(OUT_TMPL_KEY, JSON.stringify(keys));
+  closeModal('modalOutputTmpl');
+  refreshPreview();
+  showToast('✅ 輸出模板已儲存');
+}
+
 function generateMarkdown() {
   if(!log)return '# 無數據';
   const ds0 = log.dateStr || todayStr();
   const dd=formatDate(ds0), wd=getWeekday(ds0);
-  let md=`# 工作日誌 ${dd}（${wd}）\n\n人員：${escHtml(log.person||'傑')}\n\n---\n\n## 時間軸\n\n| 時間 | 事項 | 完成度 | 分類 | 項位分類 | 人員 | 地點 | 工種 | 照片 |\n|------|------|--------|------|----------|------|------|------|------|\n`;
-  if(log.tasks)log.tasks.forEach(t=>{if(!t)return;const c=t.category||'—', ic=t.itemCategory||'—', pnl=t.personnel||(log.person||'傑'), l=t.location||'—', w=t.workType||'—', p=t.photoStatus||'無照片';md+=`| <strong>${escHtml(t.timeRange)}</strong> | ${escHtml(t.desc)} | ${escHtml(t.status)} | ${escHtml(c)} | ${escHtml(ic)} | ${escHtml(pnl)} | ${escHtml(l)} | ${escHtml(w)} | ${p} |\n`;});
+  const tpl=getOutTemplate();
+  const hdr=tpl.map(k=>outFieldLabel(k)).join(' | ');
+  const sep=tpl.map(()=>'------').join('|');
+  let md=`# 工作日誌 ${dd}（${wd}）\n\n人員：${escHtml(log.person||'傑')}\n\n---\n\n## 時間軸\n\n| ${hdr} |\n|${sep}|\n`;
+  if(log.tasks)log.tasks.forEach(t=>{if(!t)return;md+=`| ${tpl.map(k=>{
+    const v=taskFieldVal(t,k,log);
+    return k==='timeRange' ? '<strong>'+escHtml(v)+'</strong>' : escHtml(v);
+  }).join(' | ')} |\n`;});
   md+='\n---\n\n## 問題／考勤／待跟進\n\n| 問題 | 考勤 | 待跟進 |\n|------|------|--------|\n';
   const pr=log.problems||[], ri=(log.attendance||[]).map(a=>a.name+':'+a.status), fl=(log.followups||[]).map(f => typeof f === 'string' ? {text:f} : f), ml=Math.max(pr.length,ri.length,fl.length,1);
   for(let i=0;i<ml;i++){const p=i<pr.length?pr[i]:'', r=i<ri.length?ri[i]:'', f=i<fl.length?fl[i].text||'':'';md+=`| ${escHtml(p)} | ${escHtml(r)} | ${escHtml(f)} |\n`;}
@@ -2096,8 +2192,9 @@ function exportXLSXWithPhotos() {
       views: [{ state: 'frozen', ySplit: 3 }]
     });
 
+    const tpl = getOutTemplate();
     // Title row
-    ws1.mergeCells('A1:J1');
+    ws1.mergeCells(1, 1, 1, tpl.length);
     const titleCell = ws1.getCell('A1');
     titleCell.value = title;
     titleCell.font = { bold: true, size: 14, color: { argb: 'FF1E3A5F' } };
@@ -2108,7 +2205,7 @@ function exportXLSXWithPhotos() {
     ws1.getRow(2).height = 8;
 
     // Header row
-    const headers = ['時間', '事項', '完成度', '分類', '項位分類', '項目', '人員', '地點', '工種', '照片'];
+    const headers = tpl.map(k => outFieldLabel(k));
     const headerRow = ws1.getRow(3);
     headers.forEach((h, i) => {
       const cell = headerRow.getCell(i + 1);
@@ -2126,35 +2223,16 @@ function exportXLSXWithPhotos() {
     headerRow.height = 24;
 
     // Column widths
-    ws1.getColumn(1).width = 14;  // 時間
-    ws1.getColumn(2).width = 22;  // 事項
-    ws1.getColumn(3).width = 10;  // 完成度
-    ws1.getColumn(4).width = 8;   // 分類
-    ws1.getColumn(5).width = 10;  // 項位分類
-    ws1.getColumn(6).width = 14;  // 項目
-    ws1.getColumn(7).width = 8;   // 人員
-    ws1.getColumn(8).width = 14;  // 地點
-    ws1.getColumn(9).width = 10;  // 工種
-    ws1.getColumn(10).width = 16; // 照片
+    tpl.forEach((k, i) => { ws1.getColumn(i + 1).width = outFieldWch(k); });
 
     // Data rows + photos
     (log.tasks || []).forEach((t, i) => {
       const rowNum = i + 4;
       const row = ws1.getRow(rowNum);
-      const pnl = t.personnel || (log.person || '傑');
-      row.getCell(1).value = t.timeRange || '';
-      row.getCell(2).value = t.desc || '';
-      row.getCell(3).value = t.status || '';
-      row.getCell(4).value = t.category || firstCategory();
-      row.getCell(5).value = t.itemCategory || '';
-      row.getCell(6).value = t.project || '—';
-      row.getCell(7).value = pnl;
-      row.getCell(8).value = t.location || '—';
-      row.getCell(9).value = t.workType || '—';
-      row.getCell(10).value = t.photoStatus || '無照片';
+      tpl.forEach((k, ci) => { row.getCell(ci + 1).value = taskFieldVal(t, k, log); });
 
       // Style
-      [1,2,3,4,5,6,7,8,9,10].forEach(c => {
+      tpl.map((_, ci) => ci + 1).forEach(c => {
         const cell = row.getCell(c);
         cell.font = { size: 10 };
         cell.alignment = { vertical: 'middle', horizontal: c === 2 ? 'left' : 'center', wrapText: true };
@@ -2167,7 +2245,7 @@ function exportXLSXWithPhotos() {
       });
 
       // Set row height for photos
-      const photoIds = taskPhotoMap[i];
+      const photoIds = tpl.includes('photos') ? taskPhotoMap[i] : null;
       if (photoIds && photoIds.length > 0) {
         row.height = 80;
 
@@ -2187,7 +2265,7 @@ function exportXLSXWithPhotos() {
             });
 
             // Position photos side by side in the photo column
-            const col = 10; // J column = 照片 column
+            const col = tpl.indexOf('photos') + 1; // 照片欄位位置（冇揀 photos 就唔會入到嚟）
             const xOffset = pi * 70; // pixels offset for multiple photos
             ws1.addImage(imageId, {
               tl: { col: col - 1, row: rowNum - 1, dx: xOffset, dy: 5 },
@@ -2203,7 +2281,7 @@ function exportXLSXWithPhotos() {
 
       // Alternate row coloring
       if (i % 2 === 1) {
-        [1,2,3,4,5,6,7,8,9,10].forEach(c => {
+        tpl.map((_, ci) => ci + 1).forEach(c => {
           row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
         });
       }
@@ -2274,10 +2352,11 @@ function _buildXLSX(data, filename) {
   const title = '工作日誌 ' + (data.dateStr||'') + (data.weekday ? '（'+data.weekday+'）' : '');
   ws1Data.push([title]);
   ws1Data.push([]);
-ws1Data.push(['時間','事項','完成度','分類','項位分類','項目','人員','地點','工種','照片']);
-  (data.tasks||[]).forEach(t => ws1Data.push([t.timeRange||'',t.desc||'',t.status||'',t.category||firstCategory(),t.itemCategory||'',t.project||'—',t.personnel||(data.person||'傑'),t.location||'—',t.workType||'—',t.photoStatus||'無照片']));
+  const tpl = getOutTemplate();
+  ws1Data.push(tpl.map(k => outFieldLabel(k)));
+  (data.tasks||[]).forEach(t => ws1Data.push(tpl.map(k => taskFieldVal(t, k, data))));
   const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
-  ws1['!cols'] = [{wch:10},{wch:20},{wch:7},{wch:7},{wch:10},{wch:14},{wch:8},{wch:10},{wch:7},{wch:8}];
+  ws1['!cols'] = tpl.map(k => ({wch: outFieldWch(k)}));
   ws1['!rows'] = [{hpx:30},{},{hpx:22}];
   ws1['!freeze'] = {xSplit:0,ySplit:3};
   XLSX.utils.book_append_sheet(wb, ws1, '時間軸');
@@ -2555,7 +2634,7 @@ function resetSchedule(){
 // ── KEYBOARD SHORTCUTS ──
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+    document.querySelectorAll('.modal-overlay.show').forEach(m => closeModal(m.id));
   }
 });
 
