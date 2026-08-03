@@ -283,6 +283,27 @@ body {
   font-size: 0.78rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap;
   max-height: 400px; overflow-y: auto; margin: 10px 0;
 }
+/* 輸出預覧 — 表格形式 */
+.preview-title {
+  font-family: "Microsoft YaHei","Noto Sans SC",sans-serif;
+  font-weight: 700; font-size: 0.85rem; color: #1e293b; margin-bottom: 8px;
+}
+.preview-table {
+  width: 100%; border-collapse: collapse; font-size: 0.75rem;
+  font-family: "Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+.preview-table th {
+  background: #2c3e50; color: #fff; padding: 6px 8px; text-align: center;
+  font-weight: 600; white-space: nowrap; position: sticky; top: 0; z-index: 1;
+}
+.preview-table td { padding: 5px 8px; border: 1px solid #e2e8f0; vertical-align: top; }
+.preview-table tr:nth-child(even) td { background: #f8fafc; }
+.preview-table td.td-time { font-weight: 600; white-space: nowrap; }
+.preview-section {
+  font-family: "Microsoft YaHei","Noto Sans SC",sans-serif;
+  margin-top: 10px; font-size: 0.78rem; color: #334155; line-height: 1.6;
+}
+.preview-section b { color: #1e293b; }
 .photo-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 .photo-thumb {
   width: 60px; height: 60px; object-fit: cover; border-radius: 6px;
@@ -408,6 +429,35 @@ body {
   background: #fffbe6; border: 1px solid #fde68a;
   border-radius: 6px; padding: 4px 8px;
   margin: -2px 10px 4px; align-self: stretch;
+}
+/* ── 進度評估 — 按項目分組 ── */
+.pv-group { margin-bottom: 12px; }
+.pv-group-title {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.78rem; font-weight: 700; color: #fff;
+  background: linear-gradient(90deg, #334155, #475569);
+  padding: 5px 12px; border-radius: 8px 8px 0 0;
+}
+.pv-group-title .pv-group-count { font-weight: 400; font-size: 0.7rem; opacity: 0.85; }
+.pv-group-body {
+  border: 1px solid #e2e8f0; border-top: none;
+  border-radius: 0 0 8px 8px; padding: 8px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pv-qty {
+  font-size: 0.72rem; font-weight: 600; color: #b45309;
+  background: #fef3c7; padding: 1px 8px; border-radius: 10px; white-space: nowrap;
+}
+/* ── 完成度滑動條 — 按數量等分刻度 ── */
+.pv-ticks { position: relative; height: 16px; margin: 2px 1px 0; }
+.pv-ticks span {
+  position: absolute; transform: translateX(-50%);
+  font-size: 0.6rem; line-height: 1.2; color: var(--slate-400);
+  text-align: center;
+}
+.pv-ticks span::before {
+  content: ''; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  width: 1px; height: 5px; background: var(--slate-300);
 }
 
 .empty-state {
@@ -635,6 +685,22 @@ body {
           <div class="form-group" style="flex:1.2">
             <label>📈 完成度 <span id="pvPctLabel" class="pv-pct-label">0%</span></label>
             <input type="range" id="pvPct" min="0" max="100" step="5" value="0" oninput="updatePvPctLabel()">
+            <div class="pv-ticks" id="pvTicks"></div>
+          </div>
+          <div class="form-group">
+            <label>🔢 數量</label>
+            <select class="form-select" id="pvQty" onchange="pvQtyChange()">
+              <option value="">—</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
           </div>
           <div class="form-group"><label>狀態</label>
             <select class="form-select" id="pvStatus">
@@ -1532,7 +1598,38 @@ function generateMarkdown() {
 function refreshPreview(){
   const el=document.getElementById('markdownPreview');
   if(!log||!log.tasks||!log.tasks.length){el.textContent='尚未開工或無數據';return;}
-  el.textContent=generateMarkdown();
+  const tpl=getOutTemplate();
+  if(!tpl.length){el.textContent='（未揀任何輸出欄位 — 去 ⚙️ 輸出模板 揀返）';return;}
+  const ds0=log.dateStr||todayStr(), dd=formatDate(ds0), wd=getWeekday(ds0);
+  let html=`<div class="preview-title">工作日誌 ${dd}（${wd}）｜人員：${escHtml(log.person||'傑')}</div>`;
+  // 時間軸 — 按輸出模板以表格形式顯示
+  html+='<table class="preview-table"><thead><tr>';
+  tpl.forEach(k=>{ html+=`<th>${escHtml(outFieldLabel(k))}</th>`; });
+  html+='</tr></thead><tbody>';
+  (log.tasks||[]).forEach(t=>{
+    if(!t)return;
+    html+='<tr>';
+    tpl.forEach(k=>{
+      const v=taskFieldVal(t,k,log);
+      html+=`<td${k==='timeRange'?' class="td-time"':''}>${escHtml(v)}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  // 問題／考勤／待跟進 — 整合顯示
+  const pr=log.problems||[], ri=(log.attendance||[]).map(a=>a.name+':'+a.status), fl=(log.followups||[]).map(f=>typeof f==='string'?f:(f.text||''));
+  const ml=Math.max(pr.length,ri.length,fl.length,1);
+  html+='<div class="preview-section"><b>問題／考勤／待跟進</b><div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:4px">';
+  html+=`<span>問題：${(pr.map(escHtml).join('；'))||'—'}</span>`;
+  html+=`<span>考勤：${(ri.map(escHtml).join('；'))||'—'}</span>`;
+  html+=`<span>待跟進：${(fl.map(escHtml).join('；'))||'—'}</span>`;
+  html+='</div></div>';
+  // 小復盤
+  if(log.summary) html+=`<div class="preview-section"><b>小復盤</b>：${escHtml(log.summary)}</div>`;
+  // 明日優先 TOP3
+  const top3=(log.top3&&log.top3.length?log.top3:['','','']).map((x,i)=>`${i+1}. ${escHtml(x||'—')}`);
+  html+=`<div class="preview-section"><b>明日優先 TOP3</b>：${top3.join('　')}</div>`;
+  el.innerHTML=html;
 }
 function copyMarkdown(){const t=generateMarkdown();navigator.clipboard.writeText(t).then(()=>showToast('✅ 已複製到剪貼簿')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ 已複製到剪貼簿');});}
 function downloadMarkdown(){const t=generateMarkdown(),ds=log.dateStr.replace(/-/g,''),b=new Blob([t],{type:'text/markdown;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`工作日誌_${ds}.md`;a.click();URL.revokeObjectURL(a.href);showToast('✅ 已下載 .md 檔案');}
@@ -2394,15 +2491,47 @@ var progressEditId = null;
 
 function getProgressEntries(){ return (log && log.progress) || []; }
 
+// ── 儲存欄位整合：兩個下拉 → 一個 loc（「項目（地點）」）──
+function pvMergeLoc(location, project){
+  location = (location && location!=='—') ? location : '';
+  project = (project && project!=='—') ? project : '';
+  if(project) return location ? `${project}（${location}）` : project;
+  return location;
+}
+function pvSplitLoc(loc){
+  if(!loc) return {project:'', location:''};
+  const m = loc.match(/^(.*?)（(.*?)）$/);
+  if(m && m[1] && m[2]) return {project:m[1].trim(), location:m[2].trim()};
+  return {project:'', location:loc};
+}
+// 統一取合併 key（新資料 e.loc；舊資料 location+project 自動合併）
+function pvEntryKey(e){
+  if(!e) return '';
+  if(e.loc) return e.loc;
+  return pvMergeLoc(e.location, e.project);
+}
+// 項目部分（用嚟分組：反映同項目嘅不同進度）
+function pvProjectKey(loc){
+  const sp = pvSplitLoc(loc);
+  return (sp.project || loc || '未分類');
+}
+
 function refreshProgressSelects(){
   const presets = getPresets();
   const locSel = document.getElementById('pvLocation');
   const projSel = document.getElementById('pvProject');
   if(!locSel || !projSel) return;
   const curLoc = locSel.value, curProj = projSel.value;
-  const locs = presets.locations || [];
+  const locs = (presets.locations || []).slice();
+  const projs = (presets.projects || []).slice();
+  const seenLoc = new Set(locs), seenProj = new Set(projs);
+  // 加入已存在記錄嘅地點／項目（編輯舊記錄時揀得返）
+  getProgressEntries().forEach(e => {
+    const sp = pvSplitLoc(pvEntryKey(e));
+    if(sp.location && !seenLoc.has(sp.location)){ seenLoc.add(sp.location); locs.push(sp.location); }
+    if(sp.project && !seenProj.has(sp.project)){ seenProj.add(sp.project); projs.push(sp.project); }
+  });
   locSel.innerHTML = '<option value="">— 揀地點 —</option>' + locs.map(l=>`<option value="${escHtml(l)}">${escHtml(l)}</option>`).join('');
-  const projs = presets.projects || [];
   projSel.innerHTML = '<option value="">— 揀項目 —</option>' + projs.map(p=>`<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('');
   if(curLoc) locSel.value = curLoc;
   if(curProj) projSel.value = curProj;
@@ -2411,7 +2540,43 @@ function refreshProgressSelects(){
 function updatePvPctLabel(){
   const el = document.getElementById('pvPct');
   const lb = document.getElementById('pvPctLabel');
-  if(el && lb) lb.textContent = el.value + '%';
+  if(!el || !lb) return;
+  const qty = Number(document.getElementById('pvQty').value) || 0;
+  if(qty > 0){
+    lb.textContent = `${el.value}/${qty}`;
+  } else {
+    lb.textContent = el.value;
+  }
+}
+
+// 數量改變 → 滑動條以「完成咗幾多件」做單位（0..N，step=1）
+// 唔再用 100/N 小數 step（浮點誤差會令尾段滑唔到）
+function pvQtyChange(){
+  const qty = Number(document.getElementById('pvQty').value) || 0;
+  const slider = document.getElementById('pvPct');
+  if(qty > 0){
+    slider.min = 0; slider.max = qty; slider.step = 1;
+    if(slider.value > qty) slider.value = qty;
+    if(slider.value < 0) slider.value = 0;
+  } else {
+    slider.min = 0; slider.max = 100; slider.step = 5;
+    if(slider.value > 100) slider.value = 100;
+    if(slider.value < 0) slider.value = 0;
+  }
+  renderPvTicks();
+  updatePvPctLabel();
+}
+function renderPvTicks(){
+  const qty = Number(document.getElementById('pvQty').value) || 0;
+  const box = document.getElementById('pvTicks');
+  if(!box) return;
+  if(qty < 1){ box.innerHTML = ''; return; }
+  let h = '';
+  for(let i = 0; i <= qty; i++){
+    const left = (i / qty * 100).toFixed(2);
+    h += `<span style="left:${left}%">${i}</span>`;
+  }
+  box.innerHTML = h;
 }
 
 function resetProgressForm(){
@@ -2422,6 +2587,8 @@ function resetProgressForm(){
   const desc = document.getElementById('pvDesc'); if(desc) desc.value = '';
   const pct = document.getElementById('pvPct'); if(pct) pct.value = 0;
   updatePvPctLabel();
+  const qty = document.getElementById('pvQty'); if(qty) qty.value = '';
+  pvQtyChange();
   const st = document.getElementById('pvStatus'); if(st) st.value = '待辦';
   const note = document.getElementById('pvNote'); if(note) note.value = '';
   const cb = document.getElementById('pvCancelBtn'); if(cb) cb.style.display = 'none';
@@ -2435,15 +2602,21 @@ function saveProgressEntry(){
   const desc = document.getElementById('pvDesc').value.trim();
   if(!location && !project){ showToast('⚠️ 地點或項目至少要揀一個'); return; }
   if(!desc){ showToast('⚠️ 請寫事項'); return; }
-  const pct = Number(document.getElementById('pvPct').value) || 0;
+  const pctRaw = Number(document.getElementById('pvPct').value) || 0;
+  const qtyVal = document.getElementById('pvQty').value;
+  // 有數量時 pct 由「完成咗幾多件」換算（0..N → 0..100）
+  const pct = qtyVal ? Math.round(pctRaw / Number(qtyVal) * 100) : pctRaw;
   const status = document.getElementById('pvStatus').value;
   const note = document.getElementById('pvNote').value.trim();
+  const qty = qtyVal;
+  // 兩個下拉 → 整合成一個儲存欄位
+  const loc = pvMergeLoc(location, project);
   if(!log.progress) log.progress = [];
   if(progressEditId){
     const e = log.progress.find(x => String(x.id) === String(progressEditId));
-    if(e){ e.location=location; e.project=project; e.desc=desc; e.pct=pct; e.status=status; e.note=note; }
+    if(e){ e.loc=loc; delete e.location; delete e.project; e.desc=desc; e.pct=pct; e.status=status; e.note=note; e.qty=qty; }
   } else {
-    log.progress.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), location, project, desc, pct, status, note });
+    log.progress.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), loc, desc, pct, status, note, qty });
   }
   saveData(); renderProgressEval(); resetProgressForm();
   showToast('✅ 已儲存進度');
@@ -2454,10 +2627,16 @@ function editProgressEntry(id){
   if(!e) return;
   progressEditId = e.id;
   refreshProgressSelects();
-  document.getElementById('pvLocation').value = e.location || '';
-  document.getElementById('pvProject').value = e.project || '';
+  const sp = pvSplitLoc(pvEntryKey(e));
+  const locSel = document.getElementById('pvLocation'), projSel = document.getElementById('pvProject');
+  if(sp.location && Array.from(locSel.options).some(o=>o.value===sp.location)) locSel.value = sp.location;
+  if(sp.project && Array.from(projSel.options).some(o=>o.value===sp.project)) projSel.value = sp.project;
   document.getElementById('pvDesc').value = e.desc || '';
-  document.getElementById('pvPct').value = (e.pct!=null && e.pct!=='') ? e.pct : 0;
+  const qtySel = document.getElementById('pvQty'); if(qtySel) qtySel.value = e.qty || '';
+  pvQtyChange();
+  const ePct = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
+  const eQty = Number(e.qty) || 0;
+  document.getElementById('pvPct').value = eQty ? Math.round(ePct / 100 * eQty) : ePct;
   updatePvPctLabel();
   document.getElementById('pvStatus').value = e.status || '待辦';
   document.getElementById('pvNote').value = e.note || '';
@@ -2486,42 +2665,58 @@ function renderProgressEval(){
     return;
   }
   const pvStatusCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
+  // 按「項目」分組 — 同項目唔同地點都歸埋一齊，反映同一項目嘅不同進度
+  const groups = {};
+  entries.forEach(e => {
+    const k = pvProjectKey(pvEntryKey(e));
+    (groups[k] = groups[k] || []).push(e);
+  });
+  const groupKeys = Object.keys(groups).sort((a,b) => a.localeCompare(b, 'zh-Hant'));
   let html = '<div class="pv-list">';
-  entries.forEach(e=>{
-    const pct = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
-    const status = e.status || '待辦';
-    const stCls = pvStatusCls(status);
-    const idAttr = String(e.id).replace(/'/g,"\\'");
-    const pctTxt = (e.pct!=null && e.pct!=='') ? pct+'%' : '—';
-    html += `<div class="pv-row">
-      ${e.location?`<span class="pv-loc">📍 ${escHtml(e.location)}</span>`:''}
-      ${e.project?`<span class="pv-proj">🏷️ ${escHtml(e.project)}</span>`:''}
-      <span class="pv-desc">${escHtml(e.desc||'')}</span>
-      <span class="pv-status ${stCls}">${escHtml(status)}</span>
-      <span class="pv-pct"><span class="pv-mini-bar ${pct>=100?'full':''}"><div style="width:${pct}%"></div></span>${pctTxt}</span>
-      <span class="pv-actions">
-        <button class="pv-edit" onclick="editProgressEntry('${idAttr}')" title="編輯">✏️</button>
-        <button class="pv-edit danger" onclick="deleteProgressEntryById('${idAttr}')" title="刪除">🗑️</button>
-      </span>
-    </div>`;
-    if(e.note) html += `<div class="pv-note">📝 ${escHtml(e.note)}</div>`;
+  groupKeys.forEach(k => {
+    const list = groups[k];
+    html += `<div class="pv-group">
+      <div class="pv-group-title"><span>🏷️ ${escHtml(k)}</span><span class="pv-group-count">${list.length} 項</span></div>
+      <div class="pv-group-body">`;
+    list.forEach(e => {
+      const pct = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
+      const status = e.status || '待辦';
+      const stCls = pvStatusCls(status);
+      const idAttr = String(e.id).replace(/'/g,"\\'");
+      const pctTxt = (e.pct!=null && e.pct!=='') ? Math.round(pct)+'%' : '—';
+      const locKey = pvEntryKey(e);
+      const qtyTxt = e.qty ? `🔢 ×${escHtml(e.qty)}` : '';
+      html += `<div class="pv-row">
+        ${locKey?`<span class="pv-loc">📌 ${escHtml(locKey)}</span>`:''}
+        <span class="pv-desc">${escHtml(e.desc||'')}</span>
+        <span class="pv-status ${stCls}">${escHtml(status)}</span>
+        <span class="pv-pct"><span class="pv-mini-bar ${pct>=100?'full':''}"><div style="width:${pct}%"></div></span>${pctTxt}</span>
+        ${qtyTxt?`<span class="pv-qty">${qtyTxt}</span>`:''}
+        <span class="pv-actions">
+          <button class="pv-edit" onclick="editProgressEntry('${idAttr}')" title="編輯">✏️</button>
+          <button class="pv-edit danger" onclick="deleteProgressEntryById('${idAttr}')" title="刪除">🗑️</button>
+        </span>
+      </div>`;
+      if(e.note) html += `<div class="pv-note">📝 ${escHtml(e.note)}</div>`;
+    });
+    html += '</div></div>';
   });
   html += '</div>';
   body.innerHTML = html;
 }
 
-// ── 進度評估匯出 XLSX（地點直行列出）──
+// ── 進度評估匯出 XLSX（項目／地點整合欄 + 數量）──
 function exportProgressXLSX(){
   if(!log||!log.progress){showToast('⚠️ 未有進度資料');return;}
   var entries=getProgressEntries().filter(function(e){return e&&e.desc;});
   if(!entries.length){showToast('⚠️ 未有進度資料');return;}
-  var rows=[['地點','項目','事項','狀態','進度','備註']];
+  var rows=[['項目／地點','事項','狀態','進度','數量','備註']];
   entries.forEach(function(e){
-    var pct=(e.pct!=null&&e.pct!=='')?e.pct+'%':'—';
-    rows.push([e.location||'—',e.project||'—',e.desc||'',e.status||'待辦',pct,e.note||'']);
+    var pct=(e.pct!=null&&e.pct!=='')?Math.round(e.pct)+'%':'—';
+    rows.push([pvEntryKey(e)||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'']);
   });
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:16},{wch:16},{wch:30},{wch:10},{wch:8},{wch:34}];
+  ws['!cols']=[{wch:22},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'進度評估');
   var ds=(log.dateStr||todayStr()).replace(/-/g,'');
@@ -2536,7 +2731,7 @@ function exportProgressXLSX(){
   showToast('✅ 已輸出 '+filename+'.xlsx');
 }
 
-// ── 進度評估讀取 XLSX（對應匯出格式：地點|項目|事項|狀態|進度|備註）──
+// ── 進度評估讀取 XLSX（新格式：項目／地點|事項|狀態|進度|數量|備註；兼容舊格式：地點|項目|事項|...）──
 function loadProgressXLSX(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -2555,37 +2750,62 @@ function loadProgressXLSX(event){
       const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
       if(json.length < 2){ showToast('⚠️ 工作表數據不足'); return; }
 
-      // 揾表頭行（包含「地點」+「事項」嗰行）
+      // 揾表頭行（包含「事項」嗰行）
       let hdrIdx = -1;
-      for(let r=0; r<Math.min(json.length,5); r++){
+      for(let r=0; r<Math.min(json.length,8); r++){
         const row = json[r] || [];
-        if(String(row[0]||'').includes('地點') && String(row[2]||'').includes('事項')){ hdrIdx = r; break; }
+        if(row.some(c => String(c||'').includes('事項'))){ hdrIdx = r; break; }
       }
-      if(hdrIdx < 0){ showToast('⚠️ 格式唔啱：需要 地點|項目|事項|狀態|進度|備註'); return; }
+      if(hdrIdx < 0){ showToast('⚠️ 格式唔啱：需要 項目／地點|事項|狀態|進度|數量|備註'); return; }
+
+      const hdr = (json[hdrIdx]||[]).map(c => String(c==null?'':c).trim());
+      // 欄位定位：合併欄優先，舊格式就 項目 + 地點 各自搵
+      let cLoc = -1, cProj = -1, cDesc = -1, cStatus = -1, cPct = -1, cQty = -1, cNote = -1;
+      for(let i=0; i<hdr.length; i++){
+        const h = hdr[i];
+        if(h.includes('事項')) cDesc = i;
+        else if(h.includes('狀態')) cStatus = i;
+        else if(h.includes('進度') || h.includes('完成度')) cPct = i;
+        else if(h.includes('數量')) cQty = i;
+        else if(h.includes('備註')) cNote = i;
+        else if(h.includes('項目／地點') || h.includes('項目/地點')) cLoc = i;
+        else if(h.includes('項目')) cProj = i;
+        else if(h.includes('地點')) cLoc = i;
+      }
+      if(cLoc<0 && cProj>=0) cLoc = cProj;
+      if(cLoc<0 || cDesc<0){ showToast('⚠️ 格式唔啱：搵唔到「項目／地點」同「事項」欄'); return; }
 
       const imported = [];
       for(let r=hdrIdx+1; r<json.length; r++){
         const row = json[r] || [];
-        const loc = String(row[0]!=null?row[0]:'').trim();
-        const project = String(row[1]!=null?row[1]:'').trim();
-        const desc = String(row[2]!=null?row[2]:'').trim();
+        const cell = i => (i>=0 && i<row.length && row[i]!=null) ? String(row[i]).trim() : '';
+        const locVal = cell(cLoc);
+        const projVal = (cProj>=0 && cProj!==cLoc) ? cell(cProj) : '';
+        const desc = cell(cDesc);
         if(!desc || desc==='—') continue;
+        // 舊格式：項目（地點）合併
+        let merged = locVal;
+        if(projVal && projVal!=='—'){
+          merged = projVal + ((locVal && locVal!=='—') ? `（${locVal}）` : '');
+        }
         let pct = 0;
-        const pctRaw = String(row[4]!=null?row[4]:'').trim();
+        const pctRaw = cell(cPct);
         if(pctRaw && pctRaw!=='—'){
           const n = Number(String(pctRaw).replace(/%/g,'').trim());
           if(!isNaN(n)) pct = Math.max(0, Math.min(100, n));
         }
-        const statusRaw = String(row[3]!=null?row[3]:'').trim();
+        const statusRaw = cell(cStatus);
         const status = ['待辦','進行中','已完成','已取消'].includes(statusRaw) ? statusRaw : '待辦';
-        const note = String(row[5]!=null?row[5]:'').trim();
+        const qtyRaw = cell(cQty);
+        const qty = (qtyRaw && qtyRaw!=='—' && /^[1-9]$/.test(qtyRaw)) ? qtyRaw : '';
+        const note = cell(cNote);
         imported.push({
           id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-          location: (loc && loc!=='—') ? loc : '',
-          project: (project && project!=='—') ? project : '',
+          loc: (merged && merged!=='—') ? merged : '',
           desc: desc,
           pct: pct,
           status: status,
+          qty: qty,
           note: (note && note!=='—') ? note : ''
         });
       }
