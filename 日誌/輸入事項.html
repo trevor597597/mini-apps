@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v1.8</title>
+<title>工作日誌 — 輸入事項工具 v1.9</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -180,6 +180,19 @@ body {
   display: flex; align-items: center; padding: 0 4px;
   color: #fff; font-size: 0.6rem; font-weight: 600;
   white-space: nowrap; overflow: hidden; min-width: 8px;
+}
+.gantt-more {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  padding: 0 5px; border-radius: 8px;
+  background: var(--blue-600); color: #fff; font-size: 0.52rem; font-weight: 700;
+  line-height: 1.5; white-space: nowrap; z-index: 3; cursor: help;
+}
+.gantt-tip {
+  position: fixed; z-index: 9999; display: none;
+  background: rgba(15,23,42,0.95); color: #fff;
+  font-size: 0.7rem; line-height: 1.55; padding: 8px 10px;
+  border-radius: 6px; max-width: 280px; white-space: pre-line;
+  pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 .task-row .task-actions button {
   border: none; background: transparent; cursor: pointer;
@@ -371,7 +384,7 @@ body {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* ── 進度評估（列表式）── */
+/* ── 進度記錄（列表式）── */
 .pv-input-wrap {
   background: var(--slate-50);
   border: 1px solid var(--slate-200);
@@ -430,7 +443,7 @@ body {
   border-radius: 6px; padding: 4px 8px;
   margin: -2px 10px 4px; align-self: stretch;
 }
-/* ── 進度評估 — 按項目分組 ── */
+/* ── 進度記錄 — 按項目分組 ── */
 .pv-group { margin-bottom: 12px; }
 .pv-group-title {
   display: flex; justify-content: space-between; align-items: center;
@@ -525,8 +538,8 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v1.6</h1>
-  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v1.9</h1>
+  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單</div>
 </div>
 
 <div class="container" id="app">
@@ -592,7 +605,7 @@ body {
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置行程</button>
-        <button class="btn btn-secondary btn-sm" onclick="showTemplate()">📖 查看模板格式</button>
+        <button class="btn btn-secondary btn-sm" onclick="showProgressOverview()">📊 項目進度概覽</button>
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <!-- 統一常用資料輸入 -->
@@ -638,6 +651,17 @@ body {
           <div id="sItemChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
       </div>
+      <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
+      <!-- 待辦清單（獨立儲存，重置行程／每日換日唔會清除） -->
+      <div style="margin-top:14px">
+        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">📌 待辦清單 <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">獨立儲存｜重置行程唔會清除</span></label>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+          <input class="form-input" id="sTodoInput" placeholder="輸入待辦事項，回車新增" style="flex:1;min-width:120px">
+          <button class="btn btn-sm btn-primary" onclick="addTodoItem()">➕ 新增</button>
+          <button class="btn btn-sm btn-secondary" onclick="clearDoneTodos()">🧹 清除已完成</button>
+        </div>
+        <div id="sTodoList" style="margin-top:8px"></div>
+      </div>
     </div>
   </div>
 
@@ -658,10 +682,10 @@ body {
     </div>
   </div>
 
-  <!-- Card: 進度評估 -->
+  <!-- Card: 進度記錄 -->
   <div class="card" id="progressCard">
     <div class="card-header">
-      <h2>📊 進度評估</h2>
+      <h2>📊 進度記錄</h2>
       <div style="display:flex;gap:8px">
         <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
           <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
@@ -1007,6 +1031,14 @@ body {
   </div>
 </div>
 
+<div class="modal-overlay" id="modalProgressOverview">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><h3>📊 項目進度概覽</h3><button class="modal-close" onclick="closeModal('modalProgressOverview')">✕</button></div>
+    <div class="modal-body" id="progressOverviewBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalProgressOverview')">關閉</button></div>
+  </div>
+</div>
+
 <!-- settings moved to inline card above -->
 
 <script>
@@ -1016,6 +1048,7 @@ const IC_KEY = 'worklog_itemCategories_v2';
 const DB_NAME = 'WorklogPhotos';
 const DB_VERSION = 1;
 const DB_STORE = 'photos';
+const TODO_KEY = 'worklog_todolist_v1';
 // 輸出模板欄位定義（放最頂，避免 const 提升順序問題）
 const OUT_TMPL_KEY = 'worklog_output_template_v1';
 const OUT_FIELDS = [
@@ -1336,6 +1369,11 @@ function toggleMatrixView(){
 // ── 3×2 分類×時間表 + 時間色條 ──
 function renderCategoryMatrix() {
   var body=document.getElementById('taskListBody'), empty=document.getElementById('taskEmpty');
+  // 確保 hover tooltip 容器存在
+  if(!document.getElementById('ganttTip')){
+    var _d=document.createElement('div'); _d.id='ganttTip'; _d.className='gantt-tip';
+    document.body.appendChild(_d);
+  }
   if(!log||!log.tasks||log.tasks.length<2){renderTaskList();return;}
   if(empty)empty.style.display='none';
   var allCats=getCategories();
@@ -1388,18 +1426,61 @@ function renderCategoryMatrix() {
     // lunch 區間 13:00-14:00 斜紋提示
     var lunchL=(13*60-T0)/span*100, lunchW=(60)/span*100;
     h+='<div style="position:absolute;top:0;bottom:0;left:'+lunchL+'%;width:'+lunchW+'%;background:repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 6px);"></div>';
-    items.filter(function(it){return it.cat===cat;}).forEach(function(it){
-      var left=Math.max(0,(it.s-T0)/span*100);
-      var width=(it.e-it.s)/span*100;
-      if(left+width>100)width=100-left;
-      if(width<0.4)width=0.4; // 至少可見
-      h+='<div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+catCl(cat)+'">'+escHtml(it.raw.desc)+'</div>';
+    // 重疊 group 掃描：排序後，同 group 內 item 開始時間 < group 最大結束時間 即重疊
+    var catItems=items.filter(function(it){return it.cat===cat;}).sort(function(a,b){return a.s-b.s;});
+    var groups=[], cur=null;
+    catItems.forEach(function(it){
+      if(!cur || it.s>=cur.maxE){ cur={items:[it], maxE:it.e}; groups.push(cur); }
+      else { cur.items.push(it); if(it.e>cur.maxE)cur.maxE=it.e; }
+    });
+    groups.forEach(function(g){
+      if(g.items.length>2){
+        // 重疊 >2 項：只畫時間最早嘅首個 bar；藍色「+N 項」badge 放 bar 右邊（唔會被 bar 截斷）；hover 自訂 tooltip 睇其餘項目
+        var first=g.items[0];
+        var restTxt=g.items.slice(1).map(function(x){return x.raw.timeRange+' '+x.raw.desc;}).join('\n');
+        var left=Math.max(0,(first.s-T0)/span*100);
+        var width=(first.e-first.s)/span*100;
+        if(left+width>100)width=100-left;
+        if(width<0.4)width=0.4; // 至少可見
+        var badgeLeft=left+width+0.3;
+        if(badgeLeft>90)badgeLeft=Math.max(0,left-6); // 太貼右邊就放 bar 左邊，避免被 track 截斷
+        h+='<div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+catCl(cat)+';cursor:help" data-tip="'+escHtml(restTxt)+'" onmouseover="showGanttTip(this,event)" onmousemove="moveGanttTip(event)" onmouseout="hideGanttTip()">'+escHtml(first.raw.desc)+'</div>';
+        h+='<span class="gantt-more" style="left:'+badgeLeft+'%" title="懸停條形睇其餘項目">+'+ (g.items.length-1) +' 項</span>';
+      }else{
+        g.items.forEach(function(it){
+          var left=Math.max(0,(it.s-T0)/span*100);
+          var width=(it.e-it.s)/span*100;
+          if(left+width>100)width=100-left;
+          if(width<0.4)width=0.4; // 至少可見
+          h+='<div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+catCl(cat)+'">'+escHtml(it.raw.desc)+'</div>';
+        });
+      }
     });
     h+='</div></div>';
   });
   h+='</div>';
   body.innerHTML=h;
 }
+
+// ── 甘特圖 hover tooltip（重疊摺疊後睇其餘項目）──
+function showGanttTip(el,ev){
+  var tip=document.getElementById('ganttTip');
+  var txt=el.getAttribute('data-tip');
+  if(!tip||!txt){ if(tip)tip.style.display='none'; return; }
+  tip.innerHTML=escHtml(txt);
+  tip.style.display='block';
+  moveGanttTip(ev);
+}
+function moveGanttTip(ev){
+  var tip=document.getElementById('ganttTip');
+  if(!tip||tip.style.display==='none')return;
+  var pad=14, x=ev.clientX+pad, y=ev.clientY+pad;
+  var r=tip.getBoundingClientRect();
+  if(x+r.width>window.innerWidth-8) x=ev.clientX-r.width-pad;
+  if(y+r.height>window.innerHeight-8) y=ev.clientY-r.height-pad;
+  tip.style.left=Math.max(4,x)+'px'; tip.style.top=Math.max(4,y)+'px';
+}
+function hideGanttTip(){ var tip=document.getElementById('ganttTip'); if(tip)tip.style.display='none'; }
 
 function loadTaskThumbnails(ti,ids) {
   const c=document.getElementById('thumbs_'+ti); if(!c) return;
@@ -1964,6 +2045,80 @@ function finishDay(){
 }
 function confirmFinish(){ finishDay(); }
 
+// ── FEATURE: 項目進度概覽（設置頁按鍵 → 睇現有項目進度）──
+function showProgressOverview(){
+  const body = document.getElementById('progressOverviewBody');
+  if(!body) return;
+  const entries = getProgressEntries().filter(e => e && e.desc);
+  if(!entries.length){
+    body.innerHTML = '<div style="font-size:0.85rem;color:var(--slate-500);text-align:center;padding:28px 0">未有進度記錄<br><span style="font-size:0.75rem">去「📋 行程」→「📊 進度記錄」輸入</span></div>';
+    openModal('modalProgressOverview');
+    return;
+  }
+  // 按項目分組
+  const groups = {};
+  entries.forEach(e => {
+    const k = pvProjectKey(pvEntryKey(e));
+    (groups[k] = groups[k] || []).push(e);
+  });
+  const groupKeys = Object.keys(groups).sort((a,b) => a.localeCompare(b, 'zh-Hant'));
+
+  let html = '';
+  let allPctSum = 0, allWeight = 0, allCount = 0;
+  groupKeys.forEach(k => {
+    const list = groups[k];
+    const total = list.length;
+    allCount += total;
+    const done = list.filter(e => e.status === '已完成').length;
+    const ongoing = list.filter(e => e.status === '進行中').length;
+    const pending = list.filter(e => e.status === '待辦').length;
+    // 平均完成度（有數量就按數量加權）
+    let pctSum = 0, weight = 0;
+    list.forEach(e => {
+      const p = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
+      const w = e.qty ? Number(e.qty) : 1;
+      pctSum += p * w; weight += w;
+    });
+    const avgPct = weight ? Math.round(pctSum / weight) : 0;
+    allPctSum += pctSum; allWeight += weight;
+    const barColor = avgPct >= 100 ? 'var(--green-500)' : avgPct > 0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    html += `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span style="font-weight:700;font-size:0.9rem;color:#1e293b">🏷️ ${escHtml(k)}</span>
+        <span style="font-size:0.72rem;color:var(--slate-500)">${total} 項</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <div style="flex:1;height:8px;background:var(--slate-200);border-radius:4px;overflow:hidden"><div style="width:${avgPct}%;height:100%;background:${barColor};border-radius:4px"></div></div>
+        <span style="font-size:0.75rem;font-weight:600;color:${avgPct>=100?'var(--green-600)':'var(--slate-600)'}">${avgPct}%</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:0.7rem">
+        ${done?`<span class="pv-status st-已完成">✅ 已完成 ${done}</span>`:''}
+        ${ongoing?`<span class="pv-status st-進行中">🔄 進行中 ${ongoing}</span>`:''}
+        ${pending?`<span class="pv-status st-待辦">⏳ 待辦 ${pending}</span>`:''}
+      </div>
+      <div style="margin-top:6px;border-top:1px dashed var(--slate-200);padding-top:6px;display:flex;flex-direction:column;gap:4px">
+        ${list.slice(0,6).map(e => {
+          const p = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
+          const q = e.qty ? `🔢×${escHtml(e.qty)}` : '';
+          return `<div style="display:flex;gap:6px;align-items:center;font-size:0.75rem;color:var(--slate-600)">
+            <span style="min-width:36px;color:var(--slate-400);font-size:0.68rem">${Math.round(p)}%</span>
+            <span style="flex:1">${escHtml(e.desc||'')}</span>
+            ${q?`<span class="pv-qty">${q}</span>`:''}
+          </div>`;
+        }).join('')}
+        ${list.length > 6 ? `<div style="font-size:0.7rem;color:var(--slate-400)">…仲有 ${list.length - 6} 項</div>` : ''}
+      </div>
+    </div>`;
+  });
+  const allAvg = allWeight ? Math.round(allPctSum / allWeight) : 0;
+  html = `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.8rem">
+    <span style="color:var(--slate-600)">共 <b>${groupKeys.length}</b> 個項目 ｜ <b>${allCount}</b> 條記錄</span>
+    <span style="font-weight:700;color:${allAvg>=100?'var(--green-600)':'var(--blue-700)'}">整體 ${allAvg}%</span>
+  </div>` + html;
+  body.innerHTML = html;
+  openModal('modalProgressOverview');
+}
+
 // ── FEATURE: Show Template（默認彈窗版）──
 function showTemplate(){
   alert('📖 工作日誌模板 v5.6 格式\n\n' +
@@ -1992,6 +2147,7 @@ function refreshSettingsInputs(){
   renderCatLegend();
   renderItemCategoryChips();
   renderItemCategoryDropdowns();
+  renderTodoList();
 }
 function confirmSettings(){
   const nd=document.getElementById('sDate').value,np=document.getElementById('sPerson').value.trim()||'傑';
@@ -1999,6 +2155,64 @@ function confirmSettings(){
   if(!nd){showToast('⚠️ 請選擇日期');return;}
   log.dateStr=nd;log.person=np;saveData();
   render();showToast('✅ 已儲存設定');
+}
+
+// ── 待辦清單（獨立儲存喺 TODO_KEY，重置行程／每日換日唔會清除）──
+function getTodoList() {
+  const raw = lsGet(TODO_KEY);
+  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch(e) {} }
+  return [];
+}
+function saveTodoList(list) { lsSet(TODO_KEY, JSON.stringify(list)); }
+function renderTodoList() {
+  const el = document.getElementById('sTodoList');
+  if (!el) return;
+  const list = getTodoList();
+  if (!list.length) { el.innerHTML = '<div style="font-size:0.75rem;color:var(--slate-400)">尚未有待辦事項</div>'; return; }
+  const pending = list.filter(t => !t.done).length;
+  el.innerHTML = list.map((t, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;background:${t.done?'var(--slate-50)':'var(--blue-50)'};border:1px solid ${t.done?'var(--slate-200)':'var(--blue-200)'};border-radius:8px;${t.done?'opacity:0.65':''}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodoItem(${i})" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--green-600)">
+      <span style="flex:1;font-size:0.8rem;${t.done?'text-decoration:line-through;color:var(--slate-400)':''}">${escHtml(t.text)}</span>
+      <button class="btn btn-sm" style="color:var(--red-500);padding:2px 6px;font-size:0.72rem" onclick="deleteTodoItem(${i})">✕</button>
+    </div>`).join('') +
+    `<div style="font-size:0.7rem;color:var(--slate-400);margin-top:4px">共 ${list.length} 項 ｜ 未完成 ${pending} 項</div>`;
+}
+function addTodoItem() {
+  const input = document.getElementById('sTodoInput');
+  const val = input.value.trim();
+  if (!val) { showToast('⚠️ 請輸入待辦事項'); return; }
+  const list = getTodoList();
+  list.unshift({text: val, done: false, created: Date.now()});
+  saveTodoList(list);
+  input.value = '';
+  renderTodoList();
+  showToast('✅ 已加入待辦清單');
+}
+function toggleTodoItem(i) {
+  const list = getTodoList();
+  if (!list[i]) return;
+  list[i].done = !list[i].done;
+  saveTodoList(list);
+  renderTodoList();
+}
+function deleteTodoItem(i) {
+  const list = getTodoList();
+  if (!list[i]) return;
+  if (!confirm(`確定刪除「${list[i].text}」？`)) return;
+  list.splice(i, 1);
+  saveTodoList(list);
+  renderTodoList();
+  showToast('🗑️ 已刪除');
+}
+function clearDoneTodos() {
+  const list = getTodoList();
+  const done = list.filter(t => t.done);
+  if (!done.length) { showToast('⚠️ 冇已完成嘅待辦'); return; }
+  if (!confirm(`確定清除 ${done.length} 項已完成待辦？`)) return;
+  saveTodoList(list.filter(t => !t.done));
+  renderTodoList();
+  showToast('🧹 已清除已完成待辦');
 }
 
 // ── SETTINGS CHIPS: Add / Render / Delete ──
@@ -2705,7 +2919,7 @@ function renderProgressEval(){
   body.innerHTML = html;
 }
 
-// ── 進度評估匯出 XLSX（項目／地點整合欄 + 數量）──
+// ── 進度記錄匯出 XLSX（項目／地點整合欄 + 數量）──
 function exportProgressXLSX(){
   if(!log||!log.progress){showToast('⚠️ 未有進度資料');return;}
   var entries=getProgressEntries().filter(function(e){return e&&e.desc;});
@@ -2718,9 +2932,9 @@ function exportProgressXLSX(){
   var ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:22},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
   var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'進度評估');
+  XLSX.utils.book_append_sheet(wb,ws,'進度記錄');
   var ds=(log.dateStr||todayStr()).replace(/-/g,'');
-  var filename='進度評估_'+ds;
+  var filename='進度記錄_'+ds;
   var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
   var blob=new Blob([wbout],{type:'application/octet-stream'});
   var a=document.createElement('a');
@@ -2731,7 +2945,7 @@ function exportProgressXLSX(){
   showToast('✅ 已輸出 '+filename+'.xlsx');
 }
 
-// ── 進度評估讀取 XLSX（新格式：項目／地點|事項|狀態|進度|數量|備註；兼容舊格式：地點|項目|事項|...）──
+// ── 進度記錄讀取 XLSX（新格式：項目／地點|事項|狀態|進度|數量|備註；兼容舊格式：地點|項目|事項|...）──
 function loadProgressXLSX(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -2741,12 +2955,12 @@ function loadProgressXLSX(event){
     try{
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
-      let ws = workbook.Sheets['進度評估'];
+      let ws = workbook.Sheets['進度記錄'] || workbook.Sheets['進度評估']; // 兼容舊版 sheet 名
       if(!ws){
         const names = workbook.SheetNames;
         ws = names.length ? workbook.Sheets[names[0]] : null;
       }
-      if(!ws){ showToast('⚠️ 搵唔到「進度評估」工作表'); return; }
+      if(!ws){ showToast('⚠️ 搵唔到「進度記錄」工作表'); return; }
       const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
       if(json.length < 2){ showToast('⚠️ 工作表數據不足'); return; }
 
@@ -2975,6 +3189,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (!('projects' in initPresets) || !Array.isArray(initPresets.projects)) initPresets.projects = [];
   if (!('workTypes' in initPresets) || !Array.isArray(initPresets.workTypes)) initPresets.workTypes = defaultWorkTypes;
   savePresets(initPresets);
+  // 待辦清單：回車新增
+  document.getElementById('sTodoInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addTodoItem(); }
+  });
   // Follow-up photo upload handler
   document.getElementById('fuPhotoInput').addEventListener('change', function() {
     const file = this.files && this.files[0];
@@ -2994,6 +3212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     this.value = '';
   });
   loadData();
+  renderTodoList(); // 待辦清單獨立渲染（未開工都要顯示）
   // Restore last active tab
   try {
     const savedTab = localStorage.getItem('worklog_active_tab');

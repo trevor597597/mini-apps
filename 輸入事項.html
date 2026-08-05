@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v1.8</title>
+<title>工作日誌 — 輸入事項工具 v1.9</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -538,8 +538,8 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v1.6</h1>
-  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v1.9</h1>
+  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單</div>
 </div>
 
 <div class="container" id="app">
@@ -650,6 +650,17 @@ body {
           <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">🏗️ 項位分類</label>
           <div id="sItemChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
+      <!-- 待辦清單（獨立儲存，重置行程／每日換日唔會清除） -->
+      <div style="margin-top:14px">
+        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">📌 待辦清單 <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">獨立儲存｜重置行程唔會清除</span></label>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+          <input class="form-input" id="sTodoInput" placeholder="輸入待辦事項，回車新增" style="flex:1;min-width:120px">
+          <button class="btn btn-sm btn-primary" onclick="addTodoItem()">➕ 新增</button>
+          <button class="btn btn-sm btn-secondary" onclick="clearDoneTodos()">🧹 清除已完成</button>
+        </div>
+        <div id="sTodoList" style="margin-top:8px"></div>
       </div>
     </div>
   </div>
@@ -1037,6 +1048,7 @@ const IC_KEY = 'worklog_itemCategories_v2';
 const DB_NAME = 'WorklogPhotos';
 const DB_VERSION = 1;
 const DB_STORE = 'photos';
+const TODO_KEY = 'worklog_todolist_v1';
 // 輸出模板欄位定義（放最頂，避免 const 提升順序問題）
 const OUT_TMPL_KEY = 'worklog_output_template_v1';
 const OUT_FIELDS = [
@@ -2135,6 +2147,7 @@ function refreshSettingsInputs(){
   renderCatLegend();
   renderItemCategoryChips();
   renderItemCategoryDropdowns();
+  renderTodoList();
 }
 function confirmSettings(){
   const nd=document.getElementById('sDate').value,np=document.getElementById('sPerson').value.trim()||'傑';
@@ -2142,6 +2155,64 @@ function confirmSettings(){
   if(!nd){showToast('⚠️ 請選擇日期');return;}
   log.dateStr=nd;log.person=np;saveData();
   render();showToast('✅ 已儲存設定');
+}
+
+// ── 待辦清單（獨立儲存喺 TODO_KEY，重置行程／每日換日唔會清除）──
+function getTodoList() {
+  const raw = lsGet(TODO_KEY);
+  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch(e) {} }
+  return [];
+}
+function saveTodoList(list) { lsSet(TODO_KEY, JSON.stringify(list)); }
+function renderTodoList() {
+  const el = document.getElementById('sTodoList');
+  if (!el) return;
+  const list = getTodoList();
+  if (!list.length) { el.innerHTML = '<div style="font-size:0.75rem;color:var(--slate-400)">尚未有待辦事項</div>'; return; }
+  const pending = list.filter(t => !t.done).length;
+  el.innerHTML = list.map((t, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;background:${t.done?'var(--slate-50)':'var(--blue-50)'};border:1px solid ${t.done?'var(--slate-200)':'var(--blue-200)'};border-radius:8px;${t.done?'opacity:0.65':''}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodoItem(${i})" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--green-600)">
+      <span style="flex:1;font-size:0.8rem;${t.done?'text-decoration:line-through;color:var(--slate-400)':''}">${escHtml(t.text)}</span>
+      <button class="btn btn-sm" style="color:var(--red-500);padding:2px 6px;font-size:0.72rem" onclick="deleteTodoItem(${i})">✕</button>
+    </div>`).join('') +
+    `<div style="font-size:0.7rem;color:var(--slate-400);margin-top:4px">共 ${list.length} 項 ｜ 未完成 ${pending} 項</div>`;
+}
+function addTodoItem() {
+  const input = document.getElementById('sTodoInput');
+  const val = input.value.trim();
+  if (!val) { showToast('⚠️ 請輸入待辦事項'); return; }
+  const list = getTodoList();
+  list.unshift({text: val, done: false, created: Date.now()});
+  saveTodoList(list);
+  input.value = '';
+  renderTodoList();
+  showToast('✅ 已加入待辦清單');
+}
+function toggleTodoItem(i) {
+  const list = getTodoList();
+  if (!list[i]) return;
+  list[i].done = !list[i].done;
+  saveTodoList(list);
+  renderTodoList();
+}
+function deleteTodoItem(i) {
+  const list = getTodoList();
+  if (!list[i]) return;
+  if (!confirm(`確定刪除「${list[i].text}」？`)) return;
+  list.splice(i, 1);
+  saveTodoList(list);
+  renderTodoList();
+  showToast('🗑️ 已刪除');
+}
+function clearDoneTodos() {
+  const list = getTodoList();
+  const done = list.filter(t => t.done);
+  if (!done.length) { showToast('⚠️ 冇已完成嘅待辦'); return; }
+  if (!confirm(`確定清除 ${done.length} 項已完成待辦？`)) return;
+  saveTodoList(list.filter(t => !t.done));
+  renderTodoList();
+  showToast('🧹 已清除已完成待辦');
 }
 
 // ── SETTINGS CHIPS: Add / Render / Delete ──
@@ -3118,6 +3189,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (!('projects' in initPresets) || !Array.isArray(initPresets.projects)) initPresets.projects = [];
   if (!('workTypes' in initPresets) || !Array.isArray(initPresets.workTypes)) initPresets.workTypes = defaultWorkTypes;
   savePresets(initPresets);
+  // 待辦清單：回車新增
+  document.getElementById('sTodoInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addTodoItem(); }
+  });
   // Follow-up photo upload handler
   document.getElementById('fuPhotoInput').addEventListener('change', function() {
     const file = this.files && this.files[0];
@@ -3137,6 +3212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     this.value = '';
   });
   loadData();
+  renderTodoList(); // 待辦清單獨立渲染（未開工都要顯示）
   // Restore last active tab
   try {
     const savedTab = localStorage.getItem('worklog_active_tab');
