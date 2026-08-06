@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v1.9</title>
+<title>工作日誌 — 輸入事項工具 v2.0</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -461,6 +461,30 @@ body {
   font-size: 0.72rem; font-weight: 600; color: #b45309;
   background: #fef3c7; padding: 1px 8px; border-radius: 10px; white-space: nowrap;
 }
+/* ── 項目流程模板 ── */
+.tpl-item { border:1px solid var(--slate-200); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:var(--slate-50); }
+.tpl-head { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+.tpl-name { font-weight:700; font-size:0.85rem; color:#1e293b; }
+.tpl-loc { font-size:0.7rem; font-weight:600; color:var(--blue-700); background:var(--blue-50); padding:1px 8px; border-radius:10px; white-space:nowrap; }
+.tpl-meta { font-size:0.72rem; color:var(--slate-500); }
+.tpl-actions { display:flex; gap:6px; }
+.tpl-actions .btn { min-height:32px; padding:4px 12px; font-size:0.75rem; }
+.tpl-step { display:flex; align-items:center; gap:8px; padding:6px 8px; background:white; border:1px solid var(--slate-200); border-radius:8px; font-size:0.78rem; }
+.tpl-step input { min-width:0; }
+.tpl-step .tpl-step-name { flex:2; }
+.tpl-step .tpl-step-kw { flex:2.4; }
+.tpl-step .tpl-step-weight { flex:0.55; min-width:64px; }
+.tpl-step .tpl-step-del { border:none; background:transparent; color:var(--red-500); cursor:pointer; font-size:1rem; padding:2px 6px; min-height:32px; }
+.ev-verdict { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
+.ev-verdict.done { background:var(--green-50); color:var(--green-600); }
+.ev-verdict.progress { background:var(--orange-100); color:var(--orange-500); }
+.ev-verdict.pending { background:var(--slate-100); color:var(--slate-500); }
+.ev-step { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:7px 8px; border:1px solid var(--slate-200); border-radius:8px; margin-bottom:6px; background:var(--slate-50); font-size:0.78rem; }
+.ev-step .ev-ico { font-size:0.9rem; width:22px; text-align:center; }
+.ev-step .ev-name { flex:1; font-weight:600; color:var(--slate-700); min-width:90px; }
+.ev-step .ev-weight { font-size:0.68rem; color:var(--slate-400); white-space:nowrap; }
+.ev-step .ev-matched { font-size:0.7rem; color:var(--slate-500); }
+.ev-unmapped { font-size:0.75rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:8px 10px; margin-top:8px; line-height:1.6; }
 /* ── 完成度滑動條 — 按數量等分刻度 ── */
 .pv-ticks { position: relative; height: 16px; margin: 2px 1px 0; }
 .pv-ticks span {
@@ -538,8 +562,8 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v1.9</h1>
-  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v2.0</h1>
+  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單 | 流程模板評估</div>
 </div>
 
 <div class="container" id="app">
@@ -698,12 +722,13 @@ body {
       <div class="pv-input-wrap">
         <div class="form-row">
           <div class="form-group"><label>📍 地點</label>
-            <select class="form-select" id="pvLocation"></select>
+            <select class="form-select" id="pvLocation" onchange="renderTplHint()"></select>
           </div>
           <div class="form-group"><label>🏷️ 項目</label>
-            <select class="form-select" id="pvProject"></select>
+            <select class="form-select" id="pvProject" onchange="renderTplHint()"></select>
           </div>
         </div>
+        <div id="tplHint" style="display:none;margin:-6px 0 10px;font-size:0.75rem;color:var(--slate-600);background:var(--blue-50);border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px"></div>
         <div class="form-group"><label>📋 事項</label><input class="form-input" id="pvDesc" placeholder="例如：更換水泵零件"></div>
         <div class="form-row">
           <div class="form-group" style="flex:1.2">
@@ -743,6 +768,25 @@ body {
       </div>
       <div id="progressEvalBody" style="margin-top:14px">
         <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: 項目流程模板 + 進度評估 -->
+  <div class="card" id="tplCard">
+    <div class="card-header">
+      <h2>🗂️ 項目流程模板</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-secondary" onclick="openTplGenerate()">📥 從記錄生成</button>
+        <button class="btn btn-sm btn-primary" onclick="openTplEdit(null)">➕ 新增模板</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="font-size:0.75rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        將重複項目嘅工序存成模板（自動或手動）；喺「📊 進度記錄」輸入或匯入記錄後，一鍵評估實際進度。
+      </div>
+      <div id="templateListBody">
+        <div style="font-size:0.8rem;color:var(--slate-400)">未有模板 — 撳「📥 從記錄生成」用已有進度記錄建模板，或「➕ 新增模板」手動建立</div>
       </div>
     </div>
   </div>
@@ -1036,6 +1080,59 @@ body {
     <div class="modal-header"><h3>📊 項目進度概覽</h3><button class="modal-close" onclick="closeModal('modalProgressOverview')">✕</button></div>
     <div class="modal-body" id="progressOverviewBody"></div>
     <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalProgressOverview')">關閉</button></div>
+  </div>
+</div>
+
+<!-- ============ 項目流程模板 MODALS ============ -->
+<div class="modal-overlay" id="modalTplEdit">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><h3 id="tplEditTitle">➕ 新增模板</h3><button class="modal-close" onclick="closeModal('modalTplEdit')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>🏷️ 項目名稱 <span class="hint">需與進度記錄嘅「項目」一致</span></label><input class="form-input" id="tplName" placeholder="例如：消防閥更換"></div>
+      <div class="form-row">
+        <div class="form-group"><label>📍 地點 <span class="hint">可留空 = 唔限地點</span></label>
+          <select class="form-select" id="tplLoc"></select>
+        </div>
+        <div class="form-group"><label>📝 備註</label><input class="form-input" id="tplNote" placeholder="可留空"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px">
+        <label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">🧩 工序（流程步驟）</label>
+        <span id="tplWeightSum" style="font-size:0.72rem;color:var(--slate-400)"></span>
+      </div>
+      <div id="tplStepsBox" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="tplAddStepRow()">➕ 加一步驟</button>
+      <div class="hint" style="margin-top:6px;line-height:1.5">關鍵字用逗號分隔；評估時自動匹配「事項」包含關鍵字嘅進度記錄。留空 = 用工序名匹配。</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalTplEdit')">取消</button>
+      <button class="btn btn-primary" onclick="saveTplEdit()">💾 儲存模板</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalTplGenerate">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><h3>📥 從進度記錄生成模板</h3><button class="modal-close" onclick="closeModal('modalTplGenerate')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:0.82rem;color:var(--slate-500);margin-bottom:10px">揀一個做過嘅項目，系統用已有進度記錄嘅「事項」自動組成流程模板（工序權重按出現次數均分，最多 12 步）。</p>
+      <div class="form-group"><label>🏷️ 揀項目</label><select class="form-select" id="tplGenProject" onchange="tplGenPreview()"></select></div>
+      <div id="tplGenPreview" style="font-size:0.75rem;color:var(--slate-400);line-height:1.6"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalTplGenerate')">取消</button>
+      <button class="btn btn-primary" onclick="generateTplFromRecords()">✨ 生成模板</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalTplEval">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><h3>📊 進度評估</h3><button class="modal-close" onclick="closeModal('modalTplEval')">✕</button></div>
+    <div class="modal-body" id="tplEvalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="tplEvalAddBtn" style="display:none" onclick="tplAddUnmappedSteps()">➕ 未映射記錄加入模板</button>
+      <button class="btn btn-secondary" onclick="closeModal('modalTplEval')">關閉</button>
+    </div>
   </div>
 </div>
 
@@ -2082,6 +2179,15 @@ function showProgressOverview(){
     const avgPct = weight ? Math.round(pctSum / weight) : 0;
     allPctSum += pctSum; allWeight += weight;
     const barColor = avgPct >= 100 ? 'var(--green-500)' : avgPct > 0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    let tplBadge = '';
+    const tpl = findTemplateForProject(k);
+    if(tpl){
+      const ev = evalTemplate(tpl);
+      tplBadge = `<div style="margin-top:6px;font-size:0.72rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span>🗂️ 模板評估 <b>${escHtml(tpl.name)}</b>${tpl.loc?' @ '+escHtml(tpl.loc):''}</span>
+        <span style="font-weight:700;color:${ev.overall>=100?'var(--green-600)':'var(--orange-500)'}">${ev.overall}%</span>
+      </div>`;
+    }
     html += `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
         <span style="font-weight:700;font-size:0.9rem;color:#1e293b">🏷️ ${escHtml(k)}</span>
@@ -2108,6 +2214,7 @@ function showProgressOverview(){
         }).join('')}
         ${list.length > 6 ? `<div style="font-size:0.7rem;color:var(--slate-400)">…仲有 ${list.length - 6} 項</div>` : ''}
       </div>
+      ${tplBadge}
     </div>`;
   });
   const allAvg = allWeight ? Math.round(allPctSum / allWeight) : 0;
@@ -2749,6 +2856,7 @@ function refreshProgressSelects(){
   projSel.innerHTML = '<option value="">— 揀項目 —</option>' + projs.map(p=>`<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('');
   if(curLoc) locSel.value = curLoc;
   if(curProj) projSel.value = curProj;
+  renderTplHint();
 }
 
 function updatePvPctLabel(){
@@ -3028,7 +3136,7 @@ function loadProgressXLSX(event){
       if(!log.progress) log.progress = [];
       if(log.progress.length && !confirm(`已有 ${log.progress.length} 條進度記錄。\n\n「確定」= 合併入去（保留現有）\n「取消」= 唔匯入`)) return;
       log.progress = log.progress.concat(imported);
-      saveData(); renderProgressEval();
+      saveData(); renderProgressEval(); renderTemplates(); renderTplHint();
       showToast(`✅ 已讀取 ${file.name}（${imported.length} 條進度）`);
     } catch(err){
       showToast('⚠️ XLSX 讀取失敗：' + err.message);
@@ -3036,6 +3144,362 @@ function loadProgressXLSX(event){
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ── FEATURE: 項目流程模板 + 進度評估 ──
+const TPL_KEY = 'worklog_templates_v1';
+let tplEditId = null;
+let tplEditSteps = [];
+let tplEvalId = null;
+
+function getTemplates(){
+  const raw = lsGet(TPL_KEY);
+  let list = [];
+  if(raw){ try { const p = JSON.parse(raw); if(Array.isArray(p)) list = p; } catch(e){} }
+  return list;
+}
+function saveTemplates(list){ lsSet(TPL_KEY, JSON.stringify(list)); }
+
+// 揾匹配模板：項目名必須一致；有傳地點時模板嘅 loc 都要一致
+function findTemplateForProject(proj, loc){
+  const list = getTemplates();
+  if(!proj) return null;
+  for(let i=0;i<list.length;i++){
+    const t = list[i];
+    if(!t || !t.name) continue;
+    if(t.name !== proj) continue;
+    if(t.loc && loc && t.loc !== loc) continue;
+    return t;
+  }
+  return null;
+}
+
+function renderTemplates(){
+  const body = document.getElementById('templateListBody');
+  if(!body) return;
+  const list = getTemplates();
+  if(!list.length){
+    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有模板 — 撳「📥 從記錄生成」用已有進度記錄建模板，或「➕ 新增模板」手動建立</div>';
+    return;
+  }
+  body.innerHTML = list.map(t => {
+    const steps = t.steps || [];
+    const wSum = steps.reduce((s,x)=>s+(Number(x.weight)||0),0);
+    const idAttr = String(t.id).replace(/'/g,"\\'");
+    return `<div class="tpl-item">
+      <div class="tpl-head">
+        <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="tpl-name">🏷️ ${escHtml(t.name||'未命名')}</span>
+          ${t.loc?`<span class="tpl-loc">📍 ${escHtml(t.loc)}</span>`:''}
+          <span class="tpl-meta">${steps.length} 工序 ｜ 權重 ${wSum}%</span>
+        </span>
+        <span class="tpl-actions">
+          <button class="btn btn-sm btn-success" onclick="openTplEval('${idAttr}')">📊 評估</button>
+          <button class="btn btn-sm btn-secondary" onclick="openTplEdit('${idAttr}')">✏️ 編輯</button>
+          <button class="btn btn-sm btn-secondary" onclick="deleteTpl('${idAttr}')">🗑️</button>
+        </span>
+      </div>
+      ${t.note?`<div style="font-size:0.72rem;color:var(--slate-400);margin-top:4px">📝 ${escHtml(t.note)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function tplLocOptions(selId, cur){
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  const presets = getPresets();
+  const locs = (presets.locations||[]).slice();
+  getProgressEntries().forEach(e => {
+    const sp = pvSplitLoc(pvEntryKey(e));
+    if(sp.location && !locs.includes(sp.location)) locs.push(sp.location);
+  });
+  sel.innerHTML = '<option value="">— 不限 —</option>' + locs.map(l=>`<option value="${escHtml(l)}">${escHtml(l)}</option>`).join('');
+  if(cur && locs.includes(cur)) sel.value = cur;
+}
+
+function openTplEdit(id){
+  tplEditId = id || null;
+  tplEditSteps = [];
+  const title = document.getElementById('tplEditTitle');
+  if(title) title.textContent = id ? '✏️ 編輯模板' : '➕ 新增模板';
+  const nameEl = document.getElementById('tplName');
+  const noteEl = document.getElementById('tplNote');
+  if(!id){
+    if(nameEl) nameEl.value = '';
+    if(noteEl) noteEl.value = '';
+    tplLocOptions('tplLoc', '');
+    tplEditSteps = [{ id:'s'+Date.now(), name:'', kw:'', weight:100 }];
+  } else {
+    const t = getTemplates().find(x => String(x.id) === String(id));
+    if(!t) return;
+    if(nameEl) nameEl.value = t.name || '';
+    if(noteEl) noteEl.value = t.note || '';
+    tplLocOptions('tplLoc', t.loc || '');
+    tplEditSteps = (t.steps||[]).map(s => ({ id:s.id||('s'+Date.now()+Math.random()), name:s.name||'', kw:s.kw||'', weight:(s.weight!=null?s.weight:0) }));
+    if(!tplEditSteps.length) tplEditSteps = [{ id:'s'+Date.now(), name:'', kw:'', weight:100 }];
+  }
+  renderTplEditSteps();
+  openModal('modalTplEdit');
+}
+
+function updateTplWeightSum(){
+  const sum = tplEditSteps.reduce((s,x)=>s+(Number(x.weight)||0),0);
+  const sumEl = document.getElementById('tplWeightSum');
+  if(sumEl) sumEl.textContent = `權重合計 ${sum}%${sum!==100?'（唔等於 100 都得，評估會自動歸一）':''}`;
+}
+
+function renderTplEditSteps(){
+  const box = document.getElementById('tplStepsBox');
+  if(!box) return;
+  box.innerHTML = tplEditSteps.map((s,i) => {
+    const idAttr = String(s.id).replace(/'/g,"\\'");
+    return `<div class="tpl-step">
+      <span style="font-size:0.8rem;color:var(--slate-400);min-width:20px">${i+1}.</span>
+      <input class="form-input tpl-step-name" value="${escHtml(s.name)}" placeholder="工序名，例如：檢查" data-i="${i}" data-f="name">
+      <input class="form-input tpl-step-kw" value="${escHtml(s.kw)}" placeholder="關鍵字（逗號分隔）" data-i="${i}" data-f="kw">
+      <input class="form-input tpl-step-weight" type="number" min="0" max="100" step="5" value="${Number(s.weight)||0}" data-i="${i}" data-f="weight" title="權重 %">
+      <button class="tpl-step-del" onclick="tplRemoveStep('${idAttr}')" title="刪除">✕</button>
+    </div>`;
+  }).join('');
+  updateTplWeightSum();
+  box.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', function(){
+      const i = Number(this.dataset.i), f = this.dataset.f;
+      if(!tplEditSteps[i]) return;
+      if(f==='weight'){ tplEditSteps[i].weight = Number(this.value)||0; updateTplWeightSum(); }
+      else tplEditSteps[i][f] = this.value;
+    });
+  });
+}
+
+function tplAddStepRow(){
+  tplEditSteps.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,5), name:'', kw:'', weight:0 });
+  renderTplEditSteps();
+}
+function tplRemoveStep(id){
+  tplEditSteps = tplEditSteps.filter(s => String(s.id) !== String(id));
+  renderTplEditSteps();
+}
+
+function saveTplEdit(){
+  const name = document.getElementById('tplName').value.trim();
+  if(!name){ showToast('⚠️ 請填項目名稱'); return; }
+  const loc = document.getElementById('tplLoc').value;
+  const note = document.getElementById('tplNote').value.trim();
+  const steps = tplEditSteps.filter(s => (s.name||'').trim());
+  if(!steps.length){ showToast('⚠️ 至少要有一個工序'); return; }
+  const list = getTemplates();
+  if(tplEditId){
+    const t = list.find(x => String(x.id) === String(tplEditId));
+    if(t){ t.name=name; t.loc=loc; t.note=note; t.steps=steps; }
+  } else {
+    list.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, loc, note, steps });
+  }
+  saveTemplates(list);
+  closeModal('modalTplEdit');
+  renderTemplates();
+  renderTplHint();
+  showToast('✅ 已儲存模板');
+}
+
+function deleteTpl(id){
+  if(!confirm('確定刪除呢個模板？')) return;
+  const list = getTemplates().filter(x => String(x.id) !== String(id));
+  saveTemplates(list);
+  renderTemplates();
+  renderTplHint();
+  showToast('🗑️ 已刪除模板');
+}
+
+// ── 從進度記錄生成模板（利用已有項目流程做模版）──
+function tplGenProjectStats(){
+  const entries = getProgressEntries().filter(e => e && e.desc);
+  const map = {};
+  entries.forEach(e => {
+    const k = pvProjectKey(pvEntryKey(e));
+    (map[k] = map[k] || {count:0, locs:{}}).count++;
+    const sp = pvSplitLoc(pvEntryKey(e));
+    if(sp.location) map[k].locs[sp.location] = (map[k].locs[sp.location]||0)+1;
+  });
+  return Object.keys(map).map(k => ({ key:k, count:map[k].count, locs:map[k].locs })).sort((a,b)=>b.count-a.count);
+}
+
+function openTplGenerate(){
+  const sel = document.getElementById('tplGenProject');
+  if(!sel) return;
+  const stats = tplGenProjectStats();
+  if(!stats.length){ showToast('⚠️ 未有進度記錄可生成模板'); return; }
+  sel.innerHTML = stats.map(s => `<option value="${escHtml(s.key)}">${escHtml(s.key)}（${s.count} 條）</option>`).join('');
+  tplGenPreview();
+  openModal('modalTplGenerate');
+}
+
+function tplGenPreview(){
+  const sel = document.getElementById('tplGenProject');
+  const pre = document.getElementById('tplGenPreview');
+  if(!sel || !pre) return;
+  const proj = sel.value;
+  if(!proj){ pre.innerHTML=''; return; }
+  const entries = getProgressEntries().filter(e => e && e.desc && pvProjectKey(pvEntryKey(e))===proj);
+  const map = {};
+  entries.forEach(e => { const d=(e.desc||'').trim(); if(d) map[d]=(map[d]||0)+1; });
+  const items = Object.keys(map).map(d=>({d,c:map[d]})).sort((a,b)=>b.c-a.c).slice(0,12);
+  pre.innerHTML = '預覽工序：<b>'+items.map(x=>escHtml(x.d)).join('</b> → <b>')+'</b><br>（'+(items.length>=12?'最多 12 步':'共 '+items.length+' 步')+'，權重自動均分）';
+}
+
+function generateTplFromRecords(){
+  const sel = document.getElementById('tplGenProject');
+  if(!sel) return;
+  const proj = sel.value;
+  if(!proj){ showToast('⚠️ 請揀項目'); return; }
+  const existing = getTemplates().find(t => t && t.name === proj);
+  if(existing && !confirm(`項目「${proj}」已有模板。\n「確定」= 覆蓋成新生成模板\n「取消」= 唔生成`)) return;
+  const entries = getProgressEntries().filter(e => e && e.desc && pvProjectKey(pvEntryKey(e))===proj);
+  const map = {};
+  entries.forEach(e => { const d=(e.desc||'').trim(); if(d) map[d]=(map[d]||0)+1; });
+  const items = Object.keys(map).map(d=>({d,c:map[d]})).sort((a,b)=>b.c-a.c).slice(0,12);
+  if(!items.length){ showToast('⚠️ 揀嘅項目冇進度記錄'); return; }
+  const base = Math.floor(100/items.length);
+  const steps = items.map((it,i) => ({ id:'s'+Date.now()+i, name:it.d, kw:it.d, weight: i===items.length-1 ? 100-base*(items.length-1) : base }));
+  const locMap = {};
+  entries.forEach(e => { const sp = pvSplitLoc(pvEntryKey(e)); if(sp.location) locMap[sp.location]=(locMap[sp.location]||0)+1; });
+  const locKeys = Object.keys(locMap);
+  const loc = locKeys.length ? locKeys.sort((a,b)=>locMap[b]-locMap[a])[0] : '';
+  const tpl = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name:proj, loc, note:'由進度記錄自動生成（'+new Date().toLocaleDateString('zh-Hans')+'）', steps };
+  const list = getTemplates();
+  if(existing){ const i = list.findIndex(t => t && t.name===proj); list[i] = tpl; }
+  else list.push(tpl);
+  saveTemplates(list);
+  closeModal('modalTplGenerate');
+  renderTemplates();
+  renderTplHint();
+  showToast('✅ 已生成模板：'+proj+'（'+steps.length+' 工序）');
+}
+
+// ── 進度評估 ──
+function tplMatchEntries(step, entries){
+  const terms = (step.kw||'').split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+  const kws = terms.length ? terms : [(step.name||'').trim()].filter(Boolean);
+  if(!kws.length) return [];
+  return entries.filter(e => {
+    const d = String(e.desc||'');
+    return kws.some(t => t && d.includes(t));
+  });
+}
+
+function evalTemplate(tpl){
+  const entries = getProgressEntries().filter(e => e && e.desc);
+  const projEntries = entries.filter(e => {
+    const k = pvProjectKey(pvEntryKey(e));
+    if(k !== tpl.name) return false;
+    if(tpl.loc){ const sp = pvSplitLoc(pvEntryKey(e)); if(sp.location !== tpl.loc) return false; }
+    return true;
+  });
+  const steps = (tpl.steps||[]).map(st => {
+    const matched = tplMatchEntries(st, projEntries);
+    const pcts = matched.map(m => (m.pct!=null && m.pct!=='') ? Number(m.pct) : 0);
+    const maxPct = pcts.length ? Math.max.apply(null, pcts) : 0;
+    let status = 'pending', credit = 0;
+    if(matched.length){
+      if(matched.some(m => m.status==='已完成') || maxPct >= 100){ status='done'; credit = Number(st.weight)||0; }
+      else if(matched.some(m => m.status==='進行中') || maxPct > 0){ status='partial'; credit = (Number(st.weight)||0) * maxPct / 100; }
+    }
+    return { step: st, matched, maxPct, status, credit };
+  });
+  const totalW = steps.reduce((s,x)=>s+(Number(x.step.weight)||0),0);
+  const earned = steps.reduce((s,x)=>s+x.credit,0);
+  const overall = totalW ? Math.round(earned/totalW*100) : 0;
+  const done = steps.filter(s=>s.status==='done').length;
+  const partial = steps.filter(s=>s.status==='partial').length;
+  const pending = steps.filter(s=>s.status==='pending').length;
+  const matchedIds = new Set();
+  steps.forEach(s => s.matched.forEach(m => matchedIds.add(m.id)));
+  const unmapped = projEntries.filter(e => !matchedIds.has(e.id));
+  return { overall, done, partial, pending, steps, unmapped, totalW, recordCount: projEntries.length };
+}
+
+function openTplEval(id){
+  const t = getTemplates().find(x => String(x.id) === String(id));
+  if(!t) return;
+  tplEvalId = t.id;
+  const body = document.getElementById('tplEvalBody');
+  if(!body) return;
+  const r = evalTemplate(t);
+  const verdict = r.overall >= 100 ? 'done' : (r.recordCount ? 'progress' : 'pending');
+  const verdictTxt = r.overall >= 100 ? '✅ 已完成' : (r.recordCount ? (r.overall>0 ? '🔄 進行中' : '🔍 已開始，未完成任何工序') : '⏳ 未有進度記錄');
+  const barColor = r.overall>=100 ? 'var(--green-500)' : r.overall>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <span style="font-weight:700;font-size:0.95rem;color:#1e293b">🏷️ ${escHtml(t.name)}${t.loc?` <span class="tpl-loc">📍 ${escHtml(t.loc)}</span>`:''}</span>
+      <span class="ev-verdict ${verdict}">${verdictTxt}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div style="flex:1;height:10px;background:var(--slate-200);border-radius:5px;overflow:hidden"><div style="width:${Math.min(100,r.overall)}%;height:100%;background:${barColor};border-radius:5px"></div></div>
+      <span style="font-size:1.1rem;font-weight:700;color:${r.overall>=100?'var(--green-600)':'var(--blue-700)'}">${r.overall}%</span>
+    </div>
+    <div style="font-size:0.72rem;color:var(--slate-500);margin-bottom:12px">
+      已完成 <b style="color:var(--green-600)">${r.done}</b> ／ ${r.steps.length} 工序 ｜ 🔄 ${r.partial} ｜ ⏳ ${r.pending} ｜ 📄 ${r.recordCount} 條記錄 ｜ 權重 ${r.totalW}%
+    </div>
+    <div style="font-size:0.78rem;font-weight:600;color:var(--slate-600);margin-bottom:6px">🧩 工序對照</div>`;
+  r.steps.forEach(s => {
+    const ico = s.status==='done' ? '✅' : (s.status==='partial' ? '🔄' : '⏳');
+    const mTxt = s.matched.length
+      ? s.matched.map(m => `${escHtml(m.desc)} ${Math.round((m.pct!=null&&m.pct!=='')?Number(m.pct):0)}%`).join('；')
+      : '<span style="color:var(--slate-400)">未有記錄匹配</span>';
+    html += `<div class="ev-step">
+      <span class="ev-ico">${ico}</span>
+      <span class="ev-name">${escHtml(s.step.name||'')}</span>
+      ${(s.step.kw||'')?`<span class="ev-weight" style="color:var(--slate-400)">🔑 ${escHtml(s.step.kw)}</span>`:''}
+      <span class="ev-weight">權重 ${Number(s.step.weight)||0}%</span>
+      <span class="ev-matched">${mTxt}</span>
+    </div>`;
+  });
+  if(r.unmapped.length){
+    html += `<div class="ev-unmapped">⚠️ ${r.unmapped.length} 條進度記錄未對應任何工序：<br>${r.unmapped.slice(0,8).map(m=>`「${escHtml(m.desc)}」 ${Math.round((m.pct!=null&&m.pct!=='')?Number(m.pct):0)}%`).join('；')}${r.unmapped.length>8?`…等 ${r.unmapped.length} 條`:''}</div>`;
+  } else {
+    html += `<div style="font-size:0.75rem;color:var(--green-600);margin-top:6px">✅ 所有記錄都已對應到工序</div>`;
+  }
+  body.innerHTML = html;
+  const addBtn = document.getElementById('tplEvalAddBtn');
+  if(addBtn) addBtn.style.display = r.unmapped.length ? '' : 'none';
+  openModal('modalTplEval');
+}
+
+function tplAddUnmappedSteps(){
+  const list = getTemplates();
+  const t = list.find(x => String(x.id) === String(tplEvalId));
+  if(!t) return;
+  const r = evalTemplate(t);
+  if(!r.unmapped.length){ closeModal('modalTplEval'); return; }
+  const map = {};
+  r.unmapped.forEach(e => { const d=(e.desc||'').trim(); if(d) map[d]=(map[d]||0)+1; });
+  const items = Object.keys(map).sort((a,b)=>map[b]-map[a]);
+  const existingNames = new Set((t.steps||[]).map(s=>s.name));
+  items.forEach(d => {
+    if(existingNames.has(d)) return;
+    t.steps.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,5), name:d, kw:d, weight:0 });
+    existingNames.add(d);
+  });
+  const n = t.steps.length;
+  const base = Math.floor(100/n);
+  t.steps.forEach((s,i) => { s.weight = (i===n-1) ? 100-base*(n-1) : base; });
+  saveTemplates(list);
+  renderTemplates();
+  openTplEval(t.id);
+  showToast('✅ 已將未映射記錄加入模板並均分權重');
+}
+
+function renderTplHint(){
+  const hint = document.getElementById('tplHint');
+  if(!hint) return;
+  const loc = (document.getElementById('pvLocation')||{}).value || '';
+  const proj = (document.getElementById('pvProject')||{}).value || '';
+  if(!proj){ hint.innerHTML=''; hint.style.display='none'; return; }
+  const t = findTemplateForProject(proj, loc);
+  if(!t){ hint.innerHTML=''; hint.style.display='none'; return; }
+  const idAttr = String(t.id).replace(/'/g,"\\'");
+  hint.innerHTML = `🗂️ 此項目有流程模板（${(t.steps||[]).length} 工序）→ <a href="javascript:void(0)" style="color:var(--blue-700);font-weight:600" onclick="openTplEval('${idAttr}')">📊 評估實際進度</a>`;
+  hint.style.display='block';
 }
 
 // ── Tab Switching ──
@@ -3213,6 +3677,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   loadData();
   renderTodoList(); // 待辦清單獨立渲染（未開工都要顯示）
+  renderTemplates();
+  renderTplHint();
   // Restore last active tab
   try {
     const savedTab = localStorage.getItem('worklog_active_tab');
