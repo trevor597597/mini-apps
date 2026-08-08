@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v2.0</title>
+<title>工作日誌 — 輸入事項工具 v2.1</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -324,21 +324,39 @@ body {
 }
 .photo-thumb:hover { opacity: 0.8; }
 @media print {
-  body { background: white; padding: 0; }
-  .header, .inline-actions, .btn, .modal-overlay:not(#modalPDFPreview),
-  .modal-overlay:not(#modalPDFPreview) *,
-  .task-actions, #toast, .status-bar, #settingsCard, .tab-bar { display: none !important; }
+  body { background: white !important; padding: 0 !important; }
+  /* 隱藏成個 app 頁面 — 唔用 :not()，避免舊 Android 瀏覽器 parse 失敗成條 rule 失效（會漏晒網頁按鍵入 PDF） */
+  .header, .inline-actions, .btn, .task-actions, #toast, .status-bar,
+  #settingsCard, .tab-bar, .container, .modal-overlay { display: none !important; }
+  /* 淨係顯示 PDF 預覽 modal */
+  #modalPDFPreview { display: block !important; position: static !important; background: white !important; }
+  #modalPDFPreview .modal { max-width: 100%; max-height: none; overflow: visible; box-shadow: none; border-radius: 0; padding: 0; animation: none; }
+  #modalPDFPreview .modal-header, #modalPDFPreview .modal-footer { display: none !important; }
+  #modalPDFPreview .modal-body { padding: 0; }
   @page { size: A4; margin: 2cm; }
-  .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
-  .container { max-width: 100%; padding: 0; }
-  .preview-box { max-height: none; overflow: visible; white-space: pre-wrap; }
-  .print-only { display: block !important; }
+  .pdf-table tr, .pdf-photo-block { break-inside: avoid; }
+  .pdf-photo { width: 60mm; }
 }
 .print-only { display: none; }
 .btn-xlsx { background: #27ae60; color: white; }
 .btn-xlsx:hover { background: #219a52; }
 .btn-xlsx-photo { background: #8e44ad; color: white; }
 .btn-xlsx-photo:hover { background: #7d3c98; }
+.btn-pdf { background: #e74c3c; color: white; }
+.btn-pdf:hover { background: #c0392b; }
+
+/* ── PDF 預覽／列印 ── */
+.pdf-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+.pdf-meta { font-size: 0.85rem; color: #475569; margin-bottom: 12px; }
+.pdf-h { font-size: 0.9rem; font-weight: 700; color: #334155; margin: 14px 0 6px; border-left: 4px solid #2563eb; padding-left: 8px; }
+.pdf-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 4px; }
+.pdf-table th, .pdf-table td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; word-break: break-word; }
+.pdf-table th { background: #f1f5f9; font-weight: 700; color: #334155; }
+.pdf-text { font-size: 0.85rem; color: #334155; line-height: 1.6; }
+.pdf-photo-block { margin-bottom: 10px; break-inside: avoid; }
+.pdf-photo-cap { font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+.pdf-photo-imgs { display: flex; gap: 8px; flex-wrap: wrap; }
+.pdf-photo { width: 62mm; border: 1px solid #cbd5e1; border-radius: 6px; }
 
 /* ── Tab Navigation ── */
 .tab-bar {
@@ -562,8 +580,8 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v2.0</h1>
-  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單 | 流程模板評估</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v2.1</h1>
+  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單 | 流程模板評估 | PDF 輸出</div>
 </div>
 
 <div class="container" id="app">
@@ -822,6 +840,7 @@ body {
         <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
         <button class="btn btn-sm btn-xlsx" onclick="exportXLSX()">📊 XLSX</button>
         <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ XLSX（含圖）</button>
+        <button class="btn btn-sm btn-pdf" onclick="openPDFPreview()">🖨️ PDF</button>
       </div>
     </div>
   </div>
@@ -1063,7 +1082,7 @@ body {
   <div class="modal" style="max-width:480px">
     <div class="modal-header"><h3>⚙️ 輸出模板</h3><button class="modal-close" onclick="closeModal('modalOutputTmpl')">✕</button></div>
     <div class="modal-body">
-      <div style="font-size:0.82rem;color:var(--slate-500);margin-bottom:12px">揀選時間軸輸出嘅欄位 — Markdown / XLSX / XLSX（含圖）一齊生效</div>
+      <div style="font-size:0.82rem;color:var(--slate-500);margin-bottom:12px">揀選時間軸輸出嘅欄位 — Markdown / XLSX / XLSX（含圖）/ PDF 一齊生效</div>
       <div id="outTmplFields" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
     <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1071,6 +1090,21 @@ body {
       <button class="btn btn-sm btn-secondary" onclick="outTmplSelectAll(false)">⬜ 全唔揀</button>
       <button class="btn btn-sm btn-secondary" onclick="outTmplReset()">↩️ 預設</button>
       <button class="btn btn-sm btn-primary" onclick="saveOutTemplate()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF 預覽／列印 -->
+<div class="modal-overlay" id="modalPDFPreview">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <h3>🖨️ PDF 預覽</h3>
+      <button class="modal-close" onclick="closeModal('modalPDFPreview')">✕</button>
+    </div>
+    <div class="modal-body" id="pdfPreviewBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalPDFPreview')">關閉</button>
+      <button class="btn btn-pdf" onclick="printPDF()">🖨️ 列印／另存為 PDF</button>
     </div>
   </div>
 </div>
@@ -1811,6 +1845,71 @@ function refreshPreview(){
 }
 function copyMarkdown(){const t=generateMarkdown();navigator.clipboard.writeText(t).then(()=>showToast('✅ 已複製到剪貼簿')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ 已複製到剪貼簿');});}
 function downloadMarkdown(){const t=generateMarkdown(),ds=log.dateStr.replace(/-/g,''),b=new Blob([t],{type:'text/markdown;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`工作日誌_${ds}.md`;a.click();URL.revokeObjectURL(a.href);showToast('✅ 已下載 .md 檔案');}
+// ── PDF 生成（預覽 modal + window.print 另存為 PDF）──
+function openPDFPreview(){
+  if(!log||!log.tasks||!log.tasks.length){showToast('⚠️ 未有數據 — 開工後先可以生成 PDF');return;}
+  const tpl=getOutTemplate();
+  if(!tpl.length){showToast('⚠️ 未揀任何輸出欄位 — 去 ⚙️ 輸出模板 揀返');return;}
+  const body=document.getElementById('pdfPreviewBody');
+  if(!body)return;
+  const ds0=log.dateStr||todayStr(), dd=formatDate(ds0), wd=getWeekday(ds0);
+  let h=`<div class="pdf-title">工作日誌 ${dd}（${wd}）</div>`;
+  h+=`<div class="pdf-meta">人員：${escHtml(log.person||'傑')}</div>`;
+  // 時間軸 — 跟輸出模板欄位
+  h+='<h4 class="pdf-h">📋 時間軸</h4><table class="pdf-table"><thead><tr>';
+  tpl.forEach(k=>{ h+=`<th>${escHtml(outFieldLabel(k))}</th>`; });
+  h+='</tr></thead><tbody>';
+  (log.tasks||[]).forEach(t=>{
+    if(!t)return;
+    h+='<tr>';
+    tpl.forEach(k=>{ h+=`<td>${escHtml(taskFieldVal(t,k,log))}</td>`; });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  // 問題／考勤／待跟進
+  const pr=log.problems||[], ri=(log.attendance||[]).map(a=>a.name+':'+a.status), fl=(log.followups||[]).map(f=>typeof f==='string'?f:(f.text||''));
+  const ml=Math.max(pr.length,ri.length,fl.length,1);
+  h+='<h4 class="pdf-h">📌 問題／考勤／待跟進</h4><table class="pdf-table"><thead><tr><th>問題</th><th>考勤</th><th>待跟進</th></tr></thead><tbody>';
+  for(let i=0;i<ml;i++){ h+=`<tr><td>${escHtml(i<pr.length?pr[i]:'')}</td><td>${escHtml(i<ri.length?ri[i]:'')}</td><td>${escHtml(i<fl.length?fl[i]:'')}</td></tr>`; }
+  h+='</tbody></table>';
+  // 小復盤 + TOP3
+  h+=`<h4 class="pdf-h">💡 小復盤</h4><div class="pdf-text">${escHtml(log.summary||'（無）')}</div>`;
+  const top3=(log.top3&&log.top3.length?log.top3:['','','']).map((x,i)=>`${i+1}. ${escHtml(x||'—')}`);
+  h+=`<h4 class="pdf-h">⭐ 明日優先 TOP3</h4><div class="pdf-text">${top3.join('<br>')}</div>`;
+  // 進度記錄
+  const entries=(typeof getProgressEntries==='function'?getProgressEntries():[]).filter(e=>e&&e.desc);
+  if(entries.length){
+    h+='<h4 class="pdf-h">📊 進度記錄</h4><table class="pdf-table"><thead><tr><th>項目／地點</th><th>事項</th><th>狀態</th><th>進度</th><th>數量</th><th>備註</th></tr></thead><tbody>';
+    entries.forEach(e=>{
+      const pct=(e.pct!=null&&e.pct!=='')?Math.round(e.pct)+'%':'—';
+      h+=`<tr><td>${escHtml(pvEntryKey(e)||'—')}</td><td>${escHtml(e.desc||'')}</td><td>${escHtml(e.status||'待辦')}</td><td>${escHtml(pct)}</td><td>${escHtml(e.qty||'')}</td><td>${escHtml(e.note||'')}</td></tr>`;
+    });
+    h+='</tbody></table>';
+  }
+  // 相片（異步由 IndexedDB 載入）
+  const photoTasks=(log.tasks||[]).filter(t=>t&&t.photos&&t.photos.length);
+  if(photoTasks.length){
+    h+='<h4 class="pdf-h">📸 相片</h4>';
+    photoTasks.forEach((t,ti)=>{
+      h+=`<div class="pdf-photo-block"><div class="pdf-photo-cap">${escHtml(t.timeRange||'')}　${escHtml(t.desc||'')}</div><div class="pdf-photo-imgs" id="pdfPhotos_${ti}"><span style="color:#94a3b8">載入中…</span></div></div>`;
+    });
+  }
+  body.innerHTML=h;
+  openModal('modalPDFPreview');
+  if(photoTasks.length){
+    photoTasks.forEach((t,ti)=>{
+      getPhotosFromDB(t.photos).then(urls=>{
+        const wrap=document.getElementById('pdfPhotos_'+ti);
+        if(!wrap)return;
+        wrap.innerHTML=urls.filter(u=>u).map(u=>`<img class="pdf-photo" src="${u}" alt="相片">`).join('')||'<span style="color:#94a3b8">（讀取失敗）</span>';
+      }).catch(()=>{
+        const wrap=document.getElementById('pdfPhotos_'+ti);
+        if(wrap)wrap.innerHTML='<span style="color:#94a3b8">（讀取失敗）</span>';
+      });
+    });
+  }
+}
+function printPDF(){ window.print(); }
 function viewImage(src){document.getElementById('viewerImage').src=src;openModal('modalImageViewer');}
 
 // ── FEATURE: Task Reordering ──
