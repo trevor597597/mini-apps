@@ -461,6 +461,20 @@ body {
   border-radius: 6px; padding: 4px 8px;
   margin: -2px 10px 4px; align-self: stretch;
 }
+/* ── 進度記錄 項目卡片（每行 2 個，獨立列事項/記錄/評估進度）── */
+.pv-card-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.pv-card { border:1px solid var(--slate-200); border-radius:12px; background:white; box-shadow:var(--shadow); overflow:hidden; }
+.pv-card-head { padding:10px 12px; border-bottom:1px solid var(--slate-200); background:var(--slate-50); }
+.pv-card-title-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pv-card-name { font-weight:700; font-size:0.85rem; color:#1e293b; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pv-card-count { font-size:0.7rem; color:var(--slate-400); white-space:nowrap; }
+.pv-card-eval { display:flex; align-items:center; gap:6px; margin-top:8px; }
+.pv-card-bar { flex:1; height:8px; background:var(--slate-200); border-radius:4px; overflow:hidden; }
+.pv-card-bar > div { height:100%; border-radius:4px; }
+.pv-card-pct { font-size:0.78rem; font-weight:700; color:var(--blue-700); white-space:nowrap; }
+.pv-card-eval .btn { min-height:28px; padding:2px 10px; font-size:0.72rem; }
+.pv-card-body { padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.pv-card-body .pv-note { margin:-2px 0 0; }
 /* ── 進度記錄 — 按項目分組 ── */
 .pv-group { margin-bottom: 12px; }
 .pv-group-title {
@@ -484,9 +498,38 @@ body {
 .tpl-head { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
 .tpl-name { font-weight:700; font-size:0.85rem; color:#1e293b; }
 .tpl-loc { font-size:0.7rem; font-weight:600; color:var(--blue-700); background:var(--blue-50); padding:1px 8px; border-radius:10px; white-space:nowrap; }
+.tpl-steps-badge { font-size:0.7rem; font-weight:600; color:var(--slate-500); background:var(--slate-100); padding:1px 8px; border-radius:10px; white-space:nowrap; }
 .tpl-meta { font-size:0.72rem; color:var(--slate-500); }
 .tpl-actions { display:flex; gap:6px; }
 .tpl-actions .btn { min-height:32px; padding:4px 12px; font-size:0.75rem; }
+/* ── 模板卡片式展示（矩形，一行最多 4 個，點擊展開詳細工序）── */
+#templateListBody { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+#templateListBody > div:only-child { grid-column:1 / -1; }
+.tpl-item { border:1px solid var(--slate-200); border-radius:12px; background:white; box-shadow:var(--shadow); overflow:hidden; }
+.tpl-card-head { display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:12px 12px 8px; cursor:pointer; }
+.tpl-card-head:active { background:var(--slate-50); }
+.tpl-head-row { display:flex; align-items:center; gap:6px; }
+.tpl-head-row .tpl-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tpl-head-sub { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tpl-chev { color:var(--slate-400); font-size:0.9rem; transition:transform 0.15s; flex-shrink:0; }
+.tpl-item.open .tpl-chev { transform:rotate(180deg); }
+.tpl-card-meta { display:flex; flex-direction:column; gap:6px; padding:0 12px 10px; font-size:0.72rem; color:var(--slate-500); }
+.tpl-meta-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tpl-mini { display:flex; align-items:center; gap:6px; font-weight:600; width:100%; }
+.tpl-mini-bar { flex:1; height:7px; background:var(--slate-200); border-radius:4px; overflow:hidden; }
+.tpl-mini-bar > div { height:100%; border-radius:4px; }
+.tpl-card-body { display:none; border-top:1px dashed var(--slate-200); padding:12px; background:var(--slate-50); }
+.tpl-item.open .tpl-card-body { display:block; }
+.tpl-card-body .tpl-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px; }
+.tpl-card-body .tpl-actions .btn { width:100%; margin:0; }
+.tpl-step-chip { display:flex; align-items:center; gap:8px; background:white; border:1px solid var(--slate-200); border-radius:8px; padding:7px 10px; font-size:0.78rem; margin-bottom:6px; flex-wrap:wrap; }
+.tpl-step-chip .n { color:var(--slate-400); font-weight:700; min-width:18px; text-align:center; }
+.tpl-step-chip .nm { flex:1; font-weight:600; color:var(--slate-700); min-width:80px; }
+.tpl-step-chip .kw { font-size:0.7rem; color:var(--blue-700); background:var(--blue-50); padding:1px 8px; border-radius:10px; white-space:nowrap; }
+.tpl-step-chip .w { font-size:0.7rem; color:var(--slate-400); white-space:nowrap; }
+@media (max-width: 900px) { #templateListBody { grid-template-columns:repeat(3,1fr); } }
+@media (max-width: 700px) { #templateListBody { grid-template-columns:repeat(2,1fr); } }
+@media (max-width: 460px) { #templateListBody { grid-template-columns:1fr; } }
 .tpl-step { display:flex; align-items:center; gap:8px; padding:6px 8px; background:white; border:1px solid var(--slate-200); border-radius:8px; font-size:0.78rem; }
 .tpl-step input { min-width:0; }
 .tpl-step .tpl-step-name { flex:2; }
@@ -646,7 +689,7 @@ body {
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置行程</button>
+        <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置資料</button>
         <button class="btn btn-secondary btn-sm" onclick="showProgressOverview()">📊 項目進度概覽</button>
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
@@ -724,87 +767,42 @@ body {
     </div>
   </div>
 
-  <!-- Card: 進度記錄 -->
+  <!-- Card: 進度記錄 + 項目流程模板（合併） -->
   <div class="card" id="progressCard">
     <div class="card-header">
-      <h2>📊 進度記錄</h2>
-      <div style="display:flex;gap:8px">
-        <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
-          <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
-        </label>
-        <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()">📥 匯出 XLSX</button>
-      </div>
+      <h2>📊 項目進度</h2>
     </div>
     <div class="card-body">
-      <!-- 常駐輸入區 -->
-      <div class="pv-input-wrap">
-        <div class="form-row">
-          <div class="form-group"><label>📍 地點</label>
-            <select class="form-select" id="pvLocation" onchange="renderTplHint()"></select>
-          </div>
-          <div class="form-group"><label>🏷️ 項目</label>
-            <select class="form-select" id="pvProject" onchange="renderTplHint()"></select>
-          </div>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        撳「➕ 新增記錄」開彈窗記錄進度；將重複項目嘅工序存成模板（自動或手動），喺項目卡片撳「📊 評估」一鍵對照實際進度。
+      </div>
+      <!-- 模板區 -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">🗂️ 項目流程模板</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">點擊卡片展開工序</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-secondary" onclick="openTplGenerate()">📥 從記錄生成</button>
+          <button class="btn btn-sm btn-secondary" onclick="openTplEdit(null)">➕ 新增模板</button>
         </div>
-        <div id="tplHint" style="display:none;margin:-6px 0 10px;font-size:0.75rem;color:var(--slate-600);background:var(--blue-50);border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px"></div>
-        <div class="form-group"><label>📋 事項</label><input class="form-input" id="pvDesc" placeholder="例如：更換水泵零件"></div>
-        <div class="form-row">
-          <div class="form-group" style="flex:1.2">
-            <label>📈 完成度 <span id="pvPctLabel" class="pv-pct-label">0%</span></label>
-            <input type="range" id="pvPct" min="0" max="100" step="5" value="0" oninput="updatePvPctLabel()">
-            <div class="pv-ticks" id="pvTicks"></div>
-          </div>
-          <div class="form-group">
-            <label>🔢 數量</label>
-            <select class="form-select" id="pvQty" onchange="pvQtyChange()">
-              <option value="">—</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-            </select>
-          </div>
-          <div class="form-group"><label>狀態</label>
-            <select class="form-select" id="pvStatus">
-              <option value="待辦">⏳ 待辦</option>
-              <option value="進行中">🔄 進行中</option>
-              <option value="已完成">✅ 已完成</option>
-              <option value="已取消">❌ 已取消</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group"><label>備註</label><input class="form-input" id="pvNote" placeholder="備註（可留空）"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-primary" id="pvSaveBtn" onclick="saveProgressEntry()">✅ 儲存</button>
-          <button class="btn btn-secondary" id="pvCancelBtn" onclick="resetProgressForm()" style="display:none">↩️ 取消編輯</button>
+        <div id="templateListBody">
+          <div style="font-size:0.8rem;color:var(--slate-400)">未有模板 — 撳「📥 從記錄生成」用已有進度記錄建模板，或「➕ 新增模板」手動建立</div>
         </div>
       </div>
-      <div id="progressEvalBody" style="margin-top:14px">
-        <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Card: 項目流程模板 + 進度評估 -->
-  <div class="card" id="tplCard">
-    <div class="card-header">
-      <h2>🗂️ 項目流程模板</h2>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-sm btn-secondary" onclick="openTplGenerate()">📥 從記錄生成</button>
-        <button class="btn btn-sm btn-primary" onclick="openTplEdit(null)">➕ 新增模板</button>
-      </div>
-    </div>
-    <div class="card-body">
-      <div style="font-size:0.75rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        將重複項目嘅工序存成模板（自動或手動）；喺「📊 進度記錄」輸入或匯入記錄後，一鍵評估實際進度。
-      </div>
-      <div id="templateListBody">
-        <div style="font-size:0.8rem;color:var(--slate-400)">未有模板 — 撳「📥 從記錄生成」用已有進度記錄建模板，或「➕ 新增模板」手動建立</div>
+      <!-- 記錄區 -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 進度記錄</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-primary" onclick="openProgressEntryModal()">➕ 新增記錄</button>
+          <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
+            <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
+          </label>
+          <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()">📥 匯出 XLSX</button>
+        </div>
+        <div id="progressEvalBody">
+          <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄 — 撳「➕ 新增記錄」開始</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1170,6 +1168,81 @@ body {
   </div>
 </div>
 
+<!-- 進度記錄 新增/編輯 彈窗 -->
+<div class="modal-overlay" id="modalProgressEntry">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="progressEntryTitle">➕ 新增進度記錄</h3>
+      <button class="modal-close" onclick="closeProgressEntryModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>📍 地點</label>
+          <select class="form-select" id="pvLocation" onchange="renderTplHint()"></select>
+        </div>
+        <div class="form-group"><label>🏷️ 項目</label>
+          <select class="form-select" id="pvProject" onchange="renderTplHint()"></select>
+        </div>
+      </div>
+      <div id="tplHint" style="display:none;margin:-6px 0 10px;font-size:0.75rem;color:var(--slate-600);background:var(--blue-50);border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px"></div>
+      <div class="form-group"><label>📋 事項</label><input class="form-input" id="pvDesc" placeholder="例如：更換水泵零件"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1.2">
+          <label>📈 完成度 <span id="pvPctLabel" class="pv-pct-label">0%</span></label>
+          <input type="range" id="pvPct" min="0" max="100" step="5" value="0" oninput="updatePvPctLabel()">
+          <div class="pv-ticks" id="pvTicks"></div>
+        </div>
+        <div class="form-group">
+          <label>🔢 數量</label>
+          <select class="form-select" id="pvQty" onchange="pvQtyChange()">
+            <option value="">—</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+          </select>
+        </div>
+        <div class="form-group"><label>狀態</label>
+          <select class="form-select" id="pvStatus">
+            <option value="待辦">⏳ 待辦</option>
+            <option value="進行中">🔄 進行中</option>
+            <option value="已完成">✅ 已完成</option>
+            <option value="已取消">❌ 已取消</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>備註</label><input class="form-input" id="pvNote" placeholder="備註（可留空）"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeProgressEntryModal()">取消</button>
+      <button class="btn btn-primary" id="pvSaveBtn" onclick="saveProgressEntry()">✅ 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重置資料彈窗：揀資料範圍清除 -->
+<div class="modal-overlay" id="modalReset">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3>🔄 重置資料</h3><button class="modal-close" onclick="closeModal('modalReset')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:0.75rem;color:var(--slate-500);margin-bottom:10px;line-height:1.5">
+        揀要清除嘅資料範圍（可多選）。📌 待辦清單、🗂️ 流程模板、⚙️ 常用資料屬獨立儲存，唔受影響。
+      </div>
+      <div id="resetScopeList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="closeModal('modalReset')">取消</button>
+      <button class="btn btn-primary" onclick="resetClearSelected()">✅ 清除已選</button>
+      <button class="btn btn-danger" onclick="resetClearAll()">⚠️ 一鍵清除全部</button>
+    </div>
+  </div>
+</div>
+
 <!-- settings moved to inline card above -->
 
 <script>
@@ -1193,6 +1266,17 @@ const OUT_FIELDS = [
   {key:'location', label:'地點', wch:10},
   {key:'workType', label:'工種', wch:7},
   {key:'photos', label:'照片', wch:8}
+];
+// 重置資料範圍定義（放最頂，避免 const 提升順序問題）
+const RESET_SCOPES = [
+  { key:'tasks',      label:'📋 行程事項',   hint:'保留開工記錄' },
+  { key:'problems',   label:'📝 問題',       hint:'' },
+  { key:'attendance', label:'👥 人員考勤',   hint:'' },
+  { key:'followups',  label:'📌 待跟進',     hint:'連照片一齊刪' },
+  { key:'summary',    label:'💬 小復盤',     hint:'' },
+  { key:'top3',       label:'🎯 明日優先 TOP3', hint:'' },
+  { key:'progress',   label:'📊 進度記錄',   hint:'' },
+  { key:'photos',     label:'🖼️ 全部照片',  hint:'IndexedDB 行程＋待跟進相片' }
 ];
 
 // ── SAFE STORAGE（file:// 或 Firefox 下 localStorage 會拋 SecurityError，全部包 try-catch）──
@@ -3012,8 +3096,20 @@ function resetProgressForm(){
   pvQtyChange();
   const st = document.getElementById('pvStatus'); if(st) st.value = '待辦';
   const note = document.getElementById('pvNote'); if(note) note.value = '';
-  const cb = document.getElementById('pvCancelBtn'); if(cb) cb.style.display = 'none';
   const sb = document.getElementById('pvSaveBtn'); if(sb) sb.textContent = '✅ 儲存';
+}
+
+// 新增／編輯進度記錄 — 統一開彈窗（單一按鍵，慳位）
+function openProgressEntryModal(){
+  if(!log){ showToast('⚠️ 未開工'); return; }
+  resetProgressForm();
+  const title = document.getElementById('progressEntryTitle');
+  if(title) title.textContent = '➕ 新增進度記錄';
+  openModal('modalProgressEntry');
+}
+function closeProgressEntryModal(){
+  closeModal('modalProgressEntry');
+  resetProgressForm();
 }
 
 function saveProgressEntry(){
@@ -3039,7 +3135,7 @@ function saveProgressEntry(){
   } else {
     log.progress.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), loc, desc, pct, status, note, qty });
   }
-  saveData(); renderProgressEval(); resetProgressForm();
+  saveData(); renderProgressEval(); resetProgressForm(); closeModal('modalProgressEntry');
   showToast('✅ 已儲存進度');
 }
 
@@ -3061,11 +3157,11 @@ function editProgressEntry(id){
   updatePvPctLabel();
   document.getElementById('pvStatus').value = e.status || '待辦';
   document.getElementById('pvNote').value = e.note || '';
-  document.getElementById('pvCancelBtn').style.display = '';
-  document.getElementById('pvSaveBtn').textContent = '💾 更新';
-  const card = document.getElementById('progressCard');
-  if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
-  const desc = document.getElementById('pvDesc'); if(desc) desc.focus();
+  renderTplHint();
+  const title = document.getElementById('progressEntryTitle');
+  if(title) title.textContent = '✏️ 編輯進度記錄';
+  const sb = document.getElementById('pvSaveBtn'); if(sb) sb.textContent = '💾 更新';
+  openModal('modalProgressEntry');
 }
 
 function deleteProgressEntryById(id){
@@ -3082,33 +3178,42 @@ function renderProgressEval(){
   refreshProgressSelects();
   const entries = getProgressEntries().filter(e => e && e.desc);
   if(!entries.length){
-    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄，喺上面輸入後撳「✅ 儲存」</div>';
+    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄 — 撳「➕ 新增記錄」開彈窗記錄</div>';
     return;
   }
   const pvStatusCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
-  // 按「項目」分組 — 同項目唔同地點都歸埋一齊，反映同一項目嘅不同進度
+  // 按「項目」分組 — 同項目唔同地點都歸埋一齊
   const groups = {};
   entries.forEach(e => {
     const k = pvProjectKey(pvEntryKey(e));
     (groups[k] = groups[k] || []).push(e);
   });
   const groupKeys = Object.keys(groups).sort((a,b) => a.localeCompare(b, 'zh-Hant'));
-  let html = '<div class="pv-list">';
+  let html = '<div class="pv-card-grid">';
   groupKeys.forEach(k => {
     const list = groups[k];
-    html += `<div class="pv-group">
-      <div class="pv-group-title"><span>🏷️ ${escHtml(k)}</span><span class="pv-group-count">${list.length} 項</span></div>
-      <div class="pv-group-body">`;
-    list.forEach(e => {
+    // 卡片頭地點：全部同一地點先顯示
+    const locs = new Set(list.map(e => pvSplitLoc(pvEntryKey(e)).location).filter(Boolean));
+    const loc = locs.size === 1 ? [...locs][0] : '';
+    // 評估進度：有模板用模板對照，冇模板用記錄平均完成度
+    const tpl = findTemplateForProject(k, loc);
+    let overall = 0, barColor = 'var(--slate-300)';
+    if(tpl){
+      const r = evalTemplate(tpl);
+      overall = r.overall;
+    } else {
+      overall = Math.round(list.reduce((s,e)=>s+(Number(e.pct)||0),0) / list.length);
+    }
+    barColor = overall>=100 ? 'var(--green-500)' : overall>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    const tplIdAttr = tpl ? String(tpl.id).replace(/'/g,"\\'") : '';
+    const rows = list.map(e => {
       const pct = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
       const status = e.status || '待辦';
       const stCls = pvStatusCls(status);
       const idAttr = String(e.id).replace(/'/g,"\\'");
       const pctTxt = (e.pct!=null && e.pct!=='') ? Math.round(pct)+'%' : '—';
-      const locKey = pvEntryKey(e);
       const qtyTxt = e.qty ? `🔢 ×${escHtml(e.qty)}` : '';
-      html += `<div class="pv-row">
-        ${locKey?`<span class="pv-loc">📌 ${escHtml(locKey)}</span>`:''}
+      return `<div class="pv-row">
         <span class="pv-desc">${escHtml(e.desc||'')}</span>
         <span class="pv-status ${stCls}">${escHtml(status)}</span>
         <span class="pv-pct"><span class="pv-mini-bar ${pct>=100?'full':''}"><div style="width:${pct}%"></div></span>${pctTxt}</span>
@@ -3117,10 +3222,24 @@ function renderProgressEval(){
           <button class="pv-edit" onclick="editProgressEntry('${idAttr}')" title="編輯">✏️</button>
           <button class="pv-edit danger" onclick="deleteProgressEntryById('${idAttr}')" title="刪除">🗑️</button>
         </span>
-      </div>`;
-      if(e.note) html += `<div class="pv-note">📝 ${escHtml(e.note)}</div>`;
-    });
-    html += '</div></div>';
+      </div>${e.note?`<div class="pv-note">📝 ${escHtml(e.note)}</div>`:''}`;
+    }).join('');
+    html += `<div class="pv-card">
+      <div class="pv-card-head">
+        <div class="pv-card-title-row">
+          <span class="pv-card-name">🏷️ ${escHtml(k)}</span>
+          ${loc?`<span class="tpl-loc">📍 ${escHtml(loc)}</span>`:''}
+          <span class="pv-card-count">${list.length} 項</span>
+        </div>
+        <div class="pv-card-eval">
+          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">評估進度</span>
+          <span class="pv-card-bar"><div style="width:${Math.min(100,overall)}%;background:${barColor}"></div></span>
+          <span class="pv-card-pct">${overall}%</span>
+          ${tpl?`<button class="btn btn-sm btn-success" onclick="openTplEval('${tplIdAttr}')">📊 評估</button>`:''}
+        </div>
+      </div>
+      <div class="pv-card-body">${rows}</div>
+    </div>`;
   });
   html += '</div>';
   body.innerHTML = html;
@@ -3250,6 +3369,7 @@ const TPL_KEY = 'worklog_templates_v1';
 let tplEditId = null;
 let tplEditSteps = [];
 let tplEvalId = null;
+let tplExpanded = new Set(); // 卡片式模板：記住邊啲卡片展開咗
 
 function getTemplates(){
   const raw = lsGet(TPL_KEY);
@@ -3285,22 +3405,61 @@ function renderTemplates(){
     const steps = t.steps || [];
     const wSum = steps.reduce((s,x)=>s+(Number(x.weight)||0),0);
     const idAttr = String(t.id).replace(/'/g,"\\'");
-    return `<div class="tpl-item">
-      <div class="tpl-head">
-        <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    const open = tplExpanded.has(String(t.id)) ? ' open' : '';
+    const stepsHtml = steps.map((s,i)=>`<div class="tpl-step-chip">
+      <span class="n">${i+1}</span>
+      <span class="nm">${escHtml(s.name||'')}</span>
+      ${(s.kw||'')?`<span class="kw">🔑 ${escHtml(s.kw)}</span>`:''}
+      <span class="w">權重 ${Number(s.weight)||0}%</span>
+    </div>`).join('');
+    return `<div class="tpl-item${open}">
+      <div class="tpl-card-head" onclick="toggleTplExpand('${idAttr}')">
+        <div class="tpl-head-row">
           <span class="tpl-name">🏷️ ${escHtml(t.name||'未命名')}</span>
+          <span class="tpl-chev">▾</span>
+        </div>
+        <div class="tpl-head-sub">
           ${t.loc?`<span class="tpl-loc">📍 ${escHtml(t.loc)}</span>`:''}
-          <span class="tpl-meta">${steps.length} 工序 ｜ 權重 ${wSum}%</span>
-        </span>
-        <span class="tpl-actions">
-          <button class="btn btn-sm btn-success" onclick="openTplEval('${idAttr}')">📊 評估</button>
-          <button class="btn btn-sm btn-secondary" onclick="openTplEdit('${idAttr}')">✏️ 編輯</button>
-          <button class="btn btn-sm btn-secondary" onclick="deleteTpl('${idAttr}')">🗑️</button>
-        </span>
+          <span class="tpl-steps-badge">🧩 ${steps.length} 工序 ｜ ⚖️ ${wSum}%</span>
+        </div>
       </div>
-      ${t.note?`<div style="font-size:0.72rem;color:var(--slate-400);margin-top:4px">📝 ${escHtml(t.note)}</div>`:''}
+      <div class="tpl-card-body">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--slate-600);margin-bottom:6px">🧩 工序流程${t.loc?` ｜ 📍 ${escHtml(t.loc)}`:''}</div>
+        ${stepsHtml || '<div style="font-size:0.75rem;color:var(--slate-400)">未有工序</div>'}
+        ${t.note?`<div style="font-size:0.72rem;color:var(--slate-400);margin-top:8px">📝 ${escHtml(t.note)}</div>`:''}
+        <div class="tpl-actions">
+          <button class="btn btn-sm btn-secondary" onclick="openTplEdit('${idAttr}')">✏️ 編輯</button>
+          <button class="btn btn-sm btn-secondary" onclick="deleteTpl('${idAttr}')">🗑️ 刪除</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
+}
+
+// 點擊卡片頭部：展開／收起詳細工序
+function toggleTplExpand(id){
+  if(tplExpanded.has(String(id))) tplExpanded.delete(String(id));
+  else tplExpanded.add(String(id));
+  renderTemplates();
+}
+
+// 模板 → 快速開「新增記錄」彈窗，預填項目（地點）
+function tplQuickRecord(id){
+  if(!log){ showToast('⚠️ 未開工'); return; }
+  const t = getTemplates().find(x => String(x.id) === String(id));
+  if(!t) return;
+  openProgressEntryModal();
+  refreshProgressSelects();
+  const projSel = document.getElementById('pvProject');
+  if(t.name && !Array.from(projSel.options).some(o=>o.value===t.name)){
+    const opt = document.createElement('option');
+    opt.value = t.name; opt.textContent = t.name;
+    projSel.appendChild(opt);
+  }
+  if(t.name) projSel.value = t.name;
+  const locSel = document.getElementById('pvLocation');
+  if(t.loc && Array.from(locSel.options).some(o=>o.value===t.loc)) locSel.value = t.loc;
+  renderTplHint();
 }
 
 function tplLocOptions(selId, cur){
@@ -3619,13 +3778,90 @@ function deleteTaskFromEdit(){
   editIdx=-1;
 }
 
-// ── Reset Schedule ──
+// ── Reset：彈窗揀資料範圍清除 ──
+function resetScopeCount(key){
+  if(!log) return 0;
+  switch(key){
+    case 'tasks': return (log.tasks||[]).filter(t=>t.desc!=='開工'&&t.desc!=='收工').length;
+    case 'problems': return (log.problems||[]).length;
+    case 'attendance': return (log.attendance||[]).length;
+    case 'followups': return (log.followups||[]).length;
+    case 'summary': return (log.summary||'').trim() ? 1 : 0;
+    case 'top3': return (log.top3||[]).filter(x=>x&&x.trim()).length;
+    case 'progress': return (log.progress||[]).filter(e=>e&&e.desc).length;
+    case 'photos': {
+      let n = 0;
+      (log.tasks||[]).forEach(t=>{ n += (t.photos||[]).length; });
+      (log.followups||[]).forEach(f=>{ n += (f.photos||[]).length; });
+      return n;
+    }
+  }
+  return 0;
+}
+
 function resetSchedule(){
   if(!log||!log.tasks){showToast('⚠️ 請先開工');return;}
-  if(!confirm('確定重置行程？所有事項、備註、出勤記錄將被清空，只保留開工記錄。'))return;
-  log.tasks=[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
-  log.problems=[];log.attendance=[];log.followups=[];log.summary='';log.top3=['','',''];log.progress=[];
-  saveData();render();showToast('✅ 行程已重置');
+  const box = document.getElementById('resetScopeList');
+  if(!box) return;
+  box.innerHTML = RESET_SCOPES.map(s => {
+    const n = resetScopeCount(s.key);
+    const disabled = n === 0;
+    return `<label style="display:flex;align-items:center;gap:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;font-size:0.8rem;cursor:${disabled?'default':'pointer'};opacity:${disabled?0.55:1}">
+      <input type="checkbox" value="${s.key}" ${disabled?'disabled':''} style="width:18px;height:18px;flex-shrink:0">
+      <span style="flex:1">${s.label}${s.hint?` <span style="color:var(--slate-400);font-size:0.7rem">${s.hint}</span>`:''}</span>
+      <span style="color:var(--slate-400);font-size:0.72rem;white-space:nowrap">${n} ${s.key==='photos'?'張':'項'}</span>
+    </label>`;
+  }).join('');
+  openModal('modalReset');
+}
+
+function applyResetScopes(scopes){
+  const sc = new Set(scopes);
+  // 待跟進：先刪佢哋嘅照片（同單項刪除行為一致）
+  if(sc.has('followups') && (log.followups||[]).length){
+    log.followups.forEach(f => { (f.photos||[]).forEach(id => deletePhotoFromDB(id).catch(()=>{})); });
+  }
+  // 行程事項：保留開工記錄
+  if(sc.has('tasks')){
+    log.tasks = [{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
+  }
+  if(sc.has('problems')) log.problems = [];
+  if(sc.has('attendance')) log.attendance = [];
+  if(sc.has('followups')) log.followups = [];
+  if(sc.has('summary')) log.summary = '';
+  if(sc.has('top3')) log.top3 = ['','',''];
+  if(sc.has('progress')) log.progress = [];
+  // 全部照片：清 IndexedDB ＋ 清走殘留引用
+  if(sc.has('photos')){
+    clearAllPhotosFromDB();
+    (log.tasks||[]).forEach(t => { if(t.photos&&t.photos.length){ t.photos=[]; t.photoStatus='無照片'; } });
+    (log.followups||[]).forEach(f => { if(f.photos) f.photos=[]; });
+  }
+  saveData(); render(); closeModal('modalReset');
+  showToast('✅ 已清除所選資料');
+}
+
+function resetClearSelected(){
+  const checked = Array.from(document.querySelectorAll('#resetScopeList input[type=checkbox]:checked')).map(cb => cb.value);
+  if(!checked.length){ showToast('⚠️ 請至少揀一個範圍'); return; }
+  if(!confirm('確定清除已揀嘅資料範圍？此操作無法復原。')) return;
+  applyResetScopes(checked);
+}
+
+function resetClearAll(){
+  if(!confirm('確定清除全部資料？包括行程、問題、考勤、待跟進、小復盤、TOP3、進度記錄同所有照片。\n此操作無法復原！')) return;
+  applyResetScopes(RESET_SCOPES.map(s => s.key));
+}
+
+function clearAllPhotosFromDB(){
+  initPhotoDB().then(db => {
+    return new Promise(resolve => {
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      const req = tx.objectStore(DB_STORE).clear();
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+    });
+  }).catch(()=>{});
 }
 
 // ── KEYBOARD SHORTCUTS ──
