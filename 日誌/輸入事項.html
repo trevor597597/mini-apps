@@ -706,6 +706,21 @@ body {
     </div>
   </div>
 
+  <!-- Card: 項目進度（自動跟蹤行程事項，地點 → 項目 → 工種 三級；獨立快照儲存，換日／重置唔會清） -->
+  <div class="card" id="projectProgressCard">
+    <div class="card-header">
+      <h2>📊 項目進度</h2>
+    </div>
+    <div class="card-body">
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        自動跟蹤行程頁事項，按 <b>地點 → 項目 → 工種</b> 三級分組即時更新；冇填項目嘅事項會按地點自動歸入項目記錄嘅項目。進度資料獨立保存，換日／重置後仍可回顧。
+      </div>
+      <div id="projectProgressBody">
+        <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Card: 進度記錄 -->
   <div class="card" id="progressCard">
     <div class="card-header">
@@ -1406,7 +1421,7 @@ function render() {
   document.getElementById('statTasks').textContent=log.tasks.length;
   document.getElementById('statPhotos').textContent=log.tasks.reduce((s,t)=>s+(t.photos?t.photos.length:0),0);
   document.getElementById('statStatus').textContent=log.tasks.some(t=>t.desc==='收工')?'✅ 已收工':'🔄 進行中';
-  renderProgressSummary(); renderCategoryMatrix(); renderNotes(); refreshPreview(); refreshSettingsInputs(); renderProgressEval();
+  renderProgressSummary(); renderCategoryMatrix(); renderNotes(); refreshPreview(); refreshSettingsInputs(); renderProgressEval(); renderProjectProgressArea();
 }
 
 function renderTaskList() {
@@ -2835,6 +2850,198 @@ function pvEntryKey(e){
 function pvProjectKey(loc){
   const sp = pvSplitLoc(loc);
   return (sp.project || loc || '未分類');
+}
+
+// ── 資訊頁「項目進度」三級分組快照（獨立儲存，唔跟 log 重置／換日）— 2026-08-11 改
+const PROJ_PROGRESS_KEY = 'worklog_proj_progress_v1';
+function getProjProgressSnapshot(){
+  const raw = lsGet(PROJ_PROGRESS_KEY);
+  if(raw){ try{ const s = JSON.parse(raw); if(s && Array.isArray(s.tasks)) return s; }catch(e){} }
+  return null;
+}
+function saveProjProgressSnapshot(dateStr, tasks){
+  const snap = { savedAt: dateStr || '', tasks: (tasks||[]).map(t => Object.assign({}, t)) };
+  lsSet(PROJ_PROGRESS_KEY, JSON.stringify(snap));
+}
+
+// ── 項目追蹤：項目記錄做參考 ──
+// 參考項目：項目記錄（log.progress）→ 項目名 → 地點集合
+function pvRefProjects(){
+  const ref = {};
+  (getProgressEntries()||[]).forEach(e => {
+    const sp = pvSplitLoc(pvEntryKey(e));
+    const name = sp.project || pvEntryKey(e) || '未分類';
+    if(!ref[name]) ref[name] = { locs: new Set() };
+    if(sp.location) ref[name].locs.add(sp.location);
+  });
+  return ref;
+}
+// 動態歸屬：事項 → 項目（直接項目名優先；否則地點匹配項目記錄）
+function pvTaskProject(t, ref){
+  if(t && t.project && t.project !== '—') return t.project;
+  if(t && t.location && t.location !== '—'){
+    const r = ref || pvRefProjects();
+    for(const name in r){
+      if(r[name].locs.has(t.location)) return name;
+    }
+  }
+  return '';
+}
+
+// ── 事項文字抽進度：由 desc 數字關鍵字（%／分數／成）→ 0-100；冇數字就按狀態 ──
+function pvTaskPct(t){
+  if(!t) return 0;
+  // 0) 數量欄位（已完成/需完成）優先 — 待辦事項用數量計進度
+  if(t.qtyTotal && Number(t.qtyTotal) > 0){
+    const done = Number(t.qtyDone) || 0;
+    return Math.max(0, Math.min(100, Math.round(done / Number(t.qtyTotal) * 100)));
+  }
+  const d = t.desc || '';
+  const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+  // 1) 百分比：50% / 80％
+  let m = d.match(/(\d+(?:\.\d+)?)\s*[%％]/);
+  if(m) return clamp(parseFloat(m[1]));
+  // 2) 分數（防日期誤判：要有動詞前綴或單位後綴）：完成2/4、3/5個
+  m = d.match(/(?:完成|完成咗|做到|做咗|換咗|裝咗|檢查咗|搞掂|剩返|剩餘|仲有|已做)\s*(\d+)\s*[\/／]\s*(\d+)/);
+  if(m){ const a=+m[1], b=+m[2]; if(b>0 && a<=b) return clamp(a/b*100); }
+  m = d.match(/(\d+)\s*[\/／]\s*(\d+)\s*(?:個|件|項|隻|條|處|點|次|部|台|樽|箱|袋|支|塊|組|套|扇|門|窗|掣|閥|泵|燈|喉|位|層|樓|間|張|把|架)/);
+  if(m){ const a=+m[1], b=+m[2]; if(b>0 && a<=b) return clamp(a/b*100); }
+  // 3) 成（七成／8成／九成）：N成 = N×10%
+  const cn = {'零':0,'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
+  m = d.match(/([零一二兩三四五六七八九十\d]+)\s*成/);
+  if(m){
+    let n; const s = m[1];
+    if(/^\d+$/.test(s)) n = parseInt(s,10);
+    else { n = 0; for(const ch of s) n += cn[ch] || 0; }
+    if(n > 0 && n <= 10) return clamp(n*10);
+  }
+  // 4) 兜底：按狀態
+  return t.status === '已完成' ? 100 : 0;
+}
+// 群組平均進度：數字關鍵字優先，冇數字嘅事項按狀態兜底
+function pvGroupPct(tasks){
+  if(!tasks || !tasks.length) return 0;
+  return Math.round(tasks.reduce((s,t)=>s+pvTaskPct(t),0) / tasks.length);
+}
+// 有數字關鍵字先顯示標籤（等用戶確認偵測到）
+function pvTaskNumTag(t){
+  if(!t) return '';
+  const d = t.desc || '';
+  const hasNum = /(\d+(?:\.\d+)?)\s*[%％]/.test(d)
+    || /(?:完成|完成咗|做到|做咗|換咗|裝咗|檢查咗|搞掂|剩返|剩餘|仲有|已做)\s*\d+\s*[\/／]\s*\d+/.test(d)
+    || /\d+\s*[\/／]\s*\d+\s*(?:個|件|項|隻|條|處|點|次|部|台|樽|箱|袋|支|塊|組|套|扇|門|窗|掣|閥|泵|燈|喉|位|層|樓|間|張|把|架)/.test(d)
+    || /([零一二兩三四五六七八九十\d]+)\s*成/.test(d);
+  if(!hasNum) return '';
+  return `<span style="display:inline-block;background:#eef2ff;color:#4f46e5;border-radius:4px;padding:0 4px;font-size:0.66rem;white-space:nowrap">📈 ${pvTaskPct(t)}%</span>`;
+}
+
+// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級：地點 → 項目 → 工種 ──
+function renderProjectProgressArea(){
+  const body = document.getElementById('projectProgressBody');
+  if(!body) return;
+  // 優先即時資料；換日／重置後 log.tasks 冇嘢 → fallback 上次獨立快照
+  let workTasks = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
+  let snap = null;
+  if(!workTasks.length){
+    snap = getProjProgressSnapshot();
+    if(snap && snap.tasks && snap.tasks.length) workTasks = snap.tasks;
+  }
+  if(!workTasks.length){
+    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>';
+    return;
+  }
+  const fromSnapshot = !!snap;
+  if(fromSnapshot) snap.tasks = workTasks; // 統一後續引用
+  const ref = pvRefProjects();
+  const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
+  const wtIcon = {'維修':'🔧','檢查':'🔍','落貨':'🚚','助手':'🤝','安裝':'🛠️','搬運':'📦','焊接':'⚡','除銹':'🧽'};
+  const stCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
+  const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
+  // 第一級：地點
+  const locGroups = {};
+  workTasks.forEach(t => {
+    const lk = t.location && t.location!=='—' ? t.location : '其他';
+    (locGroups[lk] = locGroups[lk] || []).push(t);
+  });
+  let totalT = 0, totalD = 0;
+  let html = '';
+  Object.keys(locGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).forEach(lk => {
+    const ltasks = locGroups[lk];
+    const lDone = ltasks.filter(t=>t.status==='已完成').length;
+    const lPct = pvGroupPct(ltasks);
+    totalT += ltasks.length; totalD += lDone;
+    // 第二級：項目（項目記錄做參考，動態歸屬）
+    const projGroups = {};
+    ltasks.forEach(t => {
+      const pk = pvTaskProject(t, ref) || '未分類';
+      (projGroups[pk] = projGroups[pk] || []).push(t);
+    });
+    const projHtml = Object.keys(projGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(pk => {
+      const ptasks = projGroups[pk];
+      const pDone = ptasks.filter(t=>t.status==='已完成').length;
+      const pPct = pvGroupPct(ptasks);
+      // 第三級：工種
+      const wtGroups = {};
+      ptasks.forEach(t => {
+        const wk = t.workType && t.workType!=='—' ? t.workType : '未分類';
+        (wtGroups[wk] = wtGroups[wk] || []).push(t);
+      });
+      const wtHtml = Object.keys(wtGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(wk => {
+        const wtasks = wtGroups[wk];
+        const wDone = wtasks.filter(t=>t.status==='已完成').length;
+        const wPct = pvGroupPct(wtasks);
+        const rows = wtasks.map(t => `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.75rem">
+          <span style="min-width:16px">${icon[t.status]||'❓'}</span>
+          <span style="flex:1;color:var(--slate-700)">${escHtml(t.desc)}</span>
+          ${pvTaskNumTag(t)}
+          <span class="pv-status ${stCls(t.status)}">${escHtml(t.status)}</span>
+          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${escHtml(t.timeRange||'')}</span>
+        </div>`).join('');
+        return `<div style="margin:3px 0 0">
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;font-weight:600;color:var(--slate-600);padding:2px 0">
+            <span>${wtIcon[wk]||'🔨'} ${escHtml(wk)}</span>
+            <span style="font-weight:400;color:var(--slate-400)">${wDone}/${wtasks.length}（${wPct}%）</span>
+          </div>
+          ${rows}
+        </div>`;
+      }).join('');
+      return `<div style="margin:6px 0 0;padding-left:10px;border-left:2px solid var(--slate-200)">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:0.75rem;font-weight:700;color:var(--blue-800);padding:2px 0">
+          <span>🏷️ ${escHtml(pk)}</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">${pDone}/${ptasks.length}（${pPct}%）</span>
+        </div>
+        ${wtHtml}
+      </div>`;
+    }).join('');
+    const lBarColor = lPct>=100 ? 'var(--green-500)' : lPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    html += `<div style="border:1px solid var(--slate-200);border-radius:10px;background:white;box-shadow:var(--shadow);overflow:hidden;margin-bottom:10px">
+      <div style="padding:8px 12px;background:var(--slate-50);border-bottom:1px solid var(--slate-200)">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:0.82rem;color:#1e293b">📍 ${escHtml(lk)}</span>
+          <span style="font-size:0.7rem;color:var(--slate-400)">${ltasks.length} 項</span>
+          <span style="flex:1"></span>
+          <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${lDone}/${ltasks.length}</span>
+          <span style="font-size:0.75rem;font-weight:700;color:${pctColor(lPct)}">${lPct}%</span>
+        </div>
+        <div style="margin-top:4px"><div style="height:6px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div></div>
+      </div>
+      <div style="padding:8px 12px">${projHtml}</div>
+    </div>`;
+  });
+  const totalPct = pvGroupPct(workTasks);
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
+    <span style="color:var(--slate-600)">共 <b>${Object.keys(locGroups).length}</b> 個地點 ｜ <b>${totalT}</b> 項事項</span>
+    <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
+  </div>`;
+  if(fromSnapshot){
+    const savedAt = snap && snap.savedAt ? snap.savedAt : '';
+    html = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + html;
+  }
+  body.innerHTML = html;
+  // 即時資料 → 更新獨立快照（換日／重置後仍可睇返）
+  if(!fromSnapshot && log && log.dateStr){
+    saveProjProgressSnapshot(log.dateStr, workTasks);
+  }
 }
 
 function refreshProgressSelects(){
