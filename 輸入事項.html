@@ -483,6 +483,13 @@ body {
 .pv-card-tasks { border-top:1px dashed var(--slate-200); }
 .pv-card-tasks-head { display:flex; justify-content:space-between; align-items:center; padding:8px 12px 4px; font-size:0.75rem; font-weight:700; color:var(--slate-600); }
 .pv-card-tasks-head span { font-weight:400; color:var(--slate-400); font-size:0.7rem; }
+/* ── 項目進度（資訊頁）：三級分級 地點 → 項目 → 事項 ── */
+.pp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; }
+.pp-loc { font-size:0.68rem; font-weight:600; color:var(--slate-600); background:var(--slate-100); padding:1px 7px; border-radius:10px; white-space:nowrap; }
+.pp-wt-head { display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--slate-600); padding:6px 0 2px; }
+.pp-wt-head:first-child { padding-top:0; }
+.pp-loc-sec { border:1px solid var(--slate-200); border-radius:12px; padding:10px 12px; margin-bottom:12px; background:var(--slate-50); }
+.pp-loc-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 /* ── 進度記錄 — 按項目分組 ── */
 .pv-group { margin-bottom: 12px; }
 .pv-group-title {
@@ -775,15 +782,15 @@ body {
     </div>
   </div>
 
-  <!-- Card: 項目進度（自動跟蹤行程事項，地點 → 項目 → 工種 三級） -->
+  <!-- Card: 項目進度（自動跟蹤行程事項，分級 地點 → 項目 → 事項，項目由項目記錄讀取） -->
   <div class="card" id="projectProgressCard">
     <div class="card-header">
       <h2>📊 項目進度</h2>
-      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項按 項目→地點→工種 分組，寫入項目記錄卡片">🔄 更新進度</button>
+      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（地點＋項目＋事項）">🔄 更新進度</button>
     </div>
     <div class="card-body">
       <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        自動跟蹤行程頁事項，按 <b>地點 → 項目 → 工種</b> 三級分組即時更新；冇填項目嘅事項會按地點自動歸入項目記錄嘅項目。
+        資料分級 <b>地點 → 項目 → 事項</b> 三級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 地點＋項目＋事項。
       </div>
       <div id="projectProgressBody">
         <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
@@ -1754,70 +1761,52 @@ function renderProgressSummary() {
   el.style.display='block';
   const ref = pvRefProjects();
   const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
-  // 第一級：地點
-  const locGroups = {};
+  const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
+  // 第一級：項目 — 每個項目一張小卡（動態歸屬，冇匹配落「未分類」）
+  const projGroups = {};
   workTasks.forEach(t => {
-    const lk = t.location && t.location!=='—' ? t.location : '其他';
-    (locGroups[lk] = locGroups[lk] || []).push(t);
+    const pk = pvTaskProject(t, ref) || '未分類';
+    (projGroups[pk] = projGroups[pk] || []).push(t);
   });
   let totalT=0, totalD=0;
-  let card = `<div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;font-size:0.78rem">
-    <div style="font-weight:600;color:var(--slate-600);margin-bottom:8px">📍 工程進度</div>`;
-  const locKeys = Object.keys(locGroups);
-  locKeys.sort((a,b)=>a.localeCompare(b,'zh-Hant')).forEach((lk,li)=>{
-    const ltasks = locGroups[lk];
-    const lDone = ltasks.filter(t=>t.status==='已完成').length;
-    const lPct = pvGroupPct(ltasks);
-    totalT+=ltasks.length; totalD+=lDone;
-    // 第二級：項目（項目記錄做參考，動態歸屬）
-    const projGroups = {};
-    ltasks.forEach(t => {
-      const pk = pvTaskProject(t, ref) || '未分類';
-      (projGroups[pk] = projGroups[pk] || []).push(t);
-    });
-    const projHtml = Object.keys(projGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(pk => {
-      const ptasks = projGroups[pk];
-      const pDone = ptasks.filter(t=>t.status==='已完成').length;
-      const pPct = pvGroupPct(ptasks);
-      // 第三級：工種
-      const wtGroups = {};
-      ptasks.forEach(t => {
-        const wk = t.workType && t.workType!=='—' ? t.workType : '未分類';
-        (wtGroups[wk] = wtGroups[wk] || []).push(t);
-      });
-      const wtHtml = Object.keys(wtGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(wk => {
-        const wtasks = wtGroups[wk];
-        const wDone = wtasks.filter(t=>t.status==='已完成').length;
-        const wPct = pvGroupPct(wtasks);
-        const chips = wtasks.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${icon[t.status]||'❓'} ${escHtml(t.desc)}${pvTaskNumTag(t)}</span>`).join('');
-        return `<div style="padding:1px 0 0 12px">
-          <span style="color:var(--slate-500);font-size:0.7rem">🔧 ${escHtml(wk)} ${wDone}/${wtasks.length}（${wPct}%）</span><br>${chips||'<span style="color:var(--slate-400);font-size:0.68rem">—</span>'}
-        </div>`;
-      }).join('');
-      return `<div style="padding:1px 0 1px 12px">
-        <span style="color:var(--blue-800);font-weight:500;font-size:0.72rem">🏷️ ${escHtml(pk)} ${pDone}/${ptasks.length}（${pPct}%）</span>
-        ${wtHtml}
-      </div>`;
-    }).join('');
-    const lBarColor = lPct===100 ? 'var(--green-500)' : lPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
-    card += `<div style="margin-bottom:${li<locKeys.length-1?'6px':'0'};padding:4px 0;border-bottom:${li<locKeys.length-1?'1px dashed var(--slate-200)':'none'}">
-      <div style="font-weight:500;color:var(--blue-800);margin-bottom:2px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">📍 ${escHtml(lk)} <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">${lDone}/${ltasks.length}</span></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:1px 0 1px 12px;font-size:0.72rem">
-        <div style="flex:1;height:6px;background:var(--slate-200);border-radius:3px;max-width:100px"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div>
-        <span style="color:var(--slate-400);min-width:30px;text-align:right">${lPct}%</span>
-      </div>
-      ${projHtml}
-    </div>`;
+  const projKeys = Object.keys(projGroups).sort((a,b)=>{
+    if(a==='未分類') return 1;
+    if(b==='未分類') return -1;
+    return a.localeCompare(b,'zh-Hant');
   });
+  const blocks = projKeys.map(pk => {
+    const ptasks = projGroups[pk];
+    const pDone = ptasks.filter(t=>t.status==='已完成').length;
+    const pPct = pvGroupPct(ptasks);
+    totalT+=ptasks.length; totalD+=pDone;
+    const locs = [...new Set(ptasks.map(t => (t.location && t.location!=='—') ? t.location : '').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+    const chips = ptasks.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${icon[t.status]||'❓'} ${escHtml(t.desc)}${pvTaskNumTag(t)}</span>`).join('');
+    const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    return `<div style="border:1px solid var(--slate-200);border-radius:8px;background:#fff;padding:6px 10px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-weight:600;color:var(--blue-800);font-size:0.74rem">🏷️ ${escHtml(pk)}</span>
+        ${locs.map(l=>`<span class="pp-loc">📍 ${escHtml(l)}</span>`).join('')}
+        <span style="flex:1"></span>
+        <span style="font-size:0.68rem;color:var(--slate-400)">${pDone}/${ptasks.length}</span>
+        <span style="font-size:0.72rem;font-weight:700;color:${pctColor(pPct)}">${pPct}%</span>
+      </div>
+      <div style="margin-top:3px"><div style="height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${pPct}%;height:100%;background:${barColor};border-radius:3px"></div></div></div>
+      <div style="margin-top:4px">${chips}</div>
+    </div>`;
+  }).join('');
   const totalPct = pvGroupPct(workTasks);
-  card += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;font-size:0.72rem;color:var(--slate-500)">
-    <span>合計：${totalD}/${totalT} 項完成</span>
-    <span style="color:${totalPct===100?'var(--green-600)':'var(--orange-500)'}">${totalPct}% 進度</span>
-  </div></div>`;
+  let card = `<div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;font-size:0.78rem">
+    <div style="font-weight:600;color:var(--slate-600);margin-bottom:8px">📍 工程進度</div>
+    ${blocks}
+    <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;font-size:0.72rem;color:var(--slate-500)">
+      <span>合計：${totalD}/${totalT} 項完成</span>
+      <span style="color:${totalPct===100?'var(--green-600)':'var(--orange-500)'}">${totalPct}% 進度</span>
+    </div>
+  </div>`;
   el.innerHTML = card;
 }
 
-// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級：地點 → 項目 → 工種 ──
+// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級 地點 → 項目 → 事項，項目由項目記錄讀取 ──
 function renderProjectProgressArea(){
   const body = document.getElementById('projectProgressBody');
   if(!body) return;
@@ -1828,105 +1817,123 @@ function renderProjectProgressArea(){
     snap = getProjProgressSnapshot();
     if(snap && snap.tasks && snap.tasks.length) workTasks = snap.tasks;
   }
-  if(!workTasks.length){
-    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>';
-    return;
-  }
+  const entries = getProgressEntries().filter(e => e && e.desc); // 項目記錄：分級第二級「項目」嘅來源
   const fromSnapshot = !!snap;
-  if(fromSnapshot) snap.tasks = workTasks; // 統一後續引用
+  if(fromSnapshot && snap) snap.tasks = workTasks; // 統一後續引用
   const ref = pvRefProjects();
   const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
   const wtIcon = {'維修':'🔧','檢查':'🔍','落貨':'🚚','助手':'🤝','安裝':'🛠️','搬運':'📦','焊接':'⚡','除銹':'🧽'};
   const stCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
   const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
-  // 第一級：地點
-  const locGroups = {};
-  workTasks.forEach(t => {
-    const lk = t.location && t.location!=='—' ? t.location : '其他';
-    (locGroups[lk] = locGroups[lk] || []).push(t);
-  });
-  let totalT = 0, totalD = 0;
+  const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
+  const sortZh = (a,b)=>a.localeCompare(b,'zh-Hant');
+  // 第一級：地點（行程事項 ∪ 項目記錄）
+  const locSet = new Set();
+  workTasks.forEach(t => locSet.add(locOf(t)));
+  entries.forEach(e => { const sp = pvSplitLoc(pvEntryKey(e)); if(sp.location) locSet.add(sp.location); });
+  let totalT = 0, totalD = 0, totalProj = 0;
   let html = '';
-  Object.keys(locGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).forEach(lk => {
-    const ltasks = locGroups[lk];
+  [...locSet].sort(sortZh).forEach(lk => {
+    const ltasks = workTasks.filter(t => locOf(t) === lk);
     const lDone = ltasks.filter(t=>t.status==='已完成').length;
     const lPct = pvGroupPct(ltasks);
     totalT += ltasks.length; totalD += lDone;
-    // 第二級：項目（項目記錄做參考，動態歸屬）
-    const projGroups = {};
+    // 第二級：項目 — 由項目記錄（此地點）讀取，事項按 pvTaskProject 動態歸入
+    const projMap = {};
     ltasks.forEach(t => {
-      const pk = pvTaskProject(t, ref) || '未分類';
-      (projGroups[pk] = projGroups[pk] || []).push(t);
+      const pk = pvTaskProject(t, ref) || '未分類項目';
+      if(!projMap[pk]) projMap[pk] = { tasks: [], records: [] };
+      projMap[pk].tasks.push(t);
     });
-    const projHtml = Object.keys(projGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(pk => {
-      const ptasks = projGroups[pk];
+    entries.forEach(e => {
+      const sp = pvSplitLoc(pvEntryKey(e));
+      if(sp.location !== lk) return;
+      const pk = sp.project || '未分類項目';
+      if(!projMap[pk]) projMap[pk] = { tasks: [], records: [] };
+      projMap[pk].records.push(e);
+    });
+    totalProj += Object.keys(projMap).length;
+    const projKeys = Object.keys(projMap).sort((a,b)=>{
+      if(a==='未分類項目') return 1;
+      if(b==='未分類項目') return -1;
+      return sortZh(a,b);
+    });
+    const cardsHtml = projKeys.map(pk => {
+      const g = projMap[pk];
+      const ptasks = g.tasks;
       const pDone = ptasks.filter(t=>t.status==='已完成').length;
-      const pPct = pvGroupPct(ptasks);
-      // 第三級：工種
-      const wtGroups = {};
-      ptasks.forEach(t => {
-        const wk = t.workType && t.workType!=='—' ? t.workType : '未分類';
-        (wtGroups[wk] = wtGroups[wk] || []).push(t);
-      });
-      const wtHtml = Object.keys(wtGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(wk => {
-        const wtasks = wtGroups[wk];
-        const wDone = wtasks.filter(t=>t.status==='已完成').length;
-        const wPct = pvGroupPct(wtasks);
-        const rows = wtasks.map(t => `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.75rem">
-          <span style="min-width:16px">${icon[t.status]||'❓'}</span>
-          <span style="flex:1;color:var(--slate-700)">${escHtml(t.desc)}</span>
-          ${pvTaskNumTag(t)}
-          <span class="pv-status ${stCls(t.status)}">${escHtml(t.status)}</span>
-          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${escHtml(t.timeRange||'')}</span>
-        </div>`).join('');
-        return `<div style="margin:3px 0 0">
-          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;font-weight:600;color:var(--slate-600);padding:2px 0">
-            <span>${wtIcon[wk]||'🔨'} ${escHtml(wk)}</span>
-            <span style="font-weight:400;color:var(--slate-400)">${wDone}/${wtasks.length}（${wPct}%）</span>
-          </div>
-          ${rows}
+      const hasTasks = ptasks.length>0;
+      const pPct = hasTasks ? pvGroupPct(ptasks)
+        : (g.records.length ? Math.round(g.records.reduce((s,e)=>s+(Number(e.pct)||0),0)/g.records.length) : 0);
+      // 第三級：事項 — 今日事項行（動態追蹤）＋ 項目記錄行（自動記錄＝事項快照，有今日事項時唔重複顯示）
+      const tRows = ptasks.map(t => `<div class="pv-row" style="background:transparent;padding:2px 0">
+        <span style="font-size:0.78rem;min-width:16px">${icon[t.status]||'❓'}</span>
+        <span class="pv-desc" style="font-size:0.78rem">${escHtml(t.desc)}</span>
+        ${t.workType && t.workType!=='—' ? `<span style="font-size:0.65rem;color:var(--slate-500);background:var(--slate-100);border-radius:8px;padding:0 6px;white-space:nowrap">${wtIcon[t.workType]||'🔨'}${escHtml(t.workType)}</span>` : ''}
+        ${pvTaskNumTag(t)}
+        <span class="pv-status ${stCls(t.status)}">${escHtml(t.status)}</span>
+        <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${escHtml(t.timeRange||'')}</span>
+      </div>`).join('');
+      let recs = g.records.filter(r => !r.auto);
+      if(!ptasks.length && !recs.length) recs = g.records; // 記錄項目（今日冇事項）→ 顯示記錄資料
+      const rRows = recs.map(r => {
+        const rp = (r.pct!=null && r.pct!=='') ? Math.round(Number(r.pct)) : null;
+        return `<div class="pv-row" style="background:transparent;padding:2px 0;opacity:0.8">
+          <span style="font-size:0.78rem">📊</span>
+          <span class="pv-desc" style="font-size:0.78rem">${escHtml(r.desc||'')}${r.note?`（${escHtml(r.note)}）`:''}</span>
+          <span class="pv-status ${stCls(r.status||'待辦')}">${escHtml(r.status||'待辦')}</span>
+          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${rp!=null?rp+'%':''}${r.qty?` ×${escHtml(r.qty)}`:''}</span>
         </div>`;
       }).join('');
-      return `<div style="margin:6px 0 0;padding-left:10px;border-left:2px solid var(--slate-200)">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:0.75rem;font-weight:700;color:var(--blue-800);padding:2px 0">
-          <span>🏷️ ${escHtml(pk)}</span>
-          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">${pDone}/${ptasks.length}（${pPct}%）</span>
+      const bodyRows = tRows + rRows;
+      const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+      return `<div class="pv-card">
+        <div class="pv-card-head">
+          <div class="pv-card-title-row">
+            <span class="pv-card-name">🏷️ ${escHtml(pk)}</span>
+            <span class="pv-card-count">${hasTasks ? ptasks.length+' 項' : '記錄 '+g.records.length}</span>
+          </div>
+          <div class="pv-card-eval">
+            <span class="pv-card-bar"><div style="width:${Math.min(100,pPct)}%;background:${barColor}"></div></span>
+            <span class="pv-card-pct" style="color:${pctColor(pPct)}">${hasTasks ? `${pDone}/${ptasks.length} ${pPct}%` : `📊 ${pPct}%`}</span>
+          </div>
         </div>
-        ${wtHtml}
+        <div class="pv-card-body">${bodyRows || '<div style="font-size:0.72rem;color:var(--slate-400)">今日冇事項</div>'}</div>
       </div>`;
     }).join('');
     const lBarColor = lPct>=100 ? 'var(--green-500)' : lPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
-    html += `<div style="border:1px solid var(--slate-200);border-radius:10px;background:white;box-shadow:var(--shadow);overflow:hidden;margin-bottom:10px">
-      <div style="padding:8px 12px;background:var(--slate-50);border-bottom:1px solid var(--slate-200)">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-weight:700;font-size:0.82rem;color:#1e293b">📍 ${escHtml(lk)}</span>
-          <span style="font-size:0.7rem;color:var(--slate-400)">${ltasks.length} 項</span>
-          <span style="flex:1"></span>
-          <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${lDone}/${ltasks.length}</span>
-          <span style="font-size:0.75rem;font-weight:700;color:${pctColor(lPct)}">${lPct}%</span>
-        </div>
-        <div style="margin-top:4px"><div style="height:6px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div></div>
+    html += `<div class="pp-loc-sec">
+      <div class="pp-loc-head">
+        <span style="font-weight:700;font-size:0.82rem;color:#1e293b">📍 ${escHtml(lk)}</span>
+        <span style="font-size:0.7rem;color:var(--slate-400)">${ltasks.length} 項</span>
+        <span style="flex:1"></span>
+        <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${lDone}/${ltasks.length}</span>
+        <span style="font-size:0.75rem;font-weight:700;color:${pctColor(lPct)}">${lPct}%</span>
       </div>
-      <div style="padding:8px 12px">${projHtml}</div>
+      <div style="margin:4px 0 8px"><div style="height:6px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div></div>
+      <div class="pp-grid">${cardsHtml}</div>
     </div>`;
   });
   const totalPct = pvGroupPct(workTasks);
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
-    <span style="color:var(--slate-600)">共 <b>${Object.keys(locGroups).length}</b> 個地點 ｜ <b>${totalT}</b> 項事項</span>
-    <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
-  </div>`;
+  let out = html;
+  if(out){
+    out += `<div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
+      <span style="color:var(--slate-600)">共 <b>${locSet.size}</b> 個地點 ｜ <b>${totalProj}</b> 個項目 ｜ <b>${totalT}</b> 項事項</span>
+      <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
+    </div>`;
+  }
   if(fromSnapshot){
     const savedAt = snap && snap.savedAt ? snap.savedAt : '';
-    html = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + html;
+    out = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + out;
   }
-  body.innerHTML = html;
+  body.innerHTML = out;
   // 即時資料 → 更新獨立快照（換日／重置後仍可睇返）
   if(!fromSnapshot && log && log.dateStr){
     saveProjProgressSnapshot(log.dateStr, workTasks);
   }
 }
 
-// ── 更新進度：將今日事項按 項目→地點→工種 分組，寫入項目記錄卡片 ──
+// ── 更新進度：將今日事項逐條寫入項目記錄（只記 地點＋項目＋事項）──
 function updateProgressFromTasks(){
   if(!log || !log.tasks){ showToast('⚠️ 請先開工'); return; }
   const workTasks = log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工');
@@ -1934,28 +1941,18 @@ function updateProgressFromTasks(){
   // 冪等：先清走上次自動生成嘅記錄（auto:true），保留手動記錄
   const manual = getProgressEntries().filter(e => !e.auto);
   const ref = pvRefProjects();
-  // 第一級：項目（動態歸屬）→ 第二級：地點 → 第三級：工種
-  const groups = {};
-  workTasks.forEach(t => {
+  // 每條事項 → 一條記錄：只記 地點＋項目（loc）+ 事項（desc），唔再按工種歸堆
+  const autoEntries = workTasks.map(t => {
     const pk = pvTaskProject(t, ref) || '未分類';
     const lk = t.location && t.location!=='—' ? t.location : '其他';
-    const wk = t.workType && t.workType!=='—' ? t.workType : '未分類';
-    const key = `${pk}||${lk}||${wk}`;
-    if(!groups[key]) groups[key] = { project: pk, location: lk, workType: wk, tasks: [] };
-    groups[key].tasks.push(t);
-  });
-  // 每組 → 一條進度記錄（loc = 項目（地點），desc = 工種，pct = 組內平均，qty = 事項數）
-  const autoEntries = Object.keys(groups).map(key => {
-    const g = groups[key];
-    const pct = pvGroupPct(g.tasks);
-    const status = g.tasks.every(t=>t.status==='已完成') ? '已完成'
-      : g.tasks.some(t=>t.status==='進行中') ? '進行中'
-      : g.tasks.every(t=>t.status==='已取消') ? '已取消' : '待辦';
     return {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-      loc: pvMergeLoc(g.location, g.project),
-      desc: g.workType,
-      pct, status, note: '', qty: g.tasks.length,
+      loc: pvMergeLoc(lk, pk),
+      desc: t.desc,
+      pct: pvTaskPct(t),
+      status: t.status || '待辦',
+      note: '',
+      qty: (t.qtyTotal && Number(t.qtyTotal) > 0) ? String(t.qtyTotal) : '',
       auto: true
     };
   });
@@ -1964,7 +1961,7 @@ function updateProgressFromTasks(){
   renderProgressEval();
   renderProjectProgressArea();
   renderProgressSummary();
-  showToast(`🔄 已更新進度：寫入 ${autoEntries.length} 組項目資料`);
+  showToast(`🔄 已更新進度：寫入 ${autoEntries.length} 條事項記錄`);
 }
 
 function renderNotes() {
@@ -3260,9 +3257,18 @@ var progressEditId = null;
 const PROGRESS_KEY = 'worklog_progress_v1';
 function getProgressEntries(){
   const raw = lsGet(PROGRESS_KEY);
-  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch(e) {} }
+  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) {
+    // 一次性清理：移除殘留嘅 date 欄位（2026-08-12，追蹤只記 地點＋項目＋事項）
+    let dirty = false;
+    p.forEach(e => { if(e && 'date' in e){ delete e.date; dirty = true; } });
+    if(dirty) lsSet(PROGRESS_KEY, JSON.stringify(p));
+    return p;
+  } } catch(e) {} }
   // 向後相容：舊 log.progress 未有獨立 key 前嘅資料
-  if (log && Array.isArray(log.progress) && log.progress.length) return log.progress;
+  if (log && Array.isArray(log.progress) && log.progress.length) {
+    log.progress.forEach(e => { if(e && 'date' in e) delete e.date; });
+    return log.progress;
+  }
   return [];
 }
 function saveProgressEntries(list){
