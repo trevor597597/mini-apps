@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v2.0</title>
+<title>工作日誌 — 輸入事項工具 v2.1</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -100,6 +100,10 @@ body {
 .task-row .status-badge.progress { background: var(--orange-100); color: var(--orange-500); }
 .task-row .status-badge.pending { background: var(--slate-100); color: var(--slate-500); }
 .task-row .status-badge.cancel { background: var(--red-50); color: var(--red-500); }
+.qty-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px; margin-left: 4px;
+  font-size: 0.65rem; font-weight: 600; background: var(--blue-50); color: var(--blue-700);
+}
 .task-row .loc { color: var(--slate-500); font-size: 0.75rem; }
 .task-row .type { color: var(--slate-500); font-size: 0.75rem; }
 .task-row .personnel { font-size: 0.72rem; font-weight: 600; color: var(--blue-700); text-align: center; }
@@ -116,6 +120,15 @@ body {
 .cat-badge.cat-維護 { background: #dcfce7; color: #15803d; }
 .cat-badge.cat-助手 { background: #fef3c7; color: #b45309; }
 .cat-badge.cat-個人 { background: #f3e8ff; color: #7c3aed; }
+/* 項目階段徽章（準備／施工／調試 三色） */
+.stage-badge {
+  display: inline-block; padding: 1px 7px; border-radius: 10px;
+  font-size: 0.62rem; font-weight: 700; text-align: center;
+  white-space: nowrap;
+}
+.stage-badge.stage-準備 { background: #fef3c7; color: #b45309; }
+.stage-badge.stage-施工 { background: #dbeafe; color: #1d4ed8; }
+.stage-badge.stage-調試 { background: #dcfce7; color: #15803d; }
 /* 編輯modal照片區域 */
 .edit-photos-area { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 .edit-photo-item {
@@ -324,21 +337,39 @@ body {
 }
 .photo-thumb:hover { opacity: 0.8; }
 @media print {
-  body { background: white; padding: 0; }
-  .header, .inline-actions, .btn, .modal-overlay:not(#modalPDFPreview),
-  .modal-overlay:not(#modalPDFPreview) *,
-  .task-actions, #toast, .status-bar, #settingsCard, .tab-bar { display: none !important; }
+  body { background: white !important; padding: 0 !important; }
+  /* 隱藏成個 app 頁面 — 唔用 :not()，避免舊 Android 瀏覽器 parse 失敗成條 rule 失效（會漏晒網頁按鍵入 PDF） */
+  .header, .inline-actions, .btn, .task-actions, #toast, .status-bar,
+  #settingsCard, .tab-bar, .container, .modal-overlay { display: none !important; }
+  /* 淨係顯示 PDF 預覽 modal */
+  #modalPDFPreview { display: block !important; position: static !important; background: white !important; }
+  #modalPDFPreview .modal { max-width: 100%; max-height: none; overflow: visible; box-shadow: none; border-radius: 0; padding: 0; animation: none; }
+  #modalPDFPreview .modal-header, #modalPDFPreview .modal-footer { display: none !important; }
+  #modalPDFPreview .modal-body { padding: 0; }
   @page { size: A4; margin: 2cm; }
-  .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
-  .container { max-width: 100%; padding: 0; }
-  .preview-box { max-height: none; overflow: visible; white-space: pre-wrap; }
-  .print-only { display: block !important; }
+  .pdf-table tr, .pdf-photo-block { break-inside: avoid; }
+  .pdf-photo { width: 60mm; }
 }
 .print-only { display: none; }
 .btn-xlsx { background: #27ae60; color: white; }
 .btn-xlsx:hover { background: #219a52; }
 .btn-xlsx-photo { background: #8e44ad; color: white; }
 .btn-xlsx-photo:hover { background: #7d3c98; }
+.btn-pdf { background: #e74c3c; color: white; }
+.btn-pdf:hover { background: #c0392b; }
+
+/* ── PDF 預覽／列印 ── */
+.pdf-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+.pdf-meta { font-size: 0.85rem; color: #475569; margin-bottom: 12px; }
+.pdf-h { font-size: 0.9rem; font-weight: 700; color: #334155; margin: 14px 0 6px; border-left: 4px solid #2563eb; padding-left: 8px; }
+.pdf-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 4px; }
+.pdf-table th, .pdf-table td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; word-break: break-word; }
+.pdf-table th { background: #f1f5f9; font-weight: 700; color: #334155; }
+.pdf-text { font-size: 0.85rem; color: #334155; line-height: 1.6; }
+.pdf-photo-block { margin-bottom: 10px; break-inside: avoid; }
+.pdf-photo-cap { font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+.pdf-photo-imgs { display: flex; gap: 8px; flex-wrap: wrap; }
+.pdf-photo { width: 62mm; border: 1px solid #cbd5e1; border-radius: 6px; }
 
 /* ── Tab Navigation ── */
 .tab-bar {
@@ -443,6 +474,31 @@ body {
   border-radius: 6px; padding: 4px 8px;
   margin: -2px 10px 4px; align-self: stretch;
 }
+/* ── 進度記錄 項目卡片（每行 2 個，獨立列事項/記錄/評估進度）── */
+.pv-card-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.pv-card { border:1px solid var(--slate-200); border-radius:12px; background:white; box-shadow:var(--shadow); overflow:hidden; }
+.pv-card-head { padding:10px 12px; border-bottom:1px solid var(--slate-200); background:var(--slate-50); }
+.pv-card-title-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pv-card-name { font-weight:700; font-size:0.85rem; color:#1e293b; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pv-card-count { font-size:0.7rem; color:var(--slate-400); white-space:nowrap; }
+.pv-card-eval { display:flex; align-items:center; gap:6px; margin-top:8px; }
+.pv-card-bar { flex:1; height:8px; background:var(--slate-200); border-radius:4px; overflow:hidden; }
+.pv-card-bar > div { height:100%; border-radius:4px; }
+.pv-card-pct { font-size:0.78rem; font-weight:700; color:var(--blue-700); white-space:nowrap; }
+.pv-card-eval .btn { min-height:28px; padding:2px 10px; font-size:0.72rem; }
+.pv-card-body { padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.pv-card-body .pv-note { margin:-2px 0 0; }
+/* 項目卡片：動態追蹤今日事項（事項所屬項目） */
+.pv-card-tasks { border-top:1px dashed var(--slate-200); }
+.pv-card-tasks-head { display:flex; justify-content:space-between; align-items:center; padding:8px 12px 4px; font-size:0.75rem; font-weight:700; color:var(--slate-600); }
+.pv-card-tasks-head span { font-weight:400; color:var(--slate-400); font-size:0.7rem; }
+/* ── 項目進度（資訊頁）：三級分級 地點 → 項目 → 事項 ── */
+.pp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; }
+.pp-loc { font-size:0.68rem; font-weight:600; color:var(--slate-600); background:var(--slate-100); padding:1px 7px; border-radius:10px; white-space:nowrap; }
+.pp-wt-head { display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--slate-600); padding:6px 0 2px; }
+.pp-wt-head:first-child { padding-top:0; }
+.pp-loc-sec { border:1px solid var(--slate-200); border-radius:12px; padding:10px 12px; margin-bottom:12px; background:var(--slate-50); }
+.pp-loc-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 /* ── 進度記錄 — 按項目分組 ── */
 .pv-group { margin-bottom: 12px; }
 .pv-group-title {
@@ -466,9 +522,38 @@ body {
 .tpl-head { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
 .tpl-name { font-weight:700; font-size:0.85rem; color:#1e293b; }
 .tpl-loc { font-size:0.7rem; font-weight:600; color:var(--blue-700); background:var(--blue-50); padding:1px 8px; border-radius:10px; white-space:nowrap; }
+.tpl-steps-badge { font-size:0.7rem; font-weight:600; color:var(--slate-500); background:var(--slate-100); padding:1px 8px; border-radius:10px; white-space:nowrap; }
 .tpl-meta { font-size:0.72rem; color:var(--slate-500); }
 .tpl-actions { display:flex; gap:6px; }
 .tpl-actions .btn { min-height:32px; padding:4px 12px; font-size:0.75rem; }
+/* ── 模板卡片式展示（矩形，一行最多 4 個，點擊展開詳細工序）── */
+#templateListBody { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+#templateListBody > div:only-child { grid-column:1 / -1; }
+.tpl-item { border:1px solid var(--slate-200); border-radius:12px; background:white; box-shadow:var(--shadow); overflow:hidden; }
+.tpl-card-head { display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:12px 12px 8px; cursor:pointer; }
+.tpl-card-head:active { background:var(--slate-50); }
+.tpl-head-row { display:flex; align-items:center; gap:6px; }
+.tpl-head-row .tpl-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tpl-head-sub { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tpl-chev { color:var(--slate-400); font-size:0.9rem; transition:transform 0.15s; flex-shrink:0; }
+.tpl-item.open .tpl-chev { transform:rotate(180deg); }
+.tpl-card-meta { display:flex; flex-direction:column; gap:6px; padding:0 12px 10px; font-size:0.72rem; color:var(--slate-500); }
+.tpl-meta-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tpl-mini { display:flex; align-items:center; gap:6px; font-weight:600; width:100%; }
+.tpl-mini-bar { flex:1; height:7px; background:var(--slate-200); border-radius:4px; overflow:hidden; }
+.tpl-mini-bar > div { height:100%; border-radius:4px; }
+.tpl-card-body { display:none; border-top:1px dashed var(--slate-200); padding:12px; background:var(--slate-50); }
+.tpl-item.open .tpl-card-body { display:block; }
+.tpl-card-body .tpl-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px; }
+.tpl-card-body .tpl-actions .btn { width:100%; margin:0; }
+.tpl-step-chip { display:flex; align-items:center; gap:8px; background:white; border:1px solid var(--slate-200); border-radius:8px; padding:7px 10px; font-size:0.78rem; margin-bottom:6px; flex-wrap:wrap; }
+.tpl-step-chip .n { color:var(--slate-400); font-weight:700; min-width:18px; text-align:center; }
+.tpl-step-chip .nm { flex:1; font-weight:600; color:var(--slate-700); min-width:80px; }
+.tpl-step-chip .kw { font-size:0.7rem; color:var(--blue-700); background:var(--blue-50); padding:1px 8px; border-radius:10px; white-space:nowrap; }
+.tpl-step-chip .w { font-size:0.7rem; color:var(--slate-400); white-space:nowrap; }
+@media (max-width: 900px) { #templateListBody { grid-template-columns:repeat(3,1fr); } }
+@media (max-width: 700px) { #templateListBody { grid-template-columns:repeat(2,1fr); } }
+@media (max-width: 460px) { #templateListBody { grid-template-columns:1fr; } }
 .tpl-step { display:flex; align-items:center; gap:8px; padding:6px 8px; background:white; border:1px solid var(--slate-200); border-radius:8px; font-size:0.78rem; }
 .tpl-step input { min-width:0; }
 .tpl-step .tpl-step-name { flex:2; }
@@ -562,8 +647,8 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v2.0</h1>
-  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單 | 流程模板評估</div>
+  <h1>📋 工作日誌 — 輸入事項工具 v2.1</h1>
+  <div class="sub">分頁設計 | 時間×分類矩陣 | 人員分配 | 項目/地點獨立儲存 | 待辦清單 | 流程模板評估 | PDF 輸出</div>
 </div>
 
 <div class="container" id="app">
@@ -628,7 +713,7 @@ body {
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置行程</button>
+        <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置資料</button>
         <button class="btn btn-secondary btn-sm" onclick="showProgressOverview()">📊 項目進度概覽</button>
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
@@ -706,14 +791,15 @@ body {
     </div>
   </div>
 
-  <!-- Card: 項目進度（自動跟蹤行程事項，地點 → 項目 → 工種 三級；獨立快照儲存，換日／重置唔會清） -->
+  <!-- Card: 項目進度（自動跟蹤行程事項，分級 地點 → 項目 → 事項，項目由項目記錄讀取） -->
   <div class="card" id="projectProgressCard">
     <div class="card-header">
       <h2>📊 項目進度</h2>
+      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（地點＋項目＋事項）">🔄 更新進度</button>
     </div>
     <div class="card-body">
       <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        自動跟蹤行程頁事項，按 <b>地點 → 項目 → 工種</b> 三級分組即時更新；冇填項目嘅事項會按地點自動歸入項目記錄嘅項目。進度資料獨立保存，換日／重置後仍可回顧。
+        資料分級 <b>地點 → 項目 → 事項</b> 三級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 地點＋項目＋事項。
       </div>
       <div id="projectProgressBody">
         <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
@@ -721,87 +807,42 @@ body {
     </div>
   </div>
 
-  <!-- Card: 進度記錄 -->
+  <!-- Card: 進度記錄 + 項目流程模板（合併） -->
   <div class="card" id="progressCard">
     <div class="card-header">
-      <h2>📊 進度記錄</h2>
-      <div style="display:flex;gap:8px">
-        <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
-          <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
-        </label>
-        <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()">📥 匯出 XLSX</button>
-      </div>
+      <h2>📊 項目記錄</h2>
     </div>
     <div class="card-body">
-      <!-- 常駐輸入區 -->
-      <div class="pv-input-wrap">
-        <div class="form-row">
-          <div class="form-group"><label>📍 地點</label>
-            <select class="form-select" id="pvLocation" onchange="renderTplHint()"></select>
-          </div>
-          <div class="form-group"><label>🏷️ 項目</label>
-            <select class="form-select" id="pvProject" onchange="renderTplHint()"></select>
-          </div>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        撳「➕ 新增記錄」開彈窗記錄進度；將重複項目嘅工序存成模板（自動或手動），喺項目卡片撳「📊 評估」一鍵對照實際進度。
+      </div>
+      <!-- 模板區 -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">🗂️ 項目流程模板</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">點擊卡片展開工序</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-secondary" onclick="openTplGenerate()">📥 從記錄生成</button>
+          <button class="btn btn-sm btn-secondary" onclick="openTplEdit(null)">➕ 新增模板</button>
         </div>
-        <div id="tplHint" style="display:none;margin:-6px 0 10px;font-size:0.75rem;color:var(--slate-600);background:var(--blue-50);border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px"></div>
-        <div class="form-group"><label>📋 事項</label><input class="form-input" id="pvDesc" placeholder="例如：更換水泵零件"></div>
-        <div class="form-row">
-          <div class="form-group" style="flex:1.2">
-            <label>📈 完成度 <span id="pvPctLabel" class="pv-pct-label">0%</span></label>
-            <input type="range" id="pvPct" min="0" max="100" step="5" value="0" oninput="updatePvPctLabel()">
-            <div class="pv-ticks" id="pvTicks"></div>
-          </div>
-          <div class="form-group">
-            <label>🔢 數量</label>
-            <select class="form-select" id="pvQty" onchange="pvQtyChange()">
-              <option value="">—</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-            </select>
-          </div>
-          <div class="form-group"><label>狀態</label>
-            <select class="form-select" id="pvStatus">
-              <option value="待辦">⏳ 待辦</option>
-              <option value="進行中">🔄 進行中</option>
-              <option value="已完成">✅ 已完成</option>
-              <option value="已取消">❌ 已取消</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group"><label>備註</label><input class="form-input" id="pvNote" placeholder="備註（可留空）"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-primary" id="pvSaveBtn" onclick="saveProgressEntry()">✅ 儲存</button>
-          <button class="btn btn-secondary" id="pvCancelBtn" onclick="resetProgressForm()" style="display:none">↩️ 取消編輯</button>
+        <div id="templateListBody">
+          <div style="font-size:0.8rem;color:var(--slate-400)">未有模板 — 撳「📥 從記錄生成」用已有進度記錄建模板，或「➕ 新增模板」手動建立</div>
         </div>
       </div>
-      <div id="progressEvalBody" style="margin-top:14px">
-        <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Card: 項目流程模板 + 進度評估 -->
-  <div class="card" id="tplCard">
-    <div class="card-header">
-      <h2>🗂️ 項目流程模板</h2>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-sm btn-secondary" onclick="openTplGenerate()">📥 從記錄生成</button>
-        <button class="btn btn-sm btn-primary" onclick="openTplEdit(null)">➕ 新增模板</button>
-      </div>
-    </div>
-    <div class="card-body">
-      <div style="font-size:0.75rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        將重複項目嘅工序存成模板（自動或手動）；喺「📊 進度記錄」輸入或匯入記錄後，一鍵評估實際進度。
-      </div>
-      <div id="templateListBody">
-        <div style="font-size:0.8rem;color:var(--slate-400)">未有模板 — 撳「📥 從記錄生成」用已有進度記錄建模板，或「➕ 新增模板」手動建立</div>
+      <!-- 記錄區 -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 進度記錄</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-primary" onclick="openProgressEntryModal()">➕ 新增記錄</button>
+          <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
+            <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
+          </label>
+          <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()">📥 匯出 XLSX</button>
+        </div>
+        <div id="progressEvalBody">
+          <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄 — 撳「➕ 新增記錄」開始</div>
+        </div>
       </div>
     </div>
   </div>
@@ -837,6 +878,7 @@ body {
         <button class="btn btn-sm btn-secondary" onclick="downloadMarkdown()">💾 下載 .md</button>
         <button class="btn btn-sm btn-xlsx" onclick="exportXLSX()">📊 XLSX</button>
         <button class="btn btn-sm btn-xlsx-photo" onclick="exportXLSXWithPhotos()">🖼️ XLSX（含圖）</button>
+        <button class="btn btn-sm btn-pdf" onclick="openPDFPreview()">🖨️ PDF</button>
       </div>
     </div>
   </div>
@@ -876,6 +918,23 @@ body {
         <div class="form-group"><label>結束時間</label><input class="form-input" id="fEnd" type="time" step="60"></div>
       </div>
       <div class="form-group"><label>事項內容</label><input class="form-input" id="fDesc" placeholder="例如：更換消防閥門"></div>
+      <div class="form-group">
+        <label>完成度</label>
+        <select class="form-select" id="fStatus" onchange="fStatusChange(this)">
+          <option value="已完成">已完成</option>
+          <option value="進行中">進行中</option>
+          <option value="待辦">待辦</option>
+          <option value="已取消">已取消</option>
+        </select>
+        <div id="fQtyGroup" class="form-group" style="display:none;margin-top:4px">
+          <label>數量 <span class="hint">已完成 / 需完成</span></label>
+          <div class="form-row">
+            <div class="form-group"><input class="form-input" id="fQtyDone" type="number" min="0" placeholder="已完成" oninput="fQtyChange()"></div>
+            <div class="form-group"><input class="form-input" id="fQtyTotal" type="number" min="1" placeholder="需完成" oninput="fQtyChange()"></div>
+          </div>
+          <div class="hint" id="fQtyPreview"></div>
+        </div>
+      </div>
       <div class="form-group"><label>執行人員</label>
         <select class="form-select" id="fPersonnel">
           <option value="傑">傑</option>
@@ -885,15 +944,6 @@ body {
         <div id="fCustomPersonnelGroup" class="form-group" style="display:none;margin-top:4px">
           <input class="form-input" id="fCustomPersonnel" placeholder="輸入人員姓名">
         </div>
-      </div>
-      <div class="form-group">
-        <label>完成度</label>
-        <select class="form-select" id="fStatus">
-          <option value="已完成">已完成</option>
-          <option value="進行中">進行中</option>
-          <option value="待辦">待辦</option>
-          <option value="已取消">已取消</option>
-        </select>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -938,6 +988,14 @@ body {
         </div>
       </div>
       <div class="form-group">
+        <label>階段 <span class="hint">項目進度分類</span></label>
+        <select class="form-select" id="fStage">
+          <option value="準備">準備</option>
+          <option value="施工">施工</option>
+          <option value="調試">調試</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label><input type="checkbox" id="fHasPhoto" onchange="document.getElementById('fPhotoPathGroup').style.display=this.checked?'block':'none'"> 有拍照</label>
       </div>
       <div class="form-group" id="fPhotoPathGroup" style="display:none">
@@ -971,7 +1029,15 @@ body {
       </div>
       <div class="form-group"><label>事項內容</label><input class="form-input" id="feDesc"></div>
       <div class="form-group"><label>執行人員</label><input class="form-input" id="fePersonnel" placeholder="人員姓名"></div>
-      <div class="form-group"><label>完成度</label><select class="form-select" id="feStatus"><option value="已完成">已完成</option><option value="進行中">進行中</option><option value="待辦">待辦</option><option value="已取消">已取消</option></select></div>
+      <div class="form-group"><label>完成度</label><select class="form-select" id="feStatus" onchange="feStatusChange(this)"><option value="已完成">已完成</option><option value="進行中">進行中</option><option value="待辦">待辦</option><option value="已取消">已取消</option></select>
+        <div id="feQtyGroup" class="form-group" style="display:none;margin-top:4px">
+          <label>數量 <span class="hint">已完成 / 需完成</span></label>
+          <div class="form-row">
+            <div class="form-group"><input class="form-input" id="feQtyDone" type="number" min="0" placeholder="已完成"></div>
+            <div class="form-group"><input class="form-input" id="feQtyTotal" type="number" min="1" placeholder="需完成"></div>
+          </div>
+        </div>
+      </div>
       <div class="form-row"><div class="form-group">
             <label>地點</label>
             <select class="form-select" id="feLocation">
@@ -1010,6 +1076,14 @@ body {
         <div id="feCustomProjectGroup" style="display:none;margin-top:4px">
           <input class="form-input" id="feCustomProject" placeholder="輸入自訂項目" style="font-size:0.82rem">
         </div>
+      </div>
+      <div class="form-group">
+        <label>階段 <span class="hint">項目進度分類</span></label>
+        <select class="form-select" id="feStage">
+          <option value="準備">準備</option>
+          <option value="施工">施工</option>
+          <option value="調試">調試</option>
+        </select>
       </div>
       <div class="form-group" id="fePhotosGroup" style="display:none">
         <label>照片 <span class="hint">點擊 ✕ 刪除</span></label>
@@ -1078,7 +1152,7 @@ body {
   <div class="modal" style="max-width:480px">
     <div class="modal-header"><h3>⚙️ 輸出模板</h3><button class="modal-close" onclick="closeModal('modalOutputTmpl')">✕</button></div>
     <div class="modal-body">
-      <div style="font-size:0.82rem;color:var(--slate-500);margin-bottom:12px">揀選時間軸輸出嘅欄位 — Markdown / XLSX / XLSX（含圖）一齊生效</div>
+      <div style="font-size:0.82rem;color:var(--slate-500);margin-bottom:12px">揀選時間軸輸出嘅欄位 — Markdown / XLSX / XLSX（含圖）/ PDF 一齊生效</div>
       <div id="outTmplFields" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
     <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1086,6 +1160,21 @@ body {
       <button class="btn btn-sm btn-secondary" onclick="outTmplSelectAll(false)">⬜ 全唔揀</button>
       <button class="btn btn-sm btn-secondary" onclick="outTmplReset()">↩️ 預設</button>
       <button class="btn btn-sm btn-primary" onclick="saveOutTemplate()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF 預覽／列印 -->
+<div class="modal-overlay" id="modalPDFPreview">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <h3>🖨️ PDF 預覽</h3>
+      <button class="modal-close" onclick="closeModal('modalPDFPreview')">✕</button>
+    </div>
+    <div class="modal-body" id="pdfPreviewBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalPDFPreview')">關閉</button>
+      <button class="btn btn-pdf" onclick="printPDF()">🖨️ 列印／另存為 PDF</button>
     </div>
   </div>
 </div>
@@ -1151,6 +1240,81 @@ body {
   </div>
 </div>
 
+<!-- 進度記錄 新增/編輯 彈窗 -->
+<div class="modal-overlay" id="modalProgressEntry">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="progressEntryTitle">➕ 新增進度記錄</h3>
+      <button class="modal-close" onclick="closeProgressEntryModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>📍 地點</label>
+          <select class="form-select" id="pvLocation" onchange="renderTplHint()"></select>
+        </div>
+        <div class="form-group"><label>🏷️ 項目</label>
+          <select class="form-select" id="pvProject" onchange="renderTplHint()"></select>
+        </div>
+      </div>
+      <div id="tplHint" style="display:none;margin:-6px 0 10px;font-size:0.75rem;color:var(--slate-600);background:var(--blue-50);border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px"></div>
+      <div class="form-group"><label>📋 事項</label><input class="form-input" id="pvDesc" placeholder="例如：更換水泵零件"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1.2">
+          <label>📈 完成度 <span id="pvPctLabel" class="pv-pct-label">0%</span></label>
+          <input type="range" id="pvPct" min="0" max="100" step="5" value="0" oninput="updatePvPctLabel()">
+          <div class="pv-ticks" id="pvTicks"></div>
+        </div>
+        <div class="form-group">
+          <label>🔢 數量</label>
+          <select class="form-select" id="pvQty" onchange="pvQtyChange()">
+            <option value="">—</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+          </select>
+        </div>
+        <div class="form-group"><label>狀態</label>
+          <select class="form-select" id="pvStatus">
+            <option value="待辦">⏳ 待辦</option>
+            <option value="進行中">🔄 進行中</option>
+            <option value="已完成">✅ 已完成</option>
+            <option value="已取消">❌ 已取消</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>備註</label><input class="form-input" id="pvNote" placeholder="備註（可留空）"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeProgressEntryModal()">取消</button>
+      <button class="btn btn-primary" id="pvSaveBtn" onclick="saveProgressEntry()">✅ 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重置資料彈窗：揀資料範圍清除 -->
+<div class="modal-overlay" id="modalReset">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3>🔄 重置資料</h3><button class="modal-close" onclick="closeModal('modalReset')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:0.75rem;color:var(--slate-500);margin-bottom:10px;line-height:1.5">
+        揀要清除嘅資料範圍（可多選）。📌 待辦清單、🗂️ 流程模板、⚙️ 常用資料屬獨立儲存，唔受影響。
+      </div>
+      <div id="resetScopeList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="closeModal('modalReset')">取消</button>
+      <button class="btn btn-primary" onclick="resetClearSelected()">✅ 清除已選</button>
+      <button class="btn btn-danger" onclick="resetClearAll()">⚠️ 一鍵清除全部</button>
+    </div>
+  </div>
+</div>
+
 <!-- settings moved to inline card above -->
 
 <script>
@@ -1170,10 +1334,24 @@ const OUT_FIELDS = [
   {key:'category', label:'分類', wch:7},
   {key:'itemCategory', label:'項位分類', wch:10},
   {key:'project', label:'項目', wch:14},
+  {key:'stage', label:'階段', wch:7},
   {key:'personnel', label:'人員', wch:8},
   {key:'location', label:'地點', wch:10},
   {key:'workType', label:'工種', wch:7},
+  {key:'qty', label:'數量', wch:8},
   {key:'photos', label:'照片', wch:8}
+];
+// 項目階段（固定 3 階段：準備 → 施工 → 調試）
+const STAGE_ORDER = ['準備','施工','調試'];
+// 重置資料範圍定義（放最頂，避免 const 提升順序問題）
+const RESET_SCOPES = [
+  { key:'tasks',      label:'📋 行程事項',   hint:'保留開工記錄' },
+  { key:'problems',   label:'📝 問題',       hint:'' },
+  { key:'attendance', label:'👥 人員考勤',   hint:'' },
+  { key:'followups',  label:'📌 待跟進',     hint:'連照片一齊刪' },
+  { key:'summary',    label:'💬 小復盤',     hint:'' },
+  { key:'top3',       label:'🎯 明日優先 TOP3', hint:'' },
+  { key:'photos',     label:'🖼️ 全部照片',  hint:'IndexedDB 行程＋待跟進相片' }
 ];
 
 // ── SAFE STORAGE（file:// 或 Firefox 下 localStorage 會拋 SecurityError，全部包 try-catch）──
@@ -1442,7 +1620,7 @@ function renderTaskList() {
     const canUp=i>0, canDown=i<log.tasks.length-1;
     html+=`<div class="task-row">
       <div class="time">${escHtml(t.timeRange)}</div>
-      <div class="desc">${escHtml(t.desc)}</div>
+      <div class="desc"><span class="stage-badge stage-${pvTaskStage(t)}">${escHtml(pvTaskStage(t))}</span> ${escHtml(t.desc)}${t.qtyTotal&&Number(t.qtyTotal)>0?` <span class="qty-badge">${Number(t.qtyDone)||0}/${t.qtyTotal}</span>`:''}</div>
       <div><span class="status-badge ${sc}">${escHtml(t.status)}</span></div>
       <div><span class="cat-badge cat-${escHtml(cat)}">${escHtml(cat)}</span></div>
       <div style="font-size:0.75rem;color:var(--slate-500)">${escHtml(ic)}</div>
@@ -1602,50 +1780,241 @@ function loadTaskThumbnails(ti,ids) {
   }).catch(()=>{c.innerHTML='<span style="color:var(--slate-400);font-size:0.7rem">載入失敗</span>';});
 }
 
-// ── 工程進度小卡片 ──
+// ── 工程進度小卡片（項目記錄做參考，動態追蹤；分級：地點 → 項目 → 工種）──
 function renderProgressSummary() {
   const el=document.getElementById('progressSummary');
   if(!log||!log.tasks||!log.tasks.length){el.style.display='none';return;}
   const workTasks = log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工');
   if(workTasks.length<1){el.style.display='none';return;}
   el.style.display='block';
-  const groups = {};
+  const ref = pvRefProjects();
+  const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
+  const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
+  // 第一級：項目 — 每個項目一張小卡（動態歸屬，冇匹配落「未分類」）
+  const projGroups = {};
   workTasks.forEach(t => {
-    const loc = t.location && t.location!=='—' ? t.location : '其他';
-    const proj = t.project && t.project!=='—' ? t.project : '—';
-    if(!groups[loc]) groups[loc] = {};
-    if(!groups[loc][proj]) groups[loc][proj] = {total:0, done:0};
-    groups[loc][proj].total++;
-    if(t.status==='已完成') groups[loc][proj].done++;
+    const pk = pvTaskProject(t, ref) || '未分類';
+    (projGroups[pk] = projGroups[pk] || []).push(t);
   });
-  const locKeys = Object.keys(groups);
-  let card = `<div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;font-size:0.78rem">
-    <div style="font-weight:600;color:var(--slate-600);margin-bottom:8px">📍 工程進度</div>`;
   let totalT=0, totalD=0;
-  locKeys.forEach((loc, li) => {
-    const projKeys = Object.keys(groups[loc]);
-    const locTotal = projKeys.reduce((s,k)=>s+groups[loc][k].total,0);
-    const locDone = projKeys.reduce((s,k)=>s+groups[loc][k].done,0);
-    totalT+=locTotal; totalD+=locDone;
-    card += `<div style="margin-bottom:${li<locKeys.length-1?'6px':'0'};padding:4px 0;border-bottom:${li<locKeys.length-1?'1px dashed var(--slate-200)':'none'}"><div style="font-weight:500;color:var(--blue-800);margin-bottom:2px">📍 ${escHtml(loc)} <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">${locDone}/${locTotal}</span></div>`;
-    projKeys.forEach(p => {
-      const g = groups[loc][p];
-      const pct = g.total>0 ? Math.round(g.done/g.total*100) : 0;
-      const barColor = pct===100 ? 'var(--green-500)' : pct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
-      card += `<div style="display:flex;align-items:center;gap:6px;padding:1px 0 1px 12px;font-size:0.72rem">
-        <span style="min-width:60px;color:var(--slate-500)">${escHtml(p!=='—'?p:'(預設)')}</span>
-        <div style="flex:1;height:6px;background:var(--slate-200);border-radius:3px;max-width:100px"><div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px"></div></div>
-        <span style="color:var(--slate-400);min-width:30px;text-align:right">${g.done}/${g.total}</span>
-      </div>`;
-    });
-    card += '</div>';
+  const projKeys = Object.keys(projGroups).sort((a,b)=>{
+    if(a==='未分類') return 1;
+    if(b==='未分類') return -1;
+    return a.localeCompare(b,'zh-Hant');
   });
-  const totalPct = totalT>0 ? Math.round(totalD/totalT*100) : 0;
-  card += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;font-size:0.72rem;color:var(--slate-500)">
-    <span>合計：${totalD}/${totalT}</span>
-    <span style="color:${totalPct===100?'var(--green-600)':'var(--orange-500)'}">${totalPct}% 完成</span>
-  </div></div>`;
+  const blocks = projKeys.map(pk => {
+    const ptasks = projGroups[pk];
+    const pDone = ptasks.filter(t=>t.status==='已完成').length;
+    const pPct = pvGroupPct(ptasks);
+    totalT+=ptasks.length; totalD+=pDone;
+    const locs = [...new Set(ptasks.map(t => (t.location && t.location!=='—') ? t.location : '').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+    const chipsOf = list => list.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${icon[t.status]||'❓'} ${escHtml(t.desc)}${pvTaskNumTag(t)}</span>`).join('');
+    const stgMap = {準備:[],施工:[],調試:[]};
+    ptasks.forEach(t=>stgMap[pvTaskStage(t)].push(t));
+    const stageBlocks = STAGE_ORDER.filter(s=>stgMap[s].length).map(s=>{
+      const list=stgMap[s], sDone=list.filter(t=>t.status==='已完成').length, sPct=pvGroupPct(list);
+      return `<div style="margin-top:4px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;margin-bottom:1px">
+          <span class="stage-badge stage-${s}">${s}</span>
+          <span style="color:var(--slate-400)">${sDone}/${list.length}</span>
+          <span style="font-weight:700;color:${pctColor(sPct)}">${sPct}%</span>
+        </div>
+        <div>${chipsOf(list)}</div>
+      </div>`;
+    }).join('');
+    const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    return `<div style="border:1px solid var(--slate-200);border-radius:8px;background:#fff;padding:6px 10px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-weight:600;color:var(--blue-800);font-size:0.74rem">🏷️ ${escHtml(pk)}</span>
+        ${locs.map(l=>`<span class="pp-loc">📍 ${escHtml(l)}</span>`).join('')}
+        <span style="flex:1"></span>
+        <span style="font-size:0.68rem;color:var(--slate-400)">${pDone}/${ptasks.length}</span>
+        <span style="font-size:0.72rem;font-weight:700;color:${pctColor(pPct)}">${pPct}%</span>
+      </div>
+      <div style="margin-top:3px"><div style="height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${pPct}%;height:100%;background:${barColor};border-radius:3px"></div></div></div>
+      <div>${stageBlocks}</div>
+    </div>`;
+  }).join('');
+  const totalPct = pvGroupPct(workTasks);
+  let card = `<div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;font-size:0.78rem">
+    <div style="font-weight:600;color:var(--slate-600);margin-bottom:8px">📍 工程進度</div>
+    ${blocks}
+    <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;font-size:0.72rem;color:var(--slate-500)">
+      <span>合計：${totalD}/${totalT} 項完成</span>
+      <span style="color:${totalPct===100?'var(--green-600)':'var(--orange-500)'}">${totalPct}% 進度</span>
+    </div>
+  </div>`;
   el.innerHTML = card;
+}
+
+// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級 地點 → 項目 → 事項，項目由項目記錄讀取 ──
+function renderProjectProgressArea(){
+  const body = document.getElementById('projectProgressBody');
+  if(!body) return;
+  // 優先即時資料；換日／重置後 log.tasks 冇嘢 → fallback 上次獨立快照
+  let workTasks = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
+  let snap = null;
+  if(!workTasks.length){
+    snap = getProjProgressSnapshot();
+    if(snap && snap.tasks && snap.tasks.length) workTasks = snap.tasks;
+  }
+  const entries = getProgressEntries().filter(e => e && e.desc); // 項目記錄：分級第二級「項目」嘅來源
+  const fromSnapshot = !!snap;
+  if(fromSnapshot && snap) snap.tasks = workTasks; // 統一後續引用
+  const ref = pvRefProjects();
+  const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
+  const stCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
+  const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
+  const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
+  const sortZh = (a,b)=>a.localeCompare(b,'zh-Hant');
+  // 第一級：地點（行程事項 ∪ 項目記錄）
+  const locSet = new Set();
+  workTasks.forEach(t => locSet.add(locOf(t)));
+  entries.forEach(e => { const sp = pvSplitLoc(pvEntryKey(e)); if(sp.location) locSet.add(sp.location); });
+  let totalT = 0, totalD = 0, totalProj = 0;
+  let html = '';
+  [...locSet].sort(sortZh).forEach(lk => {
+    const ltasks = workTasks.filter(t => locOf(t) === lk);
+    const lDone = ltasks.filter(t=>t.status==='已完成').length;
+    const lPct = pvGroupPct(ltasks);
+    totalT += ltasks.length; totalD += lDone;
+    // 第二級：項目 — 由項目記錄（此地點）讀取，事項按 pvTaskProject 動態歸入
+    const projMap = {};
+    ltasks.forEach(t => {
+      const pk = pvTaskProject(t, ref) || '未分類項目';
+      if(!projMap[pk]) projMap[pk] = { tasks: [], records: [] };
+      projMap[pk].tasks.push(t);
+    });
+    entries.forEach(e => {
+      const sp = pvSplitLoc(pvEntryKey(e));
+      if(sp.location !== lk) return;
+      const pk = sp.project || '未分類項目';
+      if(!projMap[pk]) projMap[pk] = { tasks: [], records: [] };
+      projMap[pk].records.push(e);
+    });
+    totalProj += Object.keys(projMap).length;
+    const projKeys = Object.keys(projMap).sort((a,b)=>{
+      if(a==='未分類項目') return 1;
+      if(b==='未分類項目') return -1;
+      return sortZh(a,b);
+    });
+    const cardsHtml = projKeys.map(pk => {
+      const g = projMap[pk];
+      const ptasks = g.tasks;
+      const pDone = ptasks.filter(t=>t.status==='已完成').length;
+      const hasTasks = ptasks.length>0;
+      const pPct = hasTasks ? pvGroupPct(ptasks)
+        : (g.records.length ? Math.round(g.records.reduce((s,e)=>s+(Number(e.pct)||0),0)/g.records.length) : 0);
+      // 第三級：事項 — 今日事項行（動態追蹤）＋ 項目記錄行（自動記錄＝事項快照，有今日事項時唔重複顯示）
+      const rowOf = t => `<div class="pv-row" style="background:transparent;padding:2px 0">
+        <span style="font-size:0.78rem;min-width:16px">${icon[t.status]||'❓'}</span>
+        <span class="pv-desc" style="font-size:0.78rem">${escHtml(t.desc)}</span>
+        ${pvTaskNumTag(t)}
+        <span class="stage-badge stage-${pvTaskStage(t)}">${escHtml(pvTaskStage(t))}</span>
+        <span class="pv-status ${stCls(t.status)}">${escHtml(t.status)}</span>
+        <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${escHtml(t.timeRange||'')}</span>
+      </div>`;
+      const stgMap = {準備:[],施工:[],調試:[]};
+      ptasks.forEach(t => stgMap[pvTaskStage(t)].push(t));
+      const tRows = STAGE_ORDER.filter(s => stgMap[s].length).map(s => {
+        const list = stgMap[s], sDone = list.filter(t=>t.status==='已完成').length, sPct = pvGroupPct(list);
+        return `<div style="margin-top:3px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--slate-500);margin-bottom:1px">
+            <span class="stage-badge stage-${s}">${s}</span>
+            <span>${sDone}/${list.length}</span>
+            <span style="font-weight:700;color:${pctColor(sPct)}">${sPct}%</span>
+          </div>
+          ${list.map(rowOf).join('')}
+        </div>`;
+      }).join('');
+      let recs = g.records.filter(r => !r.auto);
+      if(!ptasks.length && !recs.length) recs = g.records; // 記錄項目（今日冇事項）→ 顯示記錄資料
+      const rRows = recs.map(r => {
+        const rp = (r.pct!=null && r.pct!=='') ? Math.round(Number(r.pct)) : null;
+        return `<div class="pv-row" style="background:transparent;padding:2px 0;opacity:0.8">
+          <span style="font-size:0.78rem">📊</span>
+          <span class="pv-desc" style="font-size:0.78rem">${escHtml(r.desc||'')}${r.note?`（${escHtml(r.note)}）`:''}</span>
+          <span class="pv-status ${stCls(r.status||'待辦')}">${escHtml(r.status||'待辦')}</span>
+          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${rp!=null?rp+'%':''}${r.qty?` ×${escHtml(r.qty)}`:''}</span>
+        </div>`;
+      }).join('');
+      const bodyRows = tRows + rRows;
+      const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+      return `<div class="pv-card">
+        <div class="pv-card-head">
+          <div class="pv-card-title-row">
+            <span class="pv-card-name">🏷️ ${escHtml(pk)}</span>
+            <span class="pv-card-count">${hasTasks ? ptasks.length+' 項' : '記錄 '+g.records.length}</span>
+          </div>
+          <div class="pv-card-eval">
+            <span class="pv-card-bar"><div style="width:${Math.min(100,pPct)}%;background:${barColor}"></div></span>
+            <span class="pv-card-pct" style="color:${pctColor(pPct)}">${hasTasks ? `${pDone}/${ptasks.length} ${pPct}%` : `📊 ${pPct}%`}</span>
+          </div>
+        </div>
+        <div class="pv-card-body">${bodyRows || '<div style="font-size:0.72rem;color:var(--slate-400)">今日冇事項</div>'}</div>
+      </div>`;
+    }).join('');
+    const lBarColor = lPct>=100 ? 'var(--green-500)' : lPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    html += `<div class="pp-loc-sec">
+      <div class="pp-loc-head">
+        <span style="font-weight:700;font-size:0.82rem;color:#1e293b">📍 ${escHtml(lk)}</span>
+        <span style="font-size:0.7rem;color:var(--slate-400)">${ltasks.length} 項</span>
+        <span style="flex:1"></span>
+        <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${lDone}/${ltasks.length}</span>
+        <span style="font-size:0.75rem;font-weight:700;color:${pctColor(lPct)}">${lPct}%</span>
+      </div>
+      <div style="margin:4px 0 8px"><div style="height:6px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div></div>
+      <div class="pp-grid">${cardsHtml}</div>
+    </div>`;
+  });
+  const totalPct = pvGroupPct(workTasks);
+  let out = html;
+  if(out){
+    out += `<div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
+      <span style="color:var(--slate-600)">共 <b>${locSet.size}</b> 個地點 ｜ <b>${totalProj}</b> 個項目 ｜ <b>${totalT}</b> 項事項</span>
+      <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
+    </div>`;
+  }
+  if(fromSnapshot){
+    const savedAt = snap && snap.savedAt ? snap.savedAt : '';
+    out = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + out;
+  }
+  body.innerHTML = out;
+  // 即時資料 → 更新獨立快照（換日／重置後仍可睇返）
+  if(!fromSnapshot && log && log.dateStr){
+    saveProjProgressSnapshot(log.dateStr, workTasks);
+  }
+}
+
+// ── 更新進度：將今日事項逐條寫入項目記錄（只記 地點＋項目＋事項）──
+function updateProgressFromTasks(){
+  if(!log || !log.tasks){ showToast('⚠️ 請先開工'); return; }
+  const workTasks = log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工');
+  if(!workTasks.length){ showToast('⚠️ 今日未有工作事項'); return; }
+  // 冪等：先清走上次自動生成嘅記錄（auto:true），保留手動記錄
+  const manual = getProgressEntries().filter(e => !e.auto);
+  const ref = pvRefProjects();
+  // 每條事項 → 一條記錄：只記 地點＋項目（loc）+ 事項（desc），唔再按工種歸堆
+  const autoEntries = workTasks.map(t => {
+    const pk = pvTaskProject(t, ref) || '未分類';
+    const lk = t.location && t.location!=='—' ? t.location : '其他';
+    return {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      loc: pvMergeLoc(lk, pk),
+      desc: t.desc,
+      pct: pvTaskPct(t),
+      status: t.status || '待辦',
+      note: '',
+      qty: (t.qtyTotal && Number(t.qtyTotal) > 0) ? String(t.qtyTotal) : '',
+      auto: true
+    };
+  });
+  saveProgressEntries(manual.concat(autoEntries));
+  saveData();
+  renderProgressEval();
+  renderProjectProgressArea();
+  renderProgressSummary();
+  showToast(`🔄 已更新進度：寫入 ${autoEntries.length} 條事項記錄`);
 }
 
 function renderNotes() {
@@ -1732,9 +2101,11 @@ function taskFieldVal(t, key, log){
     case 'category': return t.category || firstCategory();
     case 'itemCategory': return t.itemCategory || '';
     case 'project': return t.project || '—';
+    case 'stage': return t.stage || '準備';
     case 'personnel': return t.personnel || (log.person || '傑');
     case 'location': return t.location || '—';
     case 'workType': return t.workType || '—';
+    case 'qty': return (t.qtyTotal && Number(t.qtyTotal) > 0) ? `${Number(t.qtyDone)||0}/${t.qtyTotal}` : '';
     case 'photos': return t.photoStatus || '無照片';
   }
   return '';
@@ -1826,6 +2197,71 @@ function refreshPreview(){
 }
 function copyMarkdown(){const t=generateMarkdown();navigator.clipboard.writeText(t).then(()=>showToast('✅ 已複製到剪貼簿')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ 已複製到剪貼簿');});}
 function downloadMarkdown(){const t=generateMarkdown(),ds=log.dateStr.replace(/-/g,''),b=new Blob([t],{type:'text/markdown;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`工作日誌_${ds}.md`;a.click();URL.revokeObjectURL(a.href);showToast('✅ 已下載 .md 檔案');}
+// ── PDF 生成（預覽 modal + window.print 另存為 PDF）──
+function openPDFPreview(){
+  if(!log||!log.tasks||!log.tasks.length){showToast('⚠️ 未有數據 — 開工後先可以生成 PDF');return;}
+  const tpl=getOutTemplate();
+  if(!tpl.length){showToast('⚠️ 未揀任何輸出欄位 — 去 ⚙️ 輸出模板 揀返');return;}
+  const body=document.getElementById('pdfPreviewBody');
+  if(!body)return;
+  const ds0=log.dateStr||todayStr(), dd=formatDate(ds0), wd=getWeekday(ds0);
+  let h=`<div class="pdf-title">工作日誌 ${dd}（${wd}）</div>`;
+  h+=`<div class="pdf-meta">人員：${escHtml(log.person||'傑')}</div>`;
+  // 時間軸 — 跟輸出模板欄位
+  h+='<h4 class="pdf-h">📋 時間軸</h4><table class="pdf-table"><thead><tr>';
+  tpl.forEach(k=>{ h+=`<th>${escHtml(outFieldLabel(k))}</th>`; });
+  h+='</tr></thead><tbody>';
+  (log.tasks||[]).forEach(t=>{
+    if(!t)return;
+    h+='<tr>';
+    tpl.forEach(k=>{ h+=`<td>${escHtml(taskFieldVal(t,k,log))}</td>`; });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  // 問題／考勤／待跟進
+  const pr=log.problems||[], ri=(log.attendance||[]).map(a=>a.name+':'+a.status), fl=(log.followups||[]).map(f=>typeof f==='string'?f:(f.text||''));
+  const ml=Math.max(pr.length,ri.length,fl.length,1);
+  h+='<h4 class="pdf-h">📌 問題／考勤／待跟進</h4><table class="pdf-table"><thead><tr><th>問題</th><th>考勤</th><th>待跟進</th></tr></thead><tbody>';
+  for(let i=0;i<ml;i++){ h+=`<tr><td>${escHtml(i<pr.length?pr[i]:'')}</td><td>${escHtml(i<ri.length?ri[i]:'')}</td><td>${escHtml(i<fl.length?fl[i]:'')}</td></tr>`; }
+  h+='</tbody></table>';
+  // 小復盤 + TOP3
+  h+=`<h4 class="pdf-h">💡 小復盤</h4><div class="pdf-text">${escHtml(log.summary||'（無）')}</div>`;
+  const top3=(log.top3&&log.top3.length?log.top3:['','','']).map((x,i)=>`${i+1}. ${escHtml(x||'—')}`);
+  h+=`<h4 class="pdf-h">⭐ 明日優先 TOP3</h4><div class="pdf-text">${top3.join('<br>')}</div>`;
+  // 進度記錄
+  const entries=(typeof getProgressEntries==='function'?getProgressEntries():[]).filter(e=>e&&e.desc);
+  if(entries.length){
+    h+='<h4 class="pdf-h">📊 進度記錄</h4><table class="pdf-table"><thead><tr><th>項目／地點</th><th>事項</th><th>狀態</th><th>進度</th><th>數量</th><th>備註</th></tr></thead><tbody>';
+    entries.forEach(e=>{
+      const pct=(e.pct!=null&&e.pct!=='')?Math.round(e.pct)+'%':'—';
+      h+=`<tr><td>${escHtml(pvEntryKey(e)||'—')}</td><td>${escHtml(e.desc||'')}</td><td>${escHtml(e.status||'待辦')}</td><td>${escHtml(pct)}</td><td>${escHtml(e.qty||'')}</td><td>${escHtml(e.note||'')}</td></tr>`;
+    });
+    h+='</tbody></table>';
+  }
+  // 相片（異步由 IndexedDB 載入）
+  const photoTasks=(log.tasks||[]).filter(t=>t&&t.photos&&t.photos.length);
+  if(photoTasks.length){
+    h+='<h4 class="pdf-h">📸 相片</h4>';
+    photoTasks.forEach((t,ti)=>{
+      h+=`<div class="pdf-photo-block"><div class="pdf-photo-cap">${escHtml(t.timeRange||'')}　${escHtml(t.desc||'')}</div><div class="pdf-photo-imgs" id="pdfPhotos_${ti}"><span style="color:#94a3b8">載入中…</span></div></div>`;
+    });
+  }
+  body.innerHTML=h;
+  openModal('modalPDFPreview');
+  if(photoTasks.length){
+    photoTasks.forEach((t,ti)=>{
+      getPhotosFromDB(t.photos).then(urls=>{
+        const wrap=document.getElementById('pdfPhotos_'+ti);
+        if(!wrap)return;
+        wrap.innerHTML=urls.filter(u=>u).map(u=>`<img class="pdf-photo" src="${u}" alt="相片">`).join('')||'<span style="color:#94a3b8">（讀取失敗）</span>';
+      }).catch(()=>{
+        const wrap=document.getElementById('pdfPhotos_'+ti);
+        if(wrap)wrap.innerHTML='<span style="color:#94a3b8">（讀取失敗）</span>';
+      });
+    });
+  }
+}
+function printPDF(){ window.print(); }
 function viewImage(src){document.getElementById('viewerImage').src=src;openModal('modalImageViewer');}
 
 // ── FEATURE: Task Reordering ──
@@ -1853,15 +2289,43 @@ function confirmNewDay(){
 }
 
 // ── FEATURE: Add Task ──
+// 完成度揀「待辦」時顯示數量輸入（已完成 / 需完成）
+function fStatusChange(sel){
+  const grp = document.getElementById('fQtyGroup');
+  if(grp) grp.style.display = (sel && sel.value === '待辦') ? 'block' : 'none';
+  fQtyChange();
+}
+function fQtyChange(){
+  const pv = document.getElementById('fQtyPreview');
+  if(!pv) return;
+  const done = Number(document.getElementById('fQtyDone').value) || 0;
+  const total = Number(document.getElementById('fQtyTotal').value) || 0;
+  if(total > 0){
+    const pct = Math.round(done/total*100);
+    pv.textContent = `數量進度：${done}/${total}（${pct}%）`;
+  } else {
+    pv.textContent = '';
+  }
+}
+function getTaskQty(){
+  const done = Number(document.getElementById('fQtyDone').value);
+  const total = Number(document.getElementById('fQtyTotal').value);
+  if(!isNaN(done) && !isNaN(total) && total > 0) return { qtyDone: done, qtyTotal: total };
+  return null;
+}
 function addTask(){
   if(!log){showToast('⚠️ 請先開工');return;}
   editIdx=-1;document.getElementById('modalTaskTitle').textContent='➕ 新增事項';
   const def=getLastEndTime();
   document.getElementById('fStart').value=def;document.getElementById('fEnd').value='';
   document.getElementById('fDesc').value='';document.getElementById('fStatus').value='已完成';
+  document.getElementById('fQtyGroup').style.display='none';
+  document.getElementById('fQtyDone').value='';document.getElementById('fQtyTotal').value='';
+  document.getElementById('fQtyPreview').textContent='';
   document.getElementById('fLocation').value='—';document.getElementById('fWorkType').value='—';
   document.getElementById('fCategory').value=firstCategory();
   document.getElementById('fItemCategory').value='';
+  document.getElementById('fStage').value='準備';
   renderItemCategoryDropdowns();
   document.getElementById('fHasPhoto').checked=false;document.getElementById('fPhotoPathGroup').style.display='none';
   document.getElementById('fPhotoInput').value='';document.getElementById('customLocationGroup').style.display='none';document.getElementById('customWorkTypeGroup').style.display='none';
@@ -1889,11 +2353,14 @@ function confirmTask(){
   const ic=document.getElementById('fItemCategory').value||'';
   let proj=document.getElementById('fProject').value;
   if(proj==='__custom__')proj=document.getElementById('fCustomProject').value.trim()||'—';
+  const stg=document.getElementById('fStage').value||'準備';
   let pnl=document.getElementById('fPersonnel').value;
   if(pnl==='__custom__')pnl=document.getElementById('fCustomPersonnel').value.trim()||(log.person||'傑');
   if(!s||!e){showToast('⚠️ 請填寫時間');return;} if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;} if(!d){showToast('⚠️ 請填寫事項內容');return;}
+  // 完成度揀「待辦」時可輸入數量（已完成 / 需完成）→ 存入 qtyDone/qtyTotal
+  const qty = (st === '待辦') ? getTaskQty() : null;
   const hp=document.getElementById('fHasPhoto').checked, ps=hp?'有拍照':'無照片', fi=document.getElementById('fPhotoInput');
-  const baseTask={timeRange:`${s}-${e}`,desc:d,status:st,location:loc,workType:wt,photoStatus:ps,photos:[],category:cat,itemCategory:ic,project:proj,personnel:pnl};
+  const baseTask={timeRange:`${s}-${e}`,desc:d,status:st,location:loc,workType:wt,photoStatus:ps,photos:[],category:cat,itemCategory:ic,project:proj,stage:stg,personnel:pnl,qtyDone:qty?qty.qtyDone:null,qtyTotal:qty?qty.qtyTotal:null};
   if(hp&&fi.files&&fi.files.length>0){
     const files=Array.from(fi.files);
     Promise.all(files.map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(f);}))).then(results=>{
@@ -1913,6 +2380,10 @@ function viewEditTasks(){
   h+='</div>';b.innerHTML=h;openModal('modalEditSelect');
 }
 function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];editIdx=i;const parts=t.timeRange.split('-');document.getElementById('feStart').value=parts[0]||'';document.getElementById('feEnd').value=parts[1]||'';document.getElementById('feDesc').value=t.desc;document.getElementById('fePersonnel').value=t.personnel||(log.person||'傑');renderItemCategoryDropdowns();document.getElementById('feItemCategory').value=t.itemCategory||'';document.getElementById('feStatus').value=t.status;
+  // 數量欄位（已完成 / 需完成）回填
+  document.getElementById('feQtyDone').value = t.qtyDone!=null ? t.qtyDone : '';
+  document.getElementById('feQtyTotal').value = t.qtyTotal!=null ? t.qtyTotal : '';
+  feStatusChange(document.getElementById('feStatus'));
   // Populate location dropdown and set value
   refreshLocationDropdown('feLocation');
   const feLoc = document.getElementById('feLocation');
@@ -1959,6 +2430,7 @@ function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];edit
     feProj.value = '—';
     feCustomProj.style.display = 'none';
   }
+  document.getElementById('feStage').value = pvTaskStage(t);
   feRenderPhotos(i);openModal('modalEditTask');}
 function feRenderPhotos(i){
   const t=log.tasks[i], area=document.getElementById('fePhotosArea'), grp=document.getElementById('fePhotosGroup');
@@ -2004,7 +2476,20 @@ function feDeletePhoto(ti,pi){
   feRenderPhotos(ti);
   showToast('✅ 已刪除照片');
 }
-function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];const s=document.getElementById('feStart').value,e=document.getElementById('feEnd').value;if(s&&e){if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;}t.timeRange=`${s}-${e}`;}t.desc=document.getElementById('feDesc').value.trim()||t.desc;t.personnel=document.getElementById('fePersonnel').value.trim()||(log.person||'傑');t.status=document.getElementById('feStatus').value;let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.category=document.getElementById('feCategory').value||'維護';t.itemCategory=document.getElementById('feItemCategory').value||'';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
+// 編輯 modal 完成度揀「待辦」時顯示數量輸入
+function feStatusChange(sel){
+  const grp = document.getElementById('feQtyGroup');
+  if(grp) grp.style.display = (sel && sel.value === '待辦') ? 'block' : 'none';
+}
+function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];const s=document.getElementById('feStart').value,e=document.getElementById('feEnd').value;if(s&&e){if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;}t.timeRange=`${s}-${e}`;}t.desc=document.getElementById('feDesc').value.trim()||t.desc;t.personnel=document.getElementById('fePersonnel').value.trim()||(log.person||'傑');t.status=document.getElementById('feStatus').value;
+  // 數量欄位：待辦先讀；其他狀態清空
+  if(t.status==='待辦'){
+    const dQty = Number(document.getElementById('feQtyDone').value);
+    const tQty = Number(document.getElementById('feQtyTotal').value);
+    if(!isNaN(dQty) && !isNaN(tQty) && tQty > 0){ t.qtyDone = dQty; t.qtyTotal = tQty; }
+    else { delete t.qtyDone; delete t.qtyTotal; }
+  } else { delete t.qtyDone; delete t.qtyTotal; }
+let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.stage=document.getElementById('feStage').value||'準備';t.category=document.getElementById('feCategory').value||'維護';t.itemCategory=document.getElementById('feItemCategory').value||'';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
 
 
 
@@ -2039,8 +2524,8 @@ function confirmSplit(){
   const n1=document.getElementById('splitName1').value.trim()||ot.desc, n2=document.getElementById('splitName2').value.trim()||ot.desc+'（續）';
   const parts=ot.timeRange.split('-'), start=parts[0], end=parts[1];
   if(b<=start||b>=end){showToast('⚠️ 拆分邊界時間必須在原時間範圍內');return;}
-  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑')};
-  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑')};
+  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑'),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
+  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑'),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
   if(ot.photos&&ot.photos.length>0){ot.photos.forEach((pid,pi)=>{const s=document.getElementById('splitPhoto_'+pi);if(s&&s.value==='2')t2.photos.push(pid);else t1.photos.push(pid);});t1.photoStatus=t1.photos.length>0?'有拍照':'無照片';t2.photoStatus=t2.photos.length>0?'有拍照':'無照片';}
   log.tasks[oi]=t1;log.tasks.splice(oi+1,0,t2);saveData();closeModal('modalSplit');render();showToast(`✅ 已拆分：${ot.desc}`);
 }
@@ -2825,7 +3310,41 @@ function _buildXLSX(data, filename) {
 // ── FEATURE: Progress Evaluation (常駐輸入框) ──
 var progressEditId = null;
 
-function getProgressEntries(){ return (log && log.progress) || []; }
+// 進度記錄獨立儲存（唔跟行程 log 一齊重置／換日）— 2026-08-11 改
+const PROGRESS_KEY = 'worklog_progress_v1';
+function getProgressEntries(){
+  const raw = lsGet(PROGRESS_KEY);
+  if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) {
+    // 一次性清理：移除殘留嘅 date 欄位（2026-08-12，追蹤只記 地點＋項目＋事項）
+    let dirty = false;
+    p.forEach(e => { if(e && 'date' in e){ delete e.date; dirty = true; } });
+    if(dirty) lsSet(PROGRESS_KEY, JSON.stringify(p));
+    return p;
+  } } catch(e) {} }
+  // 向後相容：舊 log.progress 未有獨立 key 前嘅資料
+  if (log && Array.isArray(log.progress) && log.progress.length) {
+    log.progress.forEach(e => { if(e && 'date' in e) delete e.date; });
+    return log.progress;
+  }
+  return [];
+}
+function saveProgressEntries(list){
+  lsSet(PROGRESS_KEY, JSON.stringify(list || []));
+  // 清走 log 入面嘅舊引用，避免雙重儲存
+  if (log && log.progress) delete log.progress;
+}
+
+// ── 資訊頁「項目進度」三級分組快照（獨立儲存，唔跟 log 重置／換日）— 2026-08-11 改
+const PROJ_PROGRESS_KEY = 'worklog_proj_progress_v1';
+function getProjProgressSnapshot(){
+  const raw = lsGet(PROJ_PROGRESS_KEY);
+  if(raw){ try{ const s = JSON.parse(raw); if(s && Array.isArray(s.tasks)) return s; }catch(e){} }
+  return null;
+}
+function saveProjProgressSnapshot(dateStr, tasks){
+  const snap = { savedAt: dateStr || '', tasks: (tasks||[]).map(t => Object.assign({}, t)) };
+  lsSet(PROJ_PROGRESS_KEY, JSON.stringify(snap));
+}
 
 // ── 儲存欄位整合：兩個下拉 → 一個 loc（「項目（地點）」）──
 function pvMergeLoc(location, project){
@@ -2852,18 +3371,6 @@ function pvProjectKey(loc){
   return (sp.project || loc || '未分類');
 }
 
-// ── 資訊頁「項目進度」三級分組快照（獨立儲存，唔跟 log 重置／換日）— 2026-08-11 改
-const PROJ_PROGRESS_KEY = 'worklog_proj_progress_v1';
-function getProjProgressSnapshot(){
-  const raw = lsGet(PROJ_PROGRESS_KEY);
-  if(raw){ try{ const s = JSON.parse(raw); if(s && Array.isArray(s.tasks)) return s; }catch(e){} }
-  return null;
-}
-function saveProjProgressSnapshot(dateStr, tasks){
-  const snap = { savedAt: dateStr || '', tasks: (tasks||[]).map(t => Object.assign({}, t)) };
-  lsSet(PROJ_PROGRESS_KEY, JSON.stringify(snap));
-}
-
 // ── 項目追蹤：項目記錄做參考 ──
 // 參考項目：項目記錄（log.progress）→ 項目名 → 地點集合
 function pvRefProjects(){
@@ -2887,6 +3394,8 @@ function pvTaskProject(t, ref){
   }
   return '';
 }
+// 事項階段：準備／施工／調試（舊資料冇 stage → 預設 準備）
+function pvTaskStage(t){ return (t && (t.stage==='施工' || t.stage==='調試')) ? t.stage : '準備'; }
 
 // ── 事項文字抽進度：由 desc 數字關鍵字（%／分數／成）→ 0-100；冇數字就按狀態 ──
 function pvTaskPct(t){
@@ -2933,115 +3442,6 @@ function pvTaskNumTag(t){
     || /([零一二兩三四五六七八九十\d]+)\s*成/.test(d);
   if(!hasNum) return '';
   return `<span style="display:inline-block;background:#eef2ff;color:#4f46e5;border-radius:4px;padding:0 4px;font-size:0.66rem;white-space:nowrap">📈 ${pvTaskPct(t)}%</span>`;
-}
-
-// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級：地點 → 項目 → 工種 ──
-function renderProjectProgressArea(){
-  const body = document.getElementById('projectProgressBody');
-  if(!body) return;
-  // 優先即時資料；換日／重置後 log.tasks 冇嘢 → fallback 上次獨立快照
-  let workTasks = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
-  let snap = null;
-  if(!workTasks.length){
-    snap = getProjProgressSnapshot();
-    if(snap && snap.tasks && snap.tasks.length) workTasks = snap.tasks;
-  }
-  if(!workTasks.length){
-    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>';
-    return;
-  }
-  const fromSnapshot = !!snap;
-  if(fromSnapshot) snap.tasks = workTasks; // 統一後續引用
-  const ref = pvRefProjects();
-  const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
-  const wtIcon = {'維修':'🔧','檢查':'🔍','落貨':'🚚','助手':'🤝','安裝':'🛠️','搬運':'📦','焊接':'⚡','除銹':'🧽'};
-  const stCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
-  const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
-  // 第一級：地點
-  const locGroups = {};
-  workTasks.forEach(t => {
-    const lk = t.location && t.location!=='—' ? t.location : '其他';
-    (locGroups[lk] = locGroups[lk] || []).push(t);
-  });
-  let totalT = 0, totalD = 0;
-  let html = '';
-  Object.keys(locGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).forEach(lk => {
-    const ltasks = locGroups[lk];
-    const lDone = ltasks.filter(t=>t.status==='已完成').length;
-    const lPct = pvGroupPct(ltasks);
-    totalT += ltasks.length; totalD += lDone;
-    // 第二級：項目（項目記錄做參考，動態歸屬）
-    const projGroups = {};
-    ltasks.forEach(t => {
-      const pk = pvTaskProject(t, ref) || '未分類';
-      (projGroups[pk] = projGroups[pk] || []).push(t);
-    });
-    const projHtml = Object.keys(projGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(pk => {
-      const ptasks = projGroups[pk];
-      const pDone = ptasks.filter(t=>t.status==='已完成').length;
-      const pPct = pvGroupPct(ptasks);
-      // 第三級：工種
-      const wtGroups = {};
-      ptasks.forEach(t => {
-        const wk = t.workType && t.workType!=='—' ? t.workType : '未分類';
-        (wtGroups[wk] = wtGroups[wk] || []).push(t);
-      });
-      const wtHtml = Object.keys(wtGroups).sort((a,b)=>a.localeCompare(b,'zh-Hant')).map(wk => {
-        const wtasks = wtGroups[wk];
-        const wDone = wtasks.filter(t=>t.status==='已完成').length;
-        const wPct = pvGroupPct(wtasks);
-        const rows = wtasks.map(t => `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.75rem">
-          <span style="min-width:16px">${icon[t.status]||'❓'}</span>
-          <span style="flex:1;color:var(--slate-700)">${escHtml(t.desc)}</span>
-          ${pvTaskNumTag(t)}
-          <span class="pv-status ${stCls(t.status)}">${escHtml(t.status)}</span>
-          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${escHtml(t.timeRange||'')}</span>
-        </div>`).join('');
-        return `<div style="margin:3px 0 0">
-          <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;font-weight:600;color:var(--slate-600);padding:2px 0">
-            <span>${wtIcon[wk]||'🔨'} ${escHtml(wk)}</span>
-            <span style="font-weight:400;color:var(--slate-400)">${wDone}/${wtasks.length}（${wPct}%）</span>
-          </div>
-          ${rows}
-        </div>`;
-      }).join('');
-      return `<div style="margin:6px 0 0;padding-left:10px;border-left:2px solid var(--slate-200)">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:0.75rem;font-weight:700;color:var(--blue-800);padding:2px 0">
-          <span>🏷️ ${escHtml(pk)}</span>
-          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">${pDone}/${ptasks.length}（${pPct}%）</span>
-        </div>
-        ${wtHtml}
-      </div>`;
-    }).join('');
-    const lBarColor = lPct>=100 ? 'var(--green-500)' : lPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
-    html += `<div style="border:1px solid var(--slate-200);border-radius:10px;background:white;box-shadow:var(--shadow);overflow:hidden;margin-bottom:10px">
-      <div style="padding:8px 12px;background:var(--slate-50);border-bottom:1px solid var(--slate-200)">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-weight:700;font-size:0.82rem;color:#1e293b">📍 ${escHtml(lk)}</span>
-          <span style="font-size:0.7rem;color:var(--slate-400)">${ltasks.length} 項</span>
-          <span style="flex:1"></span>
-          <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${lDone}/${ltasks.length}</span>
-          <span style="font-size:0.75rem;font-weight:700;color:${pctColor(lPct)}">${lPct}%</span>
-        </div>
-        <div style="margin-top:4px"><div style="height:6px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div></div>
-      </div>
-      <div style="padding:8px 12px">${projHtml}</div>
-    </div>`;
-  });
-  const totalPct = pvGroupPct(workTasks);
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
-    <span style="color:var(--slate-600)">共 <b>${Object.keys(locGroups).length}</b> 個地點 ｜ <b>${totalT}</b> 項事項</span>
-    <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
-  </div>`;
-  if(fromSnapshot){
-    const savedAt = snap && snap.savedAt ? snap.savedAt : '';
-    html = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + html;
-  }
-  body.innerHTML = html;
-  // 即時資料 → 更新獨立快照（換日／重置後仍可睇返）
-  if(!fromSnapshot && log && log.dateStr){
-    saveProjProgressSnapshot(log.dateStr, workTasks);
-  }
 }
 
 function refreshProgressSelects(){
@@ -3120,12 +3520,23 @@ function resetProgressForm(){
   pvQtyChange();
   const st = document.getElementById('pvStatus'); if(st) st.value = '待辦';
   const note = document.getElementById('pvNote'); if(note) note.value = '';
-  const cb = document.getElementById('pvCancelBtn'); if(cb) cb.style.display = 'none';
   const sb = document.getElementById('pvSaveBtn'); if(sb) sb.textContent = '✅ 儲存';
 }
 
-function saveProgressEntry(){
+// 新增／編輯進度記錄 — 統一開彈窗（單一按鍵，慳位）
+function openProgressEntryModal(){
   if(!log){ showToast('⚠️ 未開工'); return; }
+  resetProgressForm();
+  const title = document.getElementById('progressEntryTitle');
+  if(title) title.textContent = '➕ 新增進度記錄';
+  openModal('modalProgressEntry');
+}
+function closeProgressEntryModal(){
+  closeModal('modalProgressEntry');
+  resetProgressForm();
+}
+
+function saveProgressEntry(){
   const location = document.getElementById('pvLocation').value;
   const project = document.getElementById('pvProject').value;
   const desc = document.getElementById('pvDesc').value.trim();
@@ -3140,14 +3551,15 @@ function saveProgressEntry(){
   const qty = qtyVal;
   // 兩個下拉 → 整合成一個儲存欄位
   const loc = pvMergeLoc(location, project);
-  if(!log.progress) log.progress = [];
+  const entries = getProgressEntries();
   if(progressEditId){
-    const e = log.progress.find(x => String(x.id) === String(progressEditId));
+    const e = entries.find(x => String(x.id) === String(progressEditId));
     if(e){ e.loc=loc; delete e.location; delete e.project; e.desc=desc; e.pct=pct; e.status=status; e.note=note; e.qty=qty; }
   } else {
-    log.progress.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), loc, desc, pct, status, note, qty });
+    entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), loc, desc, pct, status, note, qty });
   }
-  saveData(); renderProgressEval(); resetProgressForm();
+  saveProgressEntries(entries);
+  saveData(); renderProgressEval(); resetProgressForm(); closeModal('modalProgressEntry');
   showToast('✅ 已儲存進度');
 }
 
@@ -3169,17 +3581,18 @@ function editProgressEntry(id){
   updatePvPctLabel();
   document.getElementById('pvStatus').value = e.status || '待辦';
   document.getElementById('pvNote').value = e.note || '';
-  document.getElementById('pvCancelBtn').style.display = '';
-  document.getElementById('pvSaveBtn').textContent = '💾 更新';
-  const card = document.getElementById('progressCard');
-  if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
-  const desc = document.getElementById('pvDesc'); if(desc) desc.focus();
+  renderTplHint();
+  const title = document.getElementById('progressEntryTitle');
+  if(title) title.textContent = '✏️ 編輯進度記錄';
+  const sb = document.getElementById('pvSaveBtn'); if(sb) sb.textContent = '💾 更新';
+  openModal('modalProgressEntry');
 }
 
 function deleteProgressEntryById(id){
   if(!confirm('確定刪除呢條進度記錄？')) return;
-  if(log && log.progress) log.progress = log.progress.filter(x => String(x.id) !== String(id));
-  saveData(); renderProgressEval();
+  const entries = getProgressEntries().filter(x => String(x.id) !== String(id));
+  saveProgressEntries(entries);
+  renderProgressEval();
   if(progressEditId && String(progressEditId) === String(id)) resetProgressForm();
   showToast('🗑️ 已刪除進度');
 }
@@ -3189,34 +3602,44 @@ function renderProgressEval(){
   if(!body) return;
   refreshProgressSelects();
   const entries = getProgressEntries().filter(e => e && e.desc);
+  const refProjects = pvRefProjects(); // 項目記錄做參考（動態追蹤事項所屬項目）
   if(!entries.length){
-    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄，喺上面輸入後撳「✅ 儲存」</div>';
+    body.innerHTML = '<div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄 — 撳「➕ 新增記錄」開彈窗記錄</div>';
     return;
   }
   const pvStatusCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
-  // 按「項目」分組 — 同項目唔同地點都歸埋一齊，反映同一項目嘅不同進度
+  // 按「項目」分組 — 同項目唔同地點都歸埋一齊
   const groups = {};
   entries.forEach(e => {
     const k = pvProjectKey(pvEntryKey(e));
     (groups[k] = groups[k] || []).push(e);
   });
   const groupKeys = Object.keys(groups).sort((a,b) => a.localeCompare(b, 'zh-Hant'));
-  let html = '<div class="pv-list">';
+  let html = '<div class="pv-card-grid">';
   groupKeys.forEach(k => {
     const list = groups[k];
-    html += `<div class="pv-group">
-      <div class="pv-group-title"><span>🏷️ ${escHtml(k)}</span><span class="pv-group-count">${list.length} 項</span></div>
-      <div class="pv-group-body">`;
-    list.forEach(e => {
+    // 卡片頭地點：全部同一地點先顯示
+    const locs = new Set(list.map(e => pvSplitLoc(pvEntryKey(e)).location).filter(Boolean));
+    const loc = locs.size === 1 ? [...locs][0] : '';
+    // 評估進度：有模板用模板對照，冇模板用記錄平均完成度
+    const tpl = findTemplateForProject(k, loc);
+    let overall = 0, barColor = 'var(--slate-300)';
+    if(tpl){
+      const r = evalTemplate(tpl);
+      overall = r.overall;
+    } else {
+      overall = Math.round(list.reduce((s,e)=>s+(Number(e.pct)||0),0) / list.length);
+    }
+    barColor = overall>=100 ? 'var(--green-500)' : overall>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    const tplIdAttr = tpl ? String(tpl.id).replace(/'/g,"\\'") : '';
+    const rows = list.map(e => {
       const pct = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
       const status = e.status || '待辦';
       const stCls = pvStatusCls(status);
       const idAttr = String(e.id).replace(/'/g,"\\'");
       const pctTxt = (e.pct!=null && e.pct!=='') ? Math.round(pct)+'%' : '—';
-      const locKey = pvEntryKey(e);
       const qtyTxt = e.qty ? `🔢 ×${escHtml(e.qty)}` : '';
-      html += `<div class="pv-row">
-        ${locKey?`<span class="pv-loc">📌 ${escHtml(locKey)}</span>`:''}
+      return `<div class="pv-row">
         <span class="pv-desc">${escHtml(e.desc||'')}</span>
         <span class="pv-status ${stCls}">${escHtml(status)}</span>
         <span class="pv-pct"><span class="pv-mini-bar ${pct>=100?'full':''}"><div style="width:${pct}%"></div></span>${pctTxt}</span>
@@ -3225,10 +3648,44 @@ function renderProgressEval(){
           <button class="pv-edit" onclick="editProgressEntry('${idAttr}')" title="編輯">✏️</button>
           <button class="pv-edit danger" onclick="deleteProgressEntryById('${idAttr}')" title="刪除">🗑️</button>
         </span>
+      </div>${e.note?`<div class="pv-note">📝 ${escHtml(e.note)}</div>`:''}`;
+    }).join('');
+    // 動態追蹤今日事項（項目記錄做參考 → 事項歸屬）
+    const projTasks = (log && log.tasks || []).filter(t => t.desc!=='開工' && t.desc!=='收工' && pvTaskProject(t, refProjects) === k);
+    let taskSection = '';
+    if(projTasks.length){
+      const tDone = projTasks.filter(t=>t.status==='已完成').length;
+      const tPct = pvGroupPct(projTasks);
+      const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
+      const tRows = projTasks.map(t=>`<div class="pv-row" style="background:transparent;padding:2px 0">
+        <span style="font-size:0.78rem">${icon[t.status]||'❓'}</span>
+        <span class="pv-desc" style="font-size:0.78rem">${escHtml(t.desc)}</span>
+        ${pvTaskNumTag(t)}
+        <span class="pv-status ${pvStatusCls(t.status)}">${escHtml(t.status)}</span>
+        <span style="font-size:0.7rem;color:var(--slate-400)">${escHtml(t.timeRange||'')}</span>
+      </div>`).join('');
+      taskSection = `<div class="pv-card-tasks">
+        <div class="pv-card-tasks-head">📋 今日事項 <span>${tDone}/${projTasks.length}（${tPct}%）</span></div>
+        <div style="padding:0 12px 10px">${tRows}</div>
       </div>`;
-      if(e.note) html += `<div class="pv-note">📝 ${escHtml(e.note)}</div>`;
-    });
-    html += '</div></div>';
+    }
+    html += `<div class="pv-card">
+      <div class="pv-card-head">
+        <div class="pv-card-title-row">
+          <span class="pv-card-name">🏷️ ${escHtml(k)}</span>
+          ${loc?`<span class="tpl-loc">📍 ${escHtml(loc)}</span>`:''}
+          <span class="pv-card-count">${list.length} 項</span>
+        </div>
+        <div class="pv-card-eval">
+          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">評估進度</span>
+          <span class="pv-card-bar"><div style="width:${Math.min(100,overall)}%;background:${barColor}"></div></span>
+          <span class="pv-card-pct">${overall}%</span>
+          ${tpl?`<button class="btn btn-sm btn-success" onclick="openTplEval('${tplIdAttr}')">📊 評估</button>`:''}
+        </div>
+      </div>
+      <div class="pv-card-body">${rows}</div>
+      ${taskSection}
+    </div>`;
   });
   html += '</div>';
   body.innerHTML = html;
@@ -3236,7 +3693,6 @@ function renderProgressEval(){
 
 // ── 進度記錄匯出 XLSX（項目／地點整合欄 + 數量）──
 function exportProgressXLSX(){
-  if(!log||!log.progress){showToast('⚠️ 未有進度資料');return;}
   var entries=getProgressEntries().filter(function(e){return e&&e.desc;});
   if(!entries.length){showToast('⚠️ 未有進度資料');return;}
   var rows=[['項目／地點','事項','狀態','進度','數量','備註']];
@@ -3339,10 +3795,10 @@ function loadProgressXLSX(event){
         });
       }
       if(!imported.length){ showToast('⚠️ 冇讀到任何進度記錄'); return; }
-      if(!log) log = { dateStr: todayStr(), person:'傑', tasks:[], problems:[], attendance:[], followups:[], summary:'', top3:['','',''], progress:[] };
-      if(!log.progress) log.progress = [];
-      if(log.progress.length && !confirm(`已有 ${log.progress.length} 條進度記錄。\n\n「確定」= 合併入去（保留現有）\n「取消」= 唔匯入`)) return;
-      log.progress = log.progress.concat(imported);
+      if(!log) log = { dateStr: todayStr(), person:'傑', tasks:[], problems:[], attendance:[], followups:[], summary:'', top3:['','',''] };
+      const existing = getProgressEntries();
+      if(existing.length && !confirm(`已有 ${existing.length} 條進度記錄。\n\n「確定」= 合併入去（保留現有）\n「取消」= 唔匯入`)) return;
+      saveProgressEntries(existing.concat(imported));
       saveData(); renderProgressEval(); renderTemplates(); renderTplHint();
       showToast(`✅ 已讀取 ${file.name}（${imported.length} 條進度）`);
     } catch(err){
@@ -3358,6 +3814,7 @@ const TPL_KEY = 'worklog_templates_v1';
 let tplEditId = null;
 let tplEditSteps = [];
 let tplEvalId = null;
+let tplExpanded = new Set(); // 卡片式模板：記住邊啲卡片展開咗
 
 function getTemplates(){
   const raw = lsGet(TPL_KEY);
@@ -3393,22 +3850,61 @@ function renderTemplates(){
     const steps = t.steps || [];
     const wSum = steps.reduce((s,x)=>s+(Number(x.weight)||0),0);
     const idAttr = String(t.id).replace(/'/g,"\\'");
-    return `<div class="tpl-item">
-      <div class="tpl-head">
-        <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    const open = tplExpanded.has(String(t.id)) ? ' open' : '';
+    const stepsHtml = steps.map((s,i)=>`<div class="tpl-step-chip">
+      <span class="n">${i+1}</span>
+      <span class="nm">${escHtml(s.name||'')}</span>
+      ${(s.kw||'')?`<span class="kw">🔑 ${escHtml(s.kw)}</span>`:''}
+      <span class="w">權重 ${Number(s.weight)||0}%</span>
+    </div>`).join('');
+    return `<div class="tpl-item${open}">
+      <div class="tpl-card-head" onclick="toggleTplExpand('${idAttr}')">
+        <div class="tpl-head-row">
           <span class="tpl-name">🏷️ ${escHtml(t.name||'未命名')}</span>
+          <span class="tpl-chev">▾</span>
+        </div>
+        <div class="tpl-head-sub">
           ${t.loc?`<span class="tpl-loc">📍 ${escHtml(t.loc)}</span>`:''}
-          <span class="tpl-meta">${steps.length} 工序 ｜ 權重 ${wSum}%</span>
-        </span>
-        <span class="tpl-actions">
-          <button class="btn btn-sm btn-success" onclick="openTplEval('${idAttr}')">📊 評估</button>
-          <button class="btn btn-sm btn-secondary" onclick="openTplEdit('${idAttr}')">✏️ 編輯</button>
-          <button class="btn btn-sm btn-secondary" onclick="deleteTpl('${idAttr}')">🗑️</button>
-        </span>
+          <span class="tpl-steps-badge">🧩 ${steps.length} 工序 ｜ ⚖️ ${wSum}%</span>
+        </div>
       </div>
-      ${t.note?`<div style="font-size:0.72rem;color:var(--slate-400);margin-top:4px">📝 ${escHtml(t.note)}</div>`:''}
+      <div class="tpl-card-body">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--slate-600);margin-bottom:6px">🧩 工序流程${t.loc?` ｜ 📍 ${escHtml(t.loc)}`:''}</div>
+        ${stepsHtml || '<div style="font-size:0.75rem;color:var(--slate-400)">未有工序</div>'}
+        ${t.note?`<div style="font-size:0.72rem;color:var(--slate-400);margin-top:8px">📝 ${escHtml(t.note)}</div>`:''}
+        <div class="tpl-actions">
+          <button class="btn btn-sm btn-secondary" onclick="openTplEdit('${idAttr}')">✏️ 編輯</button>
+          <button class="btn btn-sm btn-secondary" onclick="deleteTpl('${idAttr}')">🗑️ 刪除</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
+}
+
+// 點擊卡片頭部：展開／收起詳細工序
+function toggleTplExpand(id){
+  if(tplExpanded.has(String(id))) tplExpanded.delete(String(id));
+  else tplExpanded.add(String(id));
+  renderTemplates();
+}
+
+// 模板 → 快速開「新增記錄」彈窗，預填項目（地點）
+function tplQuickRecord(id){
+  if(!log){ showToast('⚠️ 未開工'); return; }
+  const t = getTemplates().find(x => String(x.id) === String(id));
+  if(!t) return;
+  openProgressEntryModal();
+  refreshProgressSelects();
+  const projSel = document.getElementById('pvProject');
+  if(t.name && !Array.from(projSel.options).some(o=>o.value===t.name)){
+    const opt = document.createElement('option');
+    opt.value = t.name; opt.textContent = t.name;
+    projSel.appendChild(opt);
+  }
+  if(t.name) projSel.value = t.name;
+  const locSel = document.getElementById('pvLocation');
+  if(t.loc && Array.from(locSel.options).some(o=>o.value===t.loc)) locSel.value = t.loc;
+  renderTplHint();
 }
 
 function tplLocOptions(selId, cur){
@@ -3727,13 +4223,88 @@ function deleteTaskFromEdit(){
   editIdx=-1;
 }
 
-// ── Reset Schedule ──
+// ── Reset：彈窗揀資料範圍清除 ──
+function resetScopeCount(key){
+  if(!log) return 0;
+  switch(key){
+    case 'tasks': return (log.tasks||[]).filter(t=>t.desc!=='開工'&&t.desc!=='收工').length;
+    case 'problems': return (log.problems||[]).length;
+    case 'attendance': return (log.attendance||[]).length;
+    case 'followups': return (log.followups||[]).length;
+    case 'summary': return (log.summary||'').trim() ? 1 : 0;
+    case 'top3': return (log.top3||[]).filter(x=>x&&x.trim()).length;
+    case 'photos': {
+      let n = 0;
+      (log.tasks||[]).forEach(t=>{ n += (t.photos||[]).length; });
+      (log.followups||[]).forEach(f=>{ n += (f.photos||[]).length; });
+      return n;
+    }
+  }
+  return 0;
+}
+
 function resetSchedule(){
   if(!log||!log.tasks){showToast('⚠️ 請先開工');return;}
-  if(!confirm('確定重置行程？所有事項、備註、出勤記錄將被清空，只保留開工記錄。'))return;
-  log.tasks=[{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
-  log.problems=[];log.attendance=[];log.followups=[];log.summary='';log.top3=['','',''];log.progress=[];
-  saveData();render();showToast('✅ 行程已重置');
+  const box = document.getElementById('resetScopeList');
+  if(!box) return;
+  box.innerHTML = RESET_SCOPES.map(s => {
+    const n = resetScopeCount(s.key);
+    const disabled = n === 0;
+    return `<label style="display:flex;align-items:center;gap:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;font-size:0.8rem;cursor:${disabled?'default':'pointer'};opacity:${disabled?0.55:1}">
+      <input type="checkbox" value="${s.key}" ${disabled?'disabled':''} style="width:18px;height:18px;flex-shrink:0">
+      <span style="flex:1">${s.label}${s.hint?` <span style="color:var(--slate-400);font-size:0.7rem">${s.hint}</span>`:''}</span>
+      <span style="color:var(--slate-400);font-size:0.72rem;white-space:nowrap">${n} ${s.key==='photos'?'張':'項'}</span>
+    </label>`;
+  }).join('');
+  openModal('modalReset');
+}
+
+function applyResetScopes(scopes){
+  const sc = new Set(scopes);
+  // 待跟進：先刪佢哋嘅照片（同單項刪除行為一致）
+  if(sc.has('followups') && (log.followups||[]).length){
+    log.followups.forEach(f => { (f.photos||[]).forEach(id => deletePhotoFromDB(id).catch(()=>{})); });
+  }
+  // 行程事項：保留開工記錄
+  if(sc.has('tasks')){
+    log.tasks = [{timeRange:'09:00-09:00',desc:'開工',status:'已完成',location:'—',workType:'—',photoStatus:'無照片',photos:[],category:'個人',itemCategory:'',personnel:log.person||'傑'}];
+  }
+  if(sc.has('problems')) log.problems = [];
+  if(sc.has('attendance')) log.attendance = [];
+  if(sc.has('followups')) log.followups = [];
+  if(sc.has('summary')) log.summary = '';
+  if(sc.has('top3')) log.top3 = ['','',''];
+  // 全部照片：清 IndexedDB ＋ 清走殘留引用
+  if(sc.has('photos')){
+    clearAllPhotosFromDB();
+    (log.tasks||[]).forEach(t => { if(t.photos&&t.photos.length){ t.photos=[]; t.photoStatus='無照片'; } });
+    (log.followups||[]).forEach(f => { if(f.photos) f.photos=[]; });
+  }
+  saveData(); render(); closeModal('modalReset');
+  showToast('✅ 已清除所選資料');
+}
+
+function resetClearSelected(){
+  const checked = Array.from(document.querySelectorAll('#resetScopeList input[type=checkbox]:checked')).map(cb => cb.value);
+  if(!checked.length){ showToast('⚠️ 請至少揀一個範圍'); return; }
+  if(!confirm('確定清除已揀嘅資料範圍？此操作無法復原。')) return;
+  applyResetScopes(checked);
+}
+
+function resetClearAll(){
+  if(!confirm('確定清除全部資料？包括行程、問題、考勤、待跟進、小復盤、TOP3、進度記錄同所有照片。\n此操作無法復原！')) return;
+  applyResetScopes(RESET_SCOPES.map(s => s.key));
+}
+
+function clearAllPhotosFromDB(){
+  initPhotoDB().then(db => {
+    return new Promise(resolve => {
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      const req = tx.objectStore(DB_STORE).clear();
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+    });
+  }).catch(()=>{});
 }
 
 // ── KEYBOARD SHORTCUTS ──

@@ -120,6 +120,15 @@ body {
 .cat-badge.cat-維護 { background: #dcfce7; color: #15803d; }
 .cat-badge.cat-助手 { background: #fef3c7; color: #b45309; }
 .cat-badge.cat-個人 { background: #f3e8ff; color: #7c3aed; }
+/* 項目階段徽章（準備／施工／調試 三色） */
+.stage-badge {
+  display: inline-block; padding: 1px 7px; border-radius: 10px;
+  font-size: 0.62rem; font-weight: 700; text-align: center;
+  white-space: nowrap;
+}
+.stage-badge.stage-準備 { background: #fef3c7; color: #b45309; }
+.stage-badge.stage-施工 { background: #dbeafe; color: #1d4ed8; }
+.stage-badge.stage-調試 { background: #dcfce7; color: #15803d; }
 /* 編輯modal照片區域 */
 .edit-photos-area { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 .edit-photo-item {
@@ -979,6 +988,14 @@ body {
         </div>
       </div>
       <div class="form-group">
+        <label>階段 <span class="hint">項目進度分類</span></label>
+        <select class="form-select" id="fStage">
+          <option value="準備">準備</option>
+          <option value="施工">施工</option>
+          <option value="調試">調試</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label><input type="checkbox" id="fHasPhoto" onchange="document.getElementById('fPhotoPathGroup').style.display=this.checked?'block':'none'"> 有拍照</label>
       </div>
       <div class="form-group" id="fPhotoPathGroup" style="display:none">
@@ -1059,6 +1076,14 @@ body {
         <div id="feCustomProjectGroup" style="display:none;margin-top:4px">
           <input class="form-input" id="feCustomProject" placeholder="輸入自訂項目" style="font-size:0.82rem">
         </div>
+      </div>
+      <div class="form-group">
+        <label>階段 <span class="hint">項目進度分類</span></label>
+        <select class="form-select" id="feStage">
+          <option value="準備">準備</option>
+          <option value="施工">施工</option>
+          <option value="調試">調試</option>
+        </select>
       </div>
       <div class="form-group" id="fePhotosGroup" style="display:none">
         <label>照片 <span class="hint">點擊 ✕ 刪除</span></label>
@@ -1309,12 +1334,15 @@ const OUT_FIELDS = [
   {key:'category', label:'分類', wch:7},
   {key:'itemCategory', label:'項位分類', wch:10},
   {key:'project', label:'項目', wch:14},
+  {key:'stage', label:'階段', wch:7},
   {key:'personnel', label:'人員', wch:8},
   {key:'location', label:'地點', wch:10},
   {key:'workType', label:'工種', wch:7},
   {key:'qty', label:'數量', wch:8},
   {key:'photos', label:'照片', wch:8}
 ];
+// 項目階段（固定 3 階段：準備 → 施工 → 調試）
+const STAGE_ORDER = ['準備','施工','調試'];
 // 重置資料範圍定義（放最頂，避免 const 提升順序問題）
 const RESET_SCOPES = [
   { key:'tasks',      label:'📋 行程事項',   hint:'保留開工記錄' },
@@ -1592,7 +1620,7 @@ function renderTaskList() {
     const canUp=i>0, canDown=i<log.tasks.length-1;
     html+=`<div class="task-row">
       <div class="time">${escHtml(t.timeRange)}</div>
-      <div class="desc">${escHtml(t.desc)}${t.qtyTotal&&Number(t.qtyTotal)>0?` <span class="qty-badge">${Number(t.qtyDone)||0}/${t.qtyTotal}</span>`:''}</div>
+      <div class="desc"><span class="stage-badge stage-${pvTaskStage(t)}">${escHtml(pvTaskStage(t))}</span> ${escHtml(t.desc)}${t.qtyTotal&&Number(t.qtyTotal)>0?` <span class="qty-badge">${Number(t.qtyDone)||0}/${t.qtyTotal}</span>`:''}</div>
       <div><span class="status-badge ${sc}">${escHtml(t.status)}</span></div>
       <div><span class="cat-badge cat-${escHtml(cat)}">${escHtml(cat)}</span></div>
       <div style="font-size:0.75rem;color:var(--slate-500)">${escHtml(ic)}</div>
@@ -1780,7 +1808,20 @@ function renderProgressSummary() {
     const pPct = pvGroupPct(ptasks);
     totalT+=ptasks.length; totalD+=pDone;
     const locs = [...new Set(ptasks.map(t => (t.location && t.location!=='—') ? t.location : '').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
-    const chips = ptasks.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${icon[t.status]||'❓'} ${escHtml(t.desc)}${pvTaskNumTag(t)}</span>`).join('');
+    const chipsOf = list => list.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${icon[t.status]||'❓'} ${escHtml(t.desc)}${pvTaskNumTag(t)}</span>`).join('');
+    const stgMap = {準備:[],施工:[],調試:[]};
+    ptasks.forEach(t=>stgMap[pvTaskStage(t)].push(t));
+    const stageBlocks = STAGE_ORDER.filter(s=>stgMap[s].length).map(s=>{
+      const list=stgMap[s], sDone=list.filter(t=>t.status==='已完成').length, sPct=pvGroupPct(list);
+      return `<div style="margin-top:4px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;margin-bottom:1px">
+          <span class="stage-badge stage-${s}">${s}</span>
+          <span style="color:var(--slate-400)">${sDone}/${list.length}</span>
+          <span style="font-weight:700;color:${pctColor(sPct)}">${sPct}%</span>
+        </div>
+        <div>${chipsOf(list)}</div>
+      </div>`;
+    }).join('');
     const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
     return `<div style="border:1px solid var(--slate-200);border-radius:8px;background:#fff;padding:6px 10px;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1791,7 +1832,7 @@ function renderProgressSummary() {
         <span style="font-size:0.72rem;font-weight:700;color:${pctColor(pPct)}">${pPct}%</span>
       </div>
       <div style="margin-top:3px"><div style="height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${pPct}%;height:100%;background:${barColor};border-radius:3px"></div></div></div>
-      <div style="margin-top:4px">${chips}</div>
+      <div>${stageBlocks}</div>
     </div>`;
   }).join('');
   const totalPct = pvGroupPct(workTasks);
@@ -1822,7 +1863,6 @@ function renderProjectProgressArea(){
   if(fromSnapshot && snap) snap.tasks = workTasks; // 統一後續引用
   const ref = pvRefProjects();
   const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
-  const wtIcon = {'維修':'🔧','檢查':'🔍','落貨':'🚚','助手':'🤝','安裝':'🛠️','搬運':'📦','焊接':'⚡','除銹':'🧽'};
   const stCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
   const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
   const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
@@ -1866,14 +1906,27 @@ function renderProjectProgressArea(){
       const pPct = hasTasks ? pvGroupPct(ptasks)
         : (g.records.length ? Math.round(g.records.reduce((s,e)=>s+(Number(e.pct)||0),0)/g.records.length) : 0);
       // 第三級：事項 — 今日事項行（動態追蹤）＋ 項目記錄行（自動記錄＝事項快照，有今日事項時唔重複顯示）
-      const tRows = ptasks.map(t => `<div class="pv-row" style="background:transparent;padding:2px 0">
+      const rowOf = t => `<div class="pv-row" style="background:transparent;padding:2px 0">
         <span style="font-size:0.78rem;min-width:16px">${icon[t.status]||'❓'}</span>
         <span class="pv-desc" style="font-size:0.78rem">${escHtml(t.desc)}</span>
-        ${t.workType && t.workType!=='—' ? `<span style="font-size:0.65rem;color:var(--slate-500);background:var(--slate-100);border-radius:8px;padding:0 6px;white-space:nowrap">${wtIcon[t.workType]||'🔨'}${escHtml(t.workType)}</span>` : ''}
         ${pvTaskNumTag(t)}
+        <span class="stage-badge stage-${pvTaskStage(t)}">${escHtml(pvTaskStage(t))}</span>
         <span class="pv-status ${stCls(t.status)}">${escHtml(t.status)}</span>
         <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${escHtml(t.timeRange||'')}</span>
-      </div>`).join('');
+      </div>`;
+      const stgMap = {準備:[],施工:[],調試:[]};
+      ptasks.forEach(t => stgMap[pvTaskStage(t)].push(t));
+      const tRows = STAGE_ORDER.filter(s => stgMap[s].length).map(s => {
+        const list = stgMap[s], sDone = list.filter(t=>t.status==='已完成').length, sPct = pvGroupPct(list);
+        return `<div style="margin-top:3px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--slate-500);margin-bottom:1px">
+            <span class="stage-badge stage-${s}">${s}</span>
+            <span>${sDone}/${list.length}</span>
+            <span style="font-weight:700;color:${pctColor(sPct)}">${sPct}%</span>
+          </div>
+          ${list.map(rowOf).join('')}
+        </div>`;
+      }).join('');
       let recs = g.records.filter(r => !r.auto);
       if(!ptasks.length && !recs.length) recs = g.records; // 記錄項目（今日冇事項）→ 顯示記錄資料
       const rRows = recs.map(r => {
@@ -2048,6 +2101,7 @@ function taskFieldVal(t, key, log){
     case 'category': return t.category || firstCategory();
     case 'itemCategory': return t.itemCategory || '';
     case 'project': return t.project || '—';
+    case 'stage': return t.stage || '準備';
     case 'personnel': return t.personnel || (log.person || '傑');
     case 'location': return t.location || '—';
     case 'workType': return t.workType || '—';
@@ -2271,6 +2325,7 @@ function addTask(){
   document.getElementById('fLocation').value='—';document.getElementById('fWorkType').value='—';
   document.getElementById('fCategory').value=firstCategory();
   document.getElementById('fItemCategory').value='';
+  document.getElementById('fStage').value='準備';
   renderItemCategoryDropdowns();
   document.getElementById('fHasPhoto').checked=false;document.getElementById('fPhotoPathGroup').style.display='none';
   document.getElementById('fPhotoInput').value='';document.getElementById('customLocationGroup').style.display='none';document.getElementById('customWorkTypeGroup').style.display='none';
@@ -2298,13 +2353,14 @@ function confirmTask(){
   const ic=document.getElementById('fItemCategory').value||'';
   let proj=document.getElementById('fProject').value;
   if(proj==='__custom__')proj=document.getElementById('fCustomProject').value.trim()||'—';
+  const stg=document.getElementById('fStage').value||'準備';
   let pnl=document.getElementById('fPersonnel').value;
   if(pnl==='__custom__')pnl=document.getElementById('fCustomPersonnel').value.trim()||(log.person||'傑');
   if(!s||!e){showToast('⚠️ 請填寫時間');return;} if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;} if(!d){showToast('⚠️ 請填寫事項內容');return;}
   // 完成度揀「待辦」時可輸入數量（已完成 / 需完成）→ 存入 qtyDone/qtyTotal
   const qty = (st === '待辦') ? getTaskQty() : null;
   const hp=document.getElementById('fHasPhoto').checked, ps=hp?'有拍照':'無照片', fi=document.getElementById('fPhotoInput');
-  const baseTask={timeRange:`${s}-${e}`,desc:d,status:st,location:loc,workType:wt,photoStatus:ps,photos:[],category:cat,itemCategory:ic,project:proj,personnel:pnl,qtyDone:qty?qty.qtyDone:null,qtyTotal:qty?qty.qtyTotal:null};
+  const baseTask={timeRange:`${s}-${e}`,desc:d,status:st,location:loc,workType:wt,photoStatus:ps,photos:[],category:cat,itemCategory:ic,project:proj,stage:stg,personnel:pnl,qtyDone:qty?qty.qtyDone:null,qtyTotal:qty?qty.qtyTotal:null};
   if(hp&&fi.files&&fi.files.length>0){
     const files=Array.from(fi.files);
     Promise.all(files.map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(f);}))).then(results=>{
@@ -2374,6 +2430,7 @@ function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];edit
     feProj.value = '—';
     feCustomProj.style.display = 'none';
   }
+  document.getElementById('feStage').value = pvTaskStage(t);
   feRenderPhotos(i);openModal('modalEditTask');}
 function feRenderPhotos(i){
   const t=log.tasks[i], area=document.getElementById('fePhotosArea'), grp=document.getElementById('fePhotosGroup');
@@ -2432,7 +2489,7 @@ function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];const s=
     if(!isNaN(dQty) && !isNaN(tQty) && tQty > 0){ t.qtyDone = dQty; t.qtyTotal = tQty; }
     else { delete t.qtyDone; delete t.qtyTotal; }
   } else { delete t.qtyDone; delete t.qtyTotal; }
-let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.category=document.getElementById('feCategory').value||'維護';t.itemCategory=document.getElementById('feItemCategory').value||'';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
+let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.stage=document.getElementById('feStage').value||'準備';t.category=document.getElementById('feCategory').value||'維護';t.itemCategory=document.getElementById('feItemCategory').value||'';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
 
 
 
@@ -2467,8 +2524,8 @@ function confirmSplit(){
   const n1=document.getElementById('splitName1').value.trim()||ot.desc, n2=document.getElementById('splitName2').value.trim()||ot.desc+'（續）';
   const parts=ot.timeRange.split('-'), start=parts[0], end=parts[1];
   if(b<=start||b>=end){showToast('⚠️ 拆分邊界時間必須在原時間範圍內');return;}
-  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑'),qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
-  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑'),qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
+  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑'),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
+  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:ot.personnel||(log.person||'傑'),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
   if(ot.photos&&ot.photos.length>0){ot.photos.forEach((pid,pi)=>{const s=document.getElementById('splitPhoto_'+pi);if(s&&s.value==='2')t2.photos.push(pid);else t1.photos.push(pid);});t1.photoStatus=t1.photos.length>0?'有拍照':'無照片';t2.photoStatus=t2.photos.length>0?'有拍照':'無照片';}
   log.tasks[oi]=t1;log.tasks.splice(oi+1,0,t2);saveData();closeModal('modalSplit');render();showToast(`✅ 已拆分：${ot.desc}`);
 }
@@ -3337,6 +3394,8 @@ function pvTaskProject(t, ref){
   }
   return '';
 }
+// 事項階段：準備／施工／調試（舊資料冇 stage → 預設 準備）
+function pvTaskStage(t){ return (t && (t.stage==='施工' || t.stage==='調試')) ? t.stage : '準備'; }
 
 // ── 事項文字抽進度：由 desc 數字關鍵字（%／分數／成）→ 0-100；冇數字就按狀態 ──
 function pvTaskPct(t){
