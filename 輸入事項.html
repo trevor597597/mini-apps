@@ -1851,12 +1851,15 @@ function renderProgressSummary() {
 function renderProjectProgressArea(){
   const body = document.getElementById('projectProgressBody');
   if(!body) return;
+  // 未揀地點嘅事項（無關地點）唔列入項目進度清單
+  const hasLoc = t => t && t.location && t.location !== '—';
   // 優先即時資料；換日／重置後 log.tasks 冇嘢 → fallback 上次獨立快照
-  let workTasks = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
+  const liveWorkTasks = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
+  let workTasks = liveWorkTasks.filter(hasLoc);
   let snap = null;
-  if(!workTasks.length){
+  if(!liveWorkTasks.length){
     snap = getProjProgressSnapshot();
-    if(snap && snap.tasks && snap.tasks.length) workTasks = snap.tasks;
+    if(snap && snap.tasks && snap.tasks.length) workTasks = snap.tasks.filter(hasLoc);
   }
   const entries = getProgressEntries().filter(e => e && e.desc); // 項目記錄：分級第二級「項目」嘅來源
   const fromSnapshot = !!snap;
@@ -1978,10 +1981,12 @@ function renderProjectProgressArea(){
   if(fromSnapshot){
     const savedAt = snap && snap.savedAt ? snap.savedAt : '';
     out = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + out;
+  } else if(!out && liveWorkTasks.length){
+    out = '<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日事項未揀地點 — 唔列入項目進度清單</div>';
   }
   body.innerHTML = out;
-  // 即時資料 → 更新獨立快照（換日／重置後仍可睇返）
-  if(!fromSnapshot && log && log.dateStr){
+  // 即時資料 → 更新獨立快照（換日／重置後仍可睇返；冇地點事項唔覆蓋快照）
+  if(!fromSnapshot && log && log.dateStr && workTasks.length){
     saveProjProgressSnapshot(log.dateStr, workTasks);
   }
 }
@@ -1989,15 +1994,18 @@ function renderProjectProgressArea(){
 // ── 更新進度：將今日事項逐條寫入項目記錄（只記 地點＋項目＋事項）──
 function updateProgressFromTasks(){
   if(!log || !log.tasks){ showToast('⚠️ 請先開工'); return; }
-  const workTasks = log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工');
-  if(!workTasks.length){ showToast('⚠️ 今日未有工作事項'); return; }
+  const allWork = log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工');
+  if(!allWork.length){ showToast('⚠️ 今日未有工作事項'); return; }
+  // 未揀地點嘅事項（無關地點）唔寫入進度記錄
+  const workTasks = allWork.filter(t => t.location && t.location!=='—');
+  if(!workTasks.length){ showToast('⚠️ 今日事項未揀地點，唔列入進度'); return; }
   // 冪等：先清走上次自動生成嘅記錄（auto:true），保留手動記錄
   const manual = getProgressEntries().filter(e => !e.auto);
   const ref = pvRefProjects();
   // 每條事項 → 一條記錄：只記 地點＋項目（loc）+ 事項（desc），唔再按工種歸堆
   const autoEntries = workTasks.map(t => {
     const pk = pvTaskProject(t, ref) || '未分類';
-    const lk = t.location && t.location!=='—' ? t.location : '其他';
+    const lk = t.location;
     return {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       loc: pvMergeLoc(lk, pk),
