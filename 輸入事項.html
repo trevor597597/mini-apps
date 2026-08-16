@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.2</title>
+<title>工作日誌 — 輸入事項工具 v3.3</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -678,7 +678,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.2</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.3</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -2222,7 +2222,7 @@ function openSaveModal(){
   openModal('modalSaveAs');
 }
 function saveAsPDF(){ closeModal('modalSaveAs'); openPDFPreview(); }
-function saveAsXLSX(){ closeModal('modalSaveAs'); exportXLSX(); }
+function saveAsXLSX(){ closeModal('modalSaveAs'); exportXLSXWithPhotos(); }
 function saveAsMD(){ closeModal('modalSaveAs'); downloadMarkdown(); }
 
 function outTmplSelectAll(on){
@@ -3239,10 +3239,10 @@ function exportXLSXWithPhotos() {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `工作日誌_${dateStr}_含圖.xlsx`;
+      a.download = `工作日誌_${dateStr}.xlsx`;
       a.click();
       URL.revokeObjectURL(a.href);
-      showToast('✅ 已輸出含照片的 XLSX');
+      showToast('✅ 已輸出 ' + `工作日誌_${dateStr}.xlsx`);
     }).catch(err => {
       showToast('⚠️ XLSX 生成失敗：' + err.message);
       console.error(err);
