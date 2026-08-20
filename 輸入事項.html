@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.7</title>
+<title>工作日誌 — 輸入事項工具 v3.8</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -290,7 +290,7 @@ body {
   min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center;
 }
 .modal-body { padding: 16px 20px; }
-/* 五級劃分：前四級（委派方/地點/項目/完成度）左欄，執行人員右欄 */
+/* 五級劃分：前四級（負責人/地點/項目/完成度）左欄，執行人員右欄 */
 .five-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; align-items: start; }
 .five-grid .five-left { display: flex; flex-direction: column; gap: 14px; }
 .five-grid .five-right {
@@ -546,14 +546,14 @@ body {
 .pv-card-tasks { border-top:1px dashed var(--slate-200); }
 .pv-card-tasks-head { display:flex; justify-content:space-between; align-items:center; padding:8px 12px 4px; font-size:0.75rem; font-weight:700; color:var(--slate-600); }
 .pv-card-tasks-head span { font-weight:400; color:var(--slate-400); font-size:0.7rem; }
-/* ── 項目進度（資訊頁）：四級分級 委托方 → 地點 → 項目 → 事項 ── */
+/* ── 項目進度（資訊頁）：四級分級 負責人 → 地點 → 項目 → 事項 ── */
 .pp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; }
 .pp-loc { font-size:0.68rem; font-weight:600; color:var(--slate-600); background:var(--slate-100); padding:1px 7px; border-radius:10px; white-space:nowrap; }
 .pp-wt-head { display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--slate-600); padding:6px 0 2px; }
 .pp-wt-head:first-child { padding-top:0; }
 .pp-loc-sec { border:1px solid var(--slate-200); border-radius:12px; padding:10px 12px; margin-bottom:12px; background:var(--slate-50); }
 .pp-loc-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-/* 第一級：委托方 分區 */
+/* 第一級：負責人 分區 */
 .pp-dlg-sec { border:1px solid var(--slate-300); border-radius:14px; margin-bottom:16px; background:#fff; overflow:hidden; }
 .pp-dlg-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px 6px; background:linear-gradient(90deg,#eef2ff,#f8fafc); }
 .pp-dlg-body { padding:12px 12px 2px; }
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.7</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.8</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -749,8 +749,6 @@ body {
         <div class="inline-actions" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--slate-200)">
           <button class="btn btn-sm btn-primary" onclick="addTask()">➕ 新增事項</button>
           <button class="btn btn-sm btn-secondary" onclick="viewEditTasks()">📝 編輯</button>
-          <button class="btn btn-sm btn-secondary" onclick="splitTask()">✂️ 拆分</button>
-          <button class="btn btn-sm btn-secondary" onclick="addPhotos()">📸 照片</button>
           <button class="btn btn-sm btn-success" onclick="finishDay()">🏁 收工</button>
           <button class="btn btn-sm" id="viewToggleBtn" style="border:1.5px solid var(--slate-300);background:var(--slate-50)" onclick="toggleMatrixView()">📋 列表</button>
         </div>
@@ -830,7 +828,7 @@ body {
         <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
           <input class="form-input" id="sCommonInput" placeholder="輸入名稱（逗號分隔可批量新增）" style="flex:1;min-width:120px">
           <select class="form-select" id="sCommonType" style="width:120px;flex-shrink:0">
-            <option value="delegators">🤝 委派方</option>
+            <option value="delegators">👤 負責人</option>
             <option value="personnel">👥 人員</option>
             <option value="locations">📍 地點</option>
             <option value="projects">🏷️ 項目</option>
@@ -843,7 +841,7 @@ body {
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <div style="display:flex;flex-wrap:wrap;gap:16px">
         <div style="flex:1;min-width:140px">
-          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">🤝 委派方</label>
+          <label style="font-size:0.72rem;font-weight:600;color:var(--slate-500)">👤 負責人</label>
           <div id="sDelegatorsChips" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"></div>
         </div>
         <div style="flex:1;min-width:140px">
@@ -874,15 +872,16 @@ body {
 
   <!-- Tab: 資訊 -->
   <div class="tab-content" id="tab-info">
-  <!-- Card: 項目進度（自動跟蹤行程事項，分級 委托方 → 地點 → 項目 → 事項，項目由項目記錄讀取） -->
+  <!-- Card: 項目進度（自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取） -->
   <div class="card" id="projectProgressCard">
     <div class="card-header">
       <h2>📊 項目進度</h2>
-      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（委托方＋地點＋項目＋事項）">🔄 更新進度</button>
+      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（負責人＋地點＋項目＋事項）">🔄 更新進度</button>
+      <button class="btn btn-sm btn-secondary" onclick="openAssignDelegator()" title="更改已有記錄嘅負責人（可多名）">✏️ 編輯負責人</button>
     </div>
     <div class="card-body">
       <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        資料分級 <b>委托方 → 地點 → 項目 → 事項</b> 四級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 委托方＋地點＋項目＋事項。
+        資料分級 <b>負責人 → 地點 → 項目 → 事項</b> 四級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 負責人＋地點＋項目＋事項。
       </div>
       <div id="projectProgressBody">
         <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
@@ -975,18 +974,28 @@ body {
         </div>
       </div>
       <div class="form-group"><label>事項內容</label><input class="form-input" id="fDesc" placeholder="例如：更換消防閥門"></div>
-      <!-- 五級劃分：①委派方 ②地點 ③項目 ④完成度（左欄）→ ⑤執行人員（右欄，清單列） -->
+      <!-- 圖像儲存（事項內容下方）：暫存 dataURL，確定時寫入 IndexedDB -->
+      <div class="form-group" id="fPhotosGroup">
+        <label>照片 <span class="hint">點擊 ✕ 刪除</span></label>
+        <div class="edit-photos-area" id="fPhotosArea"></div>
+        <div style="margin-top:8px">
+          <label class="btn btn-sm btn-primary" style="cursor:pointer;display:inline-flex">
+            📸 新增照片
+            <input type="file" accept="image/*" multiple id="fPhotoInput" style="display:none" onchange="fAddPhotos(event)">
+          </label>
+        </div>
+      </div>
+      <!-- 五級劃分：①負責人 ②地點 ③項目 ④完成度（左欄）→ ⑤執行人員（右欄，清單列） -->
       <div class="five-grid">
         <div class="five-left">
           <div class="form-group">
-            <label>① 委派方</label>
-            <select class="form-select" id="fDelegator" onchange="document.getElementById('fCustomDelegatorGroup').style.display=this.value==='__custom__'?'block':'none'">
-              <option value="—">—</option>
-              <option value="__custom__">其他（請輸入）</option>
-            </select>
-            <div id="fCustomDelegatorGroup" class="form-group" style="display:none;margin-top:4px">
-              <input class="form-input" id="fCustomDelegator" placeholder="輸入委派方">
+            <label>① 負責人 <span class="hint">可添加多名</span></label>
+            <div class="person-list-row">
+              <input class="form-input" id="fDlgInput" list="fDlgDatalist" placeholder="輸入負責人" onkeydown="if(event.key==='Enter'){event.preventDefault();addTaskDlg();}">
+              <datalist id="fDlgDatalist"></datalist>
+              <button type="button" class="btn btn-sm btn-primary" onclick="addTaskDlg()" title="添加負責人">➕</button>
             </div>
+            <div class="person-chips" id="fDlgChips"></div>
           </div>
           <div class="form-group">
             <label>② 地點</label>
@@ -1039,16 +1048,6 @@ body {
         </div>
       </div>
       <div class="form-group">
-        <label>工種 <span class="hint">可選</span></label>
-        <select class="form-select" id="fWorkType">
-          <option value="—">—</option>
-          <option value="__custom__">其他（請輸入）</option>
-        </select>
-        <div id="customWorkTypeGroup" class="form-group" style="display:none;margin-top:4px">
-          <input class="form-input" id="fCustomWorkType" placeholder="輸入自訂工種">
-        </div>
-      </div>
-      <div class="form-group">
         <label>分類</label>
         <select class="form-select" id="fCategory"></select>
       </div>
@@ -1059,14 +1058,6 @@ body {
           <option value="施工">施工</option>
           <option value="調試">調試</option>
         </select>
-      </div>
-      <div class="form-group">
-        <label><input type="checkbox" id="fHasPhoto" onchange="document.getElementById('fPhotoPathGroup').style.display=this.checked?'block':'none'"> 有拍照</label>
-      </div>
-      <div class="form-group" id="fPhotoPathGroup" style="display:none">
-        <label>添加照片</label>
-        <input class="form-input" id="fPhotoInput" type="file" accept="image/*" multiple style="padding:8px;font-size:0.78rem">
-        <div class="hint" style="margin-top:4px">照片儲存在 IndexedDB，無容量限制</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1102,18 +1093,28 @@ body {
         </div>
       </div>
       <div class="form-group"><label>事項內容</label><input class="form-input" id="feDesc"></div>
-      <!-- 五級劃分：①委派方 ②地點 ③項目 ④完成度（左欄）→ ⑤執行人員（右欄，清單列） -->
+      <!-- 圖像儲存（事項內容下方，同新增事項同步）：已儲存照片即時顯示，可隨時加相 -->
+      <div class="form-group" id="fePhotosGroup">
+        <label>照片 <span class="hint">點擊 ✕ 刪除</span></label>
+        <div class="edit-photos-area" id="fePhotosArea"></div>
+        <div style="margin-top:8px">
+          <label class="btn btn-sm btn-primary" style="cursor:pointer;display:inline-flex">
+            📸 新增照片
+            <input type="file" accept="image/*" multiple id="fePhotoInput" style="display:none" onchange="feAddPhotos(event)">
+          </label>
+        </div>
+      </div>
+      <!-- 五級劃分：①負責人 ②地點 ③項目 ④完成度（左欄）→ ⑤執行人員（右欄，清單列） -->
       <div class="five-grid">
         <div class="five-left">
           <div class="form-group">
-            <label>① 委派方</label>
-            <select class="form-select" id="feDelegator" onchange="document.getElementById('feCustomDelegatorGroup').style.display=this.value==='__custom__'?'block':'none'">
-              <option value="—">—</option>
-              <option value="__custom__">其他（請輸入）</option>
-            </select>
-            <div id="feCustomDelegatorGroup" class="form-group" style="display:none;margin-top:4px">
-              <input class="form-input" id="feCustomDelegator" placeholder="輸入委派方" style="font-size:0.82rem">
+            <label>① 負責人 <span class="hint">可添加多名</span></label>
+            <div class="person-list-row">
+              <input class="form-input" id="feDlgInput" list="feDlgDatalist" placeholder="輸入負責人" onkeydown="if(event.key==='Enter'){event.preventDefault();addEditDlg();}">
+              <datalist id="feDlgDatalist"></datalist>
+              <button type="button" class="btn btn-sm btn-primary" onclick="addEditDlg()" title="添加負責人">➕</button>
             </div>
+            <div class="person-chips" id="feDlgChips"></div>
           </div>
           <div class="form-group">
             <label>② 地點</label>
@@ -1158,16 +1159,6 @@ body {
         </div>
       </div>
       <div class="form-group">
-        <label>工種</label>
-        <select class="form-select" id="feWorkType">
-          <option value="—">—</option>
-          <option value="__custom__">其他（請輸入）</option>
-        </select>
-        <div id="feCustomWorkTypeGroup" style="display:none;margin-top:4px">
-          <input class="form-input" id="feCustomWorkType" placeholder="輸入自訂工種" style="font-size:0.82rem">
-        </div>
-      </div>
-      <div class="form-group">
         <label>分類</label>
         <select class="form-select" id="feCategory"></select>
       </div>
@@ -1178,16 +1169,6 @@ body {
           <option value="施工">施工</option>
           <option value="調試">調試</option>
         </select>
-      </div>
-      <div class="form-group" id="fePhotosGroup" style="display:none">
-        <label>照片 <span class="hint">點擊 ✕ 刪除</span></label>
-        <div class="edit-photos-area" id="fePhotosArea"></div>
-        <div style="margin-top:8px">
-          <label class="btn btn-sm btn-primary" style="cursor:pointer;display:inline-flex">
-            📸 新增照片
-            <input type="file" accept="image/*" multiple id="fePhotoInput" style="display:none" onchange="feAddPhotos(event)">
-          </label>
-        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1299,6 +1280,17 @@ body {
     <div class="modal-header"><h3>📊 項目進度概覽</h3><button class="modal-close" onclick="closeModal('modalProgressOverview')">✕</button></div>
     <div class="modal-body" id="progressOverviewBody"></div>
     <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalProgressOverview')">關閉</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalAssignDlg">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><h3>✏️ 編輯負責人</h3><button class="modal-close" onclick="closeModal('modalAssignDlg')">✕</button></div>
+    <div class="modal-body" id="assignDlgBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalAssignDlg')">取消</button>
+      <button class="btn btn-primary" onclick="saveAssignDelegator()">✅ 儲存分配</button>
+    </div>
   </div>
 </div>
 
@@ -2003,7 +1995,7 @@ function renderProgressSummary() {
   el.innerHTML = card;
 }
 
-// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級 委托方 → 地點 → 項目 → 事項，項目由項目記錄讀取 ──
+// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取 ──
 function renderProjectProgressArea(){
   const body = document.getElementById('projectProgressBody');
   if(!body) return;
@@ -2025,18 +2017,19 @@ function renderProjectProgressArea(){
   const stCls = s => ({'進行中':'st-進行中','已完成':'st-已完成','待辦':'st-待辦','已取消':'st-已取消'})[s]||'';
   const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
   const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
-  const dlgOf = t => (t.delegator && t.delegator!=='—' && t.delegator!=='') ? t.delegator : '未分類';
+  const dlgOf = t => { const a = toDlgArr(t.delegator); return a.length ? a.join('、') : '未分類'; };
   const sortZh = (a,b)=>a.localeCompare(b,'zh-Hant');
-  // 委派方 ↔ 地點 對照（由行程事項建立；項目記錄冇委派方 → 用地點對照兜底）
+  // 負責人 ↔ 地點 對照（由行程事項建立；項目記錄冇負責人 → 用地點對照兜底）
   const locDlg = {};
   workTasks.forEach(t => { const lk = locOf(t); if(!locDlg[lk]) locDlg[lk] = dlgOf(t); });
   const dlgOfEntry = e => {
-    if(e && e.delegator && e.delegator!=='—' && e.delegator!=='') return e.delegator;
+    const a = toDlgArr(e && e.delegator);
+    if(a.length) return a.join('、');
     const sp = pvSplitLoc(pvEntryKey(e));
     if(sp.location && locDlg[sp.location]) return locDlg[sp.location];
     return '未分類';
   };
-  // 第一級：委托方（行程事項 ∪ 項目記錄）
+  // 第一級：負責人（行程事項 ∪ 項目記錄）
   const dlgSet = new Set();
   workTasks.forEach(t => dlgSet.add(dlgOf(t)));
   entries.forEach(e => dlgSet.add(dlgOfEntry(e)));
@@ -2149,9 +2142,11 @@ function renderProjectProgressArea(){
       </div>`;
     });
     const dBarColor = dPct>=100 ? 'var(--green-500)' : dPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    const dlgAssignBtn = (dk==='未分類') ? `<button class="btn btn-sm btn-secondary" style="padding:2px 10px;font-size:0.7rem;min-height:26px" onclick="openAssignDelegator()" title="為未分類記錄指定負責人">✏️ 分配</button>` : '';
     html += `<div class="pp-dlg-sec">
       <div class="pp-dlg-head">
-        <span style="font-weight:700;font-size:0.85rem;color:#1e293b">🤝 ${escHtml(dk)}</span>
+        <span style="font-weight:700;font-size:0.85rem;color:#1e293b">👤 ${escHtml(dk)}</span>
+        ${dlgAssignBtn}
         <span style="font-size:0.7rem;color:var(--slate-400)">${dtasks.length} 項</span>
         <span style="flex:1"></span>
         <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${dDone}/${dtasks.length}</span>
@@ -2165,7 +2160,7 @@ function renderProjectProgressArea(){
   let out = html;
   if(out){
     out += `<div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
-      <span style="color:var(--slate-600)">共 <b>${dlgSet.size}</b> 個委托方 ｜ <b>${allLocSet.size}</b> 個地點 ｜ <b>${totalProj}</b> 個項目 ｜ <b>${totalT}</b> 項事項</span>
+      <span style="color:var(--slate-600)">共 <b>${dlgSet.size}</b> 個負責人 ｜ <b>${allLocSet.size}</b> 個地點 ｜ <b>${totalProj}</b> 個項目 ｜ <b>${totalT}</b> 項事項</span>
       <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
     </div>`;
   }
@@ -2182,7 +2177,104 @@ function renderProjectProgressArea(){
   }
 }
 
-// ── 更新進度：將今日事項逐條寫入項目記錄（只記 委托方＋地點＋項目＋事項）──
+// ── 編輯負責人：列出全部記錄（行程事項＋項目記錄），每行 chips 可多名（v3.8 改）──
+var adlgRows = [], adlgSnap = null, adlgEntries = [];
+function openAssignDelegator(){
+  const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
+  const liveWork = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
+  let tasks;
+  if(liveWork.length){ tasks = liveWork; adlgSnap = null; }
+  else { adlgSnap = getProjProgressSnapshot(); tasks = (adlgSnap && adlgSnap.tasks) ? adlgSnap.tasks : []; }
+  // 地點 → 負責人 對照（項目記錄兜底顯示用）
+  const locDlg = {};
+  tasks.forEach(t => { const lk = locOf(t); const a = toDlgArr(t.delegator); if(!locDlg[lk] && a.length) locDlg[lk] = a.join('、'); });
+  adlgEntries = getProgressEntries().filter(e => e && e.desc);
+  adlgRows = [];
+  tasks.forEach(t => {
+    adlgRows.push({ store: adlgSnap ? 'snap' : 'log', ref: t, dirty: false, arr: toDlgArr(t.delegator),
+      label: `📍 ${escHtml(locOf(t))}｜${t.timeRange?escHtml(t.timeRange):''}｜${escHtml(t.desc)}` });
+  });
+  adlgEntries.forEach(e => {
+    const sp = pvSplitLoc(pvEntryKey(e));
+    let hint = '';
+    const a = toDlgArr(e.delegator);
+    if(!a.length && sp.location && locDlg[sp.location]) hint = `（地點推斷：${escHtml(locDlg[sp.location])}）`;
+    adlgRows.push({ store: 'entries', ref: e, dirty: false, arr: a,
+      label: `📊 ${sp.location?escHtml(sp.location):'（無地點）'}｜${escHtml(e.desc||'')}${sp.project?`（${escHtml(sp.project)}）`:''}${hint}` });
+  });
+  if(!adlgRows.length){ showToast('👍 冇任何記錄可編輯'); return; }
+  const presets = getPresets().delegators || [];
+  let h = `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">全部記錄 <b>${adlgRows.length}</b> 項：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`;
+  h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;background:var(--blue-50);border:1px solid var(--blue-200);border-radius:8px">
+    <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">⚡ 全部設為：</span>
+    <select class="form-select" id="adlgBulk" onchange="adlgBulkApply()" style="flex:1">
+      <option value="">（逐項設定）</option>
+      ${presets.map(d=>`<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('')}
+    </select>
+  </div>`;
+  adlgRows.forEach((r,i)=>{
+    h += `<div style="padding:7px 9px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px">
+      <div style="font-size:0.76rem;color:var(--slate-600);margin-bottom:5px">${r.label}</div>
+      <div class="person-list-row">
+        <input class="form-input" id="adlgInp_${i}" list="adlgDl_${i}" placeholder="輸入負責人" onkeydown="if(event.key==='Enter'){event.preventDefault();adlgAdd(${i});}">
+        <datalist id="adlgDl_${i}">${presets.map(d=>`<option value="${escHtml(d)}"></option>`).join('')}</datalist>
+        <button type="button" class="btn btn-sm btn-primary" onclick="adlgAdd(${i})" title="添加負責人">➕</button>
+      </div>
+      <div class="person-chips" id="adlgChips_${i}"></div>
+    </div>`;
+  });
+  document.getElementById('assignDlgBody').innerHTML = h;
+  adlgRows.forEach((r,i)=>adlgRenderChips(i));
+  openModal('modalAssignDlg');
+}
+function adlgRenderChips(i){
+  const r = adlgRows[i], el = document.getElementById('adlgChips_'+i);
+  if(!r || !el) return;
+  if(!r.arr.length){ el.innerHTML = '<span class="person-empty">未分類（冇負責人）</span>'; return; }
+  el.innerHTML = r.arr.map((n,ci) =>
+    `<span class="person-chip">👤 ${escHtml(n)}<span class="del" onclick="adlgRemove(${i},${ci})" title="移除">✕</span></span>`
+  ).join('');
+}
+function adlgAdd(i){
+  const r = adlgRows[i], input = document.getElementById('adlgInp_'+i);
+  if(!r || !input) return;
+  const val = input.value.trim();
+  if(!val){ showToast('⚠️ 請輸入負責人'); return; }
+  if(r.arr.includes(val)){ showToast('⚠️ 已存在：' + val); input.value=''; return; }
+  r.arr.push(val); r.dirty = true; input.value='';
+  adlgRenderChips(i);
+}
+function adlgRemove(i, ci){
+  const r = adlgRows[i];
+  if(!r) return;
+  r.arr.splice(ci,1); r.dirty = true;
+  adlgRenderChips(i);
+}
+function adlgBulkApply(){
+  const b = document.getElementById('adlgBulk').value; if(!b) return;
+  adlgRows.forEach((r,i)=>{
+    r.arr = [b]; r.dirty = true;
+    const inp = document.getElementById('adlgInp_'+i); if(inp) inp.value='';
+    adlgRenderChips(i);
+  });
+}
+function saveAssignDelegator(){
+  let changed = 0; const stores = {log:false, snap:false, entries:false};
+  adlgRows.forEach((r)=>{
+    if(!r.dirty) return;           // 未改過嘅行唔郁
+    r.ref.delegator = r.arr.slice(); // 存陣列（[]＝未分類）；舊單值字串由 toDlgArr 兼容
+    changed++; stores[r.store] = true;
+  });
+  if(!changed){ showToast('⚠️ 未修改任何行'); return; }
+  if(stores.log) saveData();
+  if(stores.snap && adlgSnap) saveProjProgressSnapshot(adlgSnap.savedAt, adlgSnap.tasks);
+  if(stores.entries) saveProgressEntries(adlgEntries);
+  closeModal('modalAssignDlg');
+  renderProjectProgressArea();
+  showToast(`✅ 已更新 ${changed} 項負責人`);
+}
+
+// ── 更新進度：將今日事項逐條寫入項目記錄（只記 負責人＋地點＋項目＋事項）──
 function updateProgressFromTasks(){
   if(!log || !log.tasks){ showToast('⚠️ 請先開工'); return; }
   const allWork = log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工');
@@ -2193,14 +2285,14 @@ function updateProgressFromTasks(){
   // 冪等：先清走上次自動生成嘅記錄（auto:true），保留手動記錄
   const manual = getProgressEntries().filter(e => !e.auto);
   const ref = pvRefProjects();
-  // 每條事項 → 一條記錄：只記 委托方＋地點＋項目（loc）+ 事項（desc），唔再按工種歸堆
+  // 每條事項 → 一條記錄：只記 負責人＋地點＋項目（loc）+ 事項（desc），唔再按工種歸堆
   const autoEntries = workTasks.map(t => {
     const pk = pvTaskProject(t, ref) || '未分類';
     const lk = t.location;
     return {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       loc: pvMergeLoc(lk, pk),
-      delegator: t.delegator || '',
+      delegator: toDlgArr(t.delegator),
       desc: t.desc,
       pct: pvTaskPct(t),
       status: t.status || '待辦',
@@ -2538,14 +2630,14 @@ function addTask(){
   document.getElementById('fQtyGroup').style.display='none';
   document.getElementById('fQtyDone').value='';document.getElementById('fQtyTotal').value='';
   document.getElementById('fQtyPreview').textContent='';
-  document.getElementById('fLocation').value='—';document.getElementById('fWorkType').value='—';
+  document.getElementById('fLocation').value='—';
   document.getElementById('fCategory').value=firstCategory();
   document.getElementById('fStage').value='準備';
-  document.getElementById('fHasPhoto').checked=false;document.getElementById('fPhotoPathGroup').style.display='none';
-  document.getElementById('fPhotoInput').value='';document.getElementById('customLocationGroup').style.display='none';document.getElementById('customWorkTypeGroup').style.display='none';
-  // Populate delegator dropdown
-  refreshDelegatorDropdown('fDelegator');
-  document.getElementById('fCustomDelegatorGroup').style.display='none';
+  document.getElementById('fPhotoInput').value='';document.getElementById('customLocationGroup').style.display='none';
+  fPendingPhotos=[];fRenderPendingPhotos();
+  // Populate delegator chips (負責人清單列：可添加多名)
+  fDlgArr=[];renderTaskDlgChips();refreshDlgDatalist();
+  const fdi=document.getElementById('fDlgInput'); if(fdi) fdi.value='';
   // Populate personnel list (清單列：可添加多名)
   fPersonArr=[(log&&log.person)||'傑'];
   renderTaskPersonChips();
@@ -2553,17 +2645,16 @@ function addTask(){
   const fpi=document.getElementById('fPersonInput'); if(fpi) fpi.value='';
   // Populate location dropdown
   refreshLocationDropdown('fLocation');
-  // Populate work type dropdown
-  refreshWorkTypeDropdown('fWorkType');
   // Populate project dropdown
   refreshProjectDropdown('fProject');
   openModal('modalTask');
 }
 function confirmTask(){
   const s=drGetTime('fStart','fManualStart'),e=drGetTime('fEnd','fManualEnd'),d=document.getElementById('fDesc').value.trim(),st=document.getElementById('fStatus').value;
-  let dlg=document.getElementById('fDelegator').value;if(dlg==='__custom__')dlg=document.getElementById('fCustomDelegator').value.trim()||'—';
+  // 負責人：清單列陣列，冇揀就預設 log.person（或留空）
+  const dlgArr = (fDlgArr && fDlgArr.length) ? fDlgArr.slice() : [(log&&log.person)||'傑'];
   let loc=document.getElementById('fLocation').value;if(loc==='__custom__')loc=document.getElementById('fCustomLocation').value.trim()||'—';
-  let wt=document.getElementById('fWorkType').value;if(wt==='__custom__')wt=document.getElementById('fCustomWorkType').value.trim()||'—';
+  const wt='—';
   const cat=document.getElementById('fCategory').value||firstCategory();
   const ic='';
   let proj=document.getElementById('fProject').value;
@@ -2574,17 +2665,41 @@ function confirmTask(){
   if(!s||!e){showToast('⚠️ 請填寫時間');return;} if(s>=e){showToast('⚠️ 結束時間不可早於或等於開始時間');return;} if(!d){showToast('⚠️ 請填寫事項內容');return;}
   // 完成度揀「待辦」時可輸入數量（已完成 / 需完成）→ 存入 qtyDone/qtyTotal
   const qty = (st === '待辦') ? getTaskQty() : null;
-  const hp=document.getElementById('fHasPhoto').checked, ps=hp?'有拍照':'無照片', fi=document.getElementById('fPhotoInput');
-  const baseTask={timeRange:`${s}-${e}`,desc:d,status:st,delegator:dlg,location:loc,workType:wt,photoStatus:ps,photos:[],category:cat,itemCategory:ic,project:proj,stage:stg,personnel:pnl,qtyDone:qty?qty.qtyDone:null,qtyTotal:qty?qty.qtyTotal:null};
-  if(hp&&fi.files&&fi.files.length>0){
-    const files=Array.from(fi.files);
-    Promise.all(files.map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(f);}))).then(results=>{
-      const urls=results.filter(x=>x);
-      savePhotosToDB(urls).then(ids=>{baseTask.photos=ids;baseTask.photoStatus=ids.length>0?'有拍照':'無照片';log.tasks.push(baseTask);saveData();closeModal('modalTask');render();showToast(`✅ 已新增：${d}（${s}-${e}）`);});
-    });return;
+  const baseTask={timeRange:`${s}-${e}`,desc:d,status:st,delegator:dlgArr,location:loc,workType:wt,photoStatus:'無照片',photos:[],category:cat,itemCategory:ic,project:proj,stage:stg,personnel:pnl,qtyDone:qty?qty.qtyDone:null,qtyTotal:qty?qty.qtyTotal:null};
+  if(fPendingPhotos.length){
+    savePhotosToDB(fPendingPhotos).then(ids=>{baseTask.photos=ids;baseTask.photoStatus=ids.length>0?'有拍照':'無照片';log.tasks.push(baseTask);saveData();closeModal('modalTask');render();showToast(`✅ 已新增：${d}（${s}-${e}）`);});
+    return;
   }
   log.tasks.push(baseTask);
   saveData();closeModal('modalTask');render();showToast(`✅ 已新增：${d}（${s}-${e}）`);
+}
+
+// ── 新增事項：圖像儲存（事項內容下方；暫存 dataURL，確定時寫入 IndexedDB）──
+var fPendingPhotos = [];
+function fAddPhotos(e){
+  const fi=e.target;
+  if(!fi.files||!fi.files.length)return;
+  const files=Array.from(fi.files);
+  Promise.all(files.map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(f);}))).then(results=>{
+    const urls=results.filter(x=>x);
+    urls.forEach(u=>fPendingPhotos.push(u));
+    fRenderPendingPhotos();
+    showToast(`✅ 已選取 ${urls.length} 張照片（撳確定先至儲存）`);
+  });
+  fi.value='';
+}
+function fDeletePendingPhoto(pi){
+  if(pi<0||pi>=fPendingPhotos.length)return;
+  fPendingPhotos.splice(pi,1);
+  fRenderPendingPhotos();
+}
+function fRenderPendingPhotos(){
+  const area=document.getElementById('fPhotosArea');
+  if(!area)return;
+  area.innerHTML = fPendingPhotos.length ? fPendingPhotos.map((url,pi)=>`<div class="edit-photo-item">
+    <img src="${escHtml(url)}" onclick="viewImage('${escHtml(url)}')">
+    <button class="del-photo" onclick="fDeletePendingPhoto(${pi})" title="刪除照片">✕</button>
+  </div>`).join('') : '';
 }
 
 // ── FEATURE: Edit Tasks ──
@@ -2600,13 +2715,11 @@ function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];edit
   renderEditPersonChips();
   refreshPersonDatalist();
   const fePi=document.getElementById('fePersonInput'); if(fePi) fePi.value='';
-  // 委派方 dropdown 回填
-  refreshDelegatorDropdown('feDelegator');
-  const feDlg=document.getElementById('feDelegator'), feCustomDlg=document.getElementById('feCustomDelegatorGroup');
-  const dlgVal=t.delegator||'—';
-  if (dlgVal!=='—' && Array.from(feDlg.options).some(o=>o.value===dlgVal)) { feDlg.value=dlgVal; feCustomDlg.style.display='none'; }
-  else if (dlgVal!=='—') { feDlg.value='__custom__'; document.getElementById('feCustomDelegator').value=dlgVal; feCustomDlg.style.display='block'; }
-  else { feDlg.value='—'; feCustomDlg.style.display='none'; }
+  // 負責人 chips 回填（兼容舊單值字串）
+  feDlgArr = toDlgArr(t.delegator);
+  renderEditDlgChips();
+  refreshDlgDatalist();
+  const fedi=document.getElementById('feDlgInput'); if(fedi) fedi.value='';
   // 數量欄位（已完成 / 需完成）回填
   document.getElementById('feQtyDone').value = t.qtyDone!=null ? t.qtyDone : '';
   document.getElementById('feQtyTotal').value = t.qtyTotal!=null ? t.qtyTotal : '';
@@ -2627,21 +2740,6 @@ function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];edit
     feCustomLoc.style.display = 'none';
   }
   document.getElementById('feCategory').value=(getCategories().includes(t.category||'') ? t.category : firstCategory());
-  // Populate work type dropdown and set value
-  refreshWorkTypeDropdown('feWorkType');
-  const feWt = document.getElementById('feWorkType');
-  const feCustomWt = document.getElementById('feCustomWorkTypeGroup');
-  if (t.workType && Array.from(feWt.options).some(o => o.value === t.workType)) {
-    feWt.value = t.workType;
-    feCustomWt.style.display = 'none';
-  } else if (t.workType && t.workType !== '—') {
-    feWt.value = '__custom__';
-    document.getElementById('feCustomWorkType').value = t.workType;
-    feCustomWt.style.display = 'block';
-  } else {
-    feWt.value = '—';
-    feCustomWt.style.display = 'none';
-  }
   // Populate project dropdown and set value
   refreshProjectDropdown('feProject');
   const feProj = document.getElementById('feProject');
@@ -2660,9 +2758,9 @@ function openEditTask(i){closeModal('modalEditSelect');const t=log.tasks[i];edit
   document.getElementById('feStage').value = pvTaskStage(t);
   feRenderPhotos(i);openModal('modalEditTask');}
 function feRenderPhotos(i){
-  const t=log.tasks[i], area=document.getElementById('fePhotosArea'), grp=document.getElementById('fePhotosGroup');
-  if(!t.photos||!t.photos.length){grp.style.display='none';return;}
-  grp.style.display='block';
+  const t=log.tasks[i], area=document.getElementById('fePhotosArea');
+  if(!t||!area)return;
+  if(!t.photos||!t.photos.length){ area.innerHTML=''; return; }
   getPhotosFromDB(t.photos).then(urls=>{
     let h='';
     urls.forEach((url,pi)=>{
@@ -2720,8 +2818,9 @@ function feConfirmEdit(){if(editIdx<0)return;const t=log.tasks[editIdx];const s=
     if(!isNaN(dQty) && !isNaN(tQty) && tQty > 0){ t.qtyDone = dQty; t.qtyTotal = tQty; }
     else { delete t.qtyDone; delete t.qtyTotal; }
   } else { delete t.qtyDone; delete t.qtyTotal; }
-let feDlg=document.getElementById('feDelegator').value;if(feDlg==='__custom__')feDlg=document.getElementById('feCustomDelegator').value.trim()||'—';t.delegator=feDlg;
-let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feWt=document.getElementById('feWorkType').value;if(feWt==='__custom__')feWt=document.getElementById('feCustomWorkType').value.trim()||'—';t.workType=feWt;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.stage=document.getElementById('feStage').value||'準備';t.category=document.getElementById('feCategory').value||'維護';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
+// 負責人：清單列陣列，冇揀就保留原值（兼容舊字串）
+t.delegator = (feDlgArr && feDlgArr.length) ? feDlgArr.slice() : toDlgArr(t.delegator);
+let feLoc=document.getElementById('feLocation').value;if(feLoc==='__custom__')feLoc=document.getElementById('feCustomLocation').value.trim()||'—';t.location=feLoc;let feProj=document.getElementById('feProject').value;if(feProj==='__custom__')feProj=document.getElementById('feCustomProject').value.trim()||'—';t.project=feProj;t.stage=document.getElementById('feStage').value||'準備';t.category=document.getElementById('feCategory').value||'維護';saveData();closeModal('modalEditTask');render();showToast('✅ 已更新事項');}
 
 
 
@@ -2756,8 +2855,8 @@ function confirmSplit(){
   const n1=document.getElementById('splitName1').value.trim()||ot.desc, n2=document.getElementById('splitName2').value.trim()||ot.desc+'（續）';
   const parts=ot.timeRange.split('-'), start=parts[0], end=parts[1];
   if(b<=start||b>=end){showToast('⚠️ 拆分邊界時間必須在原時間範圍內');return;}
-  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:toPersonArr(ot.personnel,log),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
-  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:toPersonArr(ot.personnel,log),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
+  const t1={timeRange:`${start}-${b}`,desc:n1,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:toPersonArr(ot.personnel,log),delegator:toDlgArr(ot.delegator),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
+  const t2={timeRange:`${b}-${end}`,desc:n2,status:ot.status,location:ot.location,workType:ot.workType,photoStatus:'無照片',photos:[],category:ot.category||firstCategory(),itemCategory:ot.itemCategory||'',personnel:toPersonArr(ot.personnel,log),delegator:toDlgArr(ot.delegator),stage:ot.stage||'準備',qtyDone:ot.qtyDone!=null?ot.qtyDone:null,qtyTotal:ot.qtyTotal!=null?ot.qtyTotal:null};
   if(ot.photos&&ot.photos.length>0){ot.photos.forEach((pid,pi)=>{const s=document.getElementById('splitPhoto_'+pi);if(s&&s.value==='2')t2.photos.push(pid);else t1.photos.push(pid);});t1.photoStatus=t1.photos.length>0?'有拍照':'無照片';t2.photoStatus=t2.photos.length>0?'有拍照':'無照片';}
   log.tasks[oi]=t1;log.tasks.splice(oi+1,0,t2);saveData();closeModal('modalSplit');render();showToast(`✅ 已拆分：${ot.desc}`);
 }
@@ -3013,8 +3112,6 @@ function _addPresetItem(listKey, inputId, chipsFn, label) {
   refreshPersonDatalist();
   refreshLocationDropdown('fLocation');
   refreshLocationDropdown('feLocation');
-  refreshWorkTypeDropdown('fWorkType');
-  refreshWorkTypeDropdown('feWorkType');
   refreshProjectDropdown('fProject');
   refreshProjectDropdown('feProject');
   showToast('✅ 已新增：' + items.join('、'));
@@ -3027,8 +3124,6 @@ function _deletePresetItem(listKey, i, chipsFn) {
   refreshPersonDatalist();
   refreshLocationDropdown('fLocation');
   refreshLocationDropdown('feLocation');
-  refreshWorkTypeDropdown('fWorkType');
-  refreshWorkTypeDropdown('feWorkType');
   refreshProjectDropdown('fProject');
   refreshProjectDropdown('feProject');
 }
@@ -3043,12 +3138,12 @@ function _renderChips(containerId, list, emoji, deleteFn) {
     </span>`
   ).join('');
 }
-function addDelegatorItem(){ _addPresetItem('delegators','sDelegatorsList',renderDelegatorsChips,'委派方'); }
+function addDelegatorItem(){ _addPresetItem('delegators','sDelegatorsList',renderDelegatorsChips,'負責人'); }
 function addPersonnelItem(){ _addPresetItem('personnel','sPersonnelList',renderPersonnelChips,'人員名稱'); }
 function addProjectItem(){ _addPresetItem('projects','sProjectsList',renderProjectsChips,'項目名稱'); }
 function addLocationItem(){ _addPresetItem('locations','sLocationsList',renderLocationsChips,'地點'); }
 function addWorkTypeItem(){ _addPresetItem('workTypes','sWorkTypesList',renderWorkTypesChips,'工種'); }
-function renderDelegatorsChips(){ const p=getPresets().delegators||[]; _renderChips('sDelegatorsChips',p,'🤝',function(i){deleteDelegatorItem(i);}); }
+function renderDelegatorsChips(){ const p=getPresets().delegators||[]; _renderChips('sDelegatorsChips',p,'👤',function(i){deleteDelegatorItem(i);}); }
 function renderPersonnelChips(){ const p=getPresets().personnel||[]; _renderChips('sPersonnelChips',p,'👤',function(i){deletePersonnelItem(i);}); }
 function renderProjectsChips(){ const p=getPresets().projects||[]; _renderChips('sProjectsChips',p,'🏷️',function(i){deleteProjectItem(i);}); }
 function renderLocationsChips(){ const p=getPresets().locations||[]; _renderChips('sLocationsChips',p,'📍',function(i){deleteLocationItem(i);}); }
@@ -3058,7 +3153,7 @@ function renderWorkTypesChips(){ const p=getPresets().workTypes||[]; _renderChip
 function addCommonData(){
   const type = document.getElementById('sCommonType').value;
   const map = {
-    delegators: { listKey: 'delegators', chipsFn: renderDelegatorsChips, label: '委派方' },
+    delegators: { listKey: 'delegators', chipsFn: renderDelegatorsChips, label: '負責人' },
     personnel: { listKey: 'personnel', chipsFn: renderPersonnelChips, label: '人員' },
     locations: { listKey: 'locations', chipsFn: renderLocationsChips, label: '地點' },
     projects: { listKey: 'projects', chipsFn: renderProjectsChips, label: '項目' },
@@ -3456,7 +3551,7 @@ const PROGRESS_KEY = 'worklog_progress_v1';
 function getProgressEntries(){
   const raw = lsGet(PROGRESS_KEY);
   if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) {
-    // 一次性清理：移除殘留嘅 date 欄位（2026-08-12，追蹤只記 委托方＋地點＋項目＋事項）
+    // 一次性清理：移除殘留嘅 date 欄位（2026-08-12，追蹤只記 負責人＋地點＋項目＋事項）
     let dirty = false;
     p.forEach(e => { if(e && 'date' in e){ delete e.date; dirty = true; } });
     if(dirty) lsSet(PROGRESS_KEY, JSON.stringify(p));
@@ -4523,20 +4618,63 @@ function renderEditPersonChips(){
   ).join('');
 }
 
-function refreshDelegatorDropdown(selId) {
-  const sel = document.getElementById(selId);
-  if (!sel) return;
+// ── 負責人清單列（可添加多名；兼容舊單值字串）──
+let fDlgArr=[], feDlgArr=[];
+// 兼容舊資料：字串 → 陣列（舊 delegator 係單一字串，如 '傑'；v3.8 起存陣列）
+function toDlgArr(d){
+  if(Array.isArray(d)) return d.filter(Boolean);
+  const s = (d && d!=='—' && String(d).trim()) ? String(d).trim() : '';
+  return s ? [s] : [];
+}
+function refreshDlgDatalist() {
   const presets = getPresets();
-  const currentVal = sel.value;
-  const delegators = presets.delegators || [];
-  sel.innerHTML = '<option value="—">—</option>' +
-    delegators.map(l => `<option value="${escHtml(l)}">${escHtml(l)}</option>`).join('') +
-    '<option value="__custom__">其他（請輸入）</option>';
-  if (Array.from(sel.options).some(o => o.value === currentVal)) sel.value = currentVal;
-  // Show/hide custom input
-  const isCustom = sel.value === '__custom__';
-  const customGroup = document.getElementById(selId === 'feDelegator' ? 'feCustomDelegatorGroup' : 'fCustomDelegatorGroup');
-  if (customGroup) customGroup.style.display = isCustom ? 'block' : 'none';
+  const seen = new Set();
+  const options = [];
+  ['傑','千軍破蒼冥'].forEach(n => { if (!seen.has(n)) { seen.add(n); options.push(n); } });
+  if (presets.delegators && presets.delegators.length) {
+    presets.delegators.forEach(n => { if (n && !seen.has(n)) { seen.add(n); options.push(n); } });
+  }
+  const gp = (log && log.person) || '傑';
+  if (!seen.has(gp)) { options.unshift(gp); }
+  const html = options.map(n => `<option value="${escHtml(n)}"></option>`).join('');
+  const dl1 = document.getElementById('fDlgDatalist'); if (dl1) dl1.innerHTML = html;
+  const dl2 = document.getElementById('feDlgDatalist'); if (dl2) dl2.innerHTML = html;
+}
+function addTaskDlg(){
+  const input = document.getElementById('fDlgInput');
+  const val = (input ? input.value : '').trim();
+  if (!val) { showToast('⚠️ 請輸入負責人'); return; }
+  if (fDlgArr.includes(val)) { showToast('⚠️ 已存在：' + val); input.value=''; return; }
+  fDlgArr.push(val);
+  if (input) input.value='';
+  renderTaskDlgChips();
+}
+function removeTaskDlg(i){ fDlgArr.splice(i,1); renderTaskDlgChips(); }
+function renderTaskDlgChips(){
+  const el = document.getElementById('fDlgChips');
+  if (!el) return;
+  if (!fDlgArr || !fDlgArr.length) { el.innerHTML = '<span class="person-empty">未添加負責人</span>'; return; }
+  el.innerHTML = fDlgArr.map((n,i) =>
+    `<span class="person-chip">👤 ${escHtml(n)}<span class="del" onclick="removeTaskDlg(${i})" title="移除">✕</span></span>`
+  ).join('');
+}
+function addEditDlg(){
+  const input = document.getElementById('feDlgInput');
+  const val = (input ? input.value : '').trim();
+  if (!val) { showToast('⚠️ 請輸入負責人'); return; }
+  if (feDlgArr.includes(val)) { showToast('⚠️ 已存在：' + val); input.value=''; return; }
+  feDlgArr.push(val);
+  if (input) input.value='';
+  renderEditDlgChips();
+}
+function removeEditDlg(i){ feDlgArr.splice(i,1); renderEditDlgChips(); }
+function renderEditDlgChips(){
+  const el = document.getElementById('feDlgChips');
+  if (!el) return;
+  if (!feDlgArr || !feDlgArr.length) { el.innerHTML = '<span class="person-empty">未添加負責人</span>'; return; }
+  el.innerHTML = feDlgArr.map((n,i) =>
+    `<span class="person-chip">👤 ${escHtml(n)}<span class="del" onclick="removeEditDlg(${i})" title="移除">✕</span></span>`
+  ).join('');
 }
 
 function refreshLocationDropdown(selId) {
@@ -4552,21 +4690,6 @@ function refreshLocationDropdown(selId) {
   // Show/hide custom input
   const isCustom = sel.value === '__custom__';
   const customGroup = document.getElementById(selId === 'feLocation' ? 'feCustomLocationGroup' : 'customLocationGroup');
-  if (customGroup) customGroup.style.display = isCustom ? 'block' : 'none';
-}
-
-function refreshWorkTypeDropdown(selId) {
-  const sel = document.getElementById(selId);
-  if (!sel) return;
-  const presets = getPresets();
-  const currentVal = sel.value;
-  const workTypes = presets.workTypes || [];
-  sel.innerHTML = '<option value="—">—</option>' +
-    workTypes.map(w => `<option value="${escHtml(w)}">${escHtml(w)}</option>`).join('') +
-    '<option value="__custom__">其他（請輸入）</option>';
-  if (Array.from(sel.options).some(o => o.value === currentVal)) sel.value = currentVal;
-  const isCustom = sel.value === '__custom__';
-  const customGroup = document.getElementById(selId === 'feWorkType' ? 'feCustomWorkTypeGroup' : 'customWorkTypeGroup');
   if (customGroup) customGroup.style.display = isCustom ? 'block' : 'none';
 }
 
@@ -4590,17 +4713,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('fLocation').addEventListener('change', function() {
     document.getElementById('customLocationGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
   });
-  document.getElementById('fWorkType').addEventListener('change', function() {
-    document.getElementById('customWorkTypeGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
-  });
   document.getElementById('fProject').addEventListener('change', function() {
     document.getElementById('fCustomProjectGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
   });
   document.getElementById('feLocation').addEventListener('change', function() {
     document.getElementById('feCustomLocationGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
-  });
-  document.getElementById('feWorkType').addEventListener('change', function() {
-    document.getElementById('feCustomWorkTypeGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
   });
   document.getElementById('feProject').addEventListener('change', function() {
     document.getElementById('feCustomProjectGroup').style.display = this.value === '__custom__' ? 'block' : 'none';
