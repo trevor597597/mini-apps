@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.11</title>
+<title>工作日誌 — 輸入事項工具 v3.12</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.11</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.12</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -872,6 +872,25 @@ body {
 
   <!-- Tab: 資訊 -->
   <div class="tab-content" id="tab-info">
+  <!-- Card: 項目數據（導入／生成記錄／預覽） -->
+  <div class="card" id="projectDataCard">
+    <div class="card-header">
+      <h2>📁 項目數據</h2>
+    </div>
+    <div class="card-body">
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        項目數據獨立儲存（唔跟行程重置／換日）。「導入」讀取項目舊記錄，「生成記錄」將已有進度匯出檔案，「預覽」睇項目進度概覽。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📥 導入
+          <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
+        </label>
+        <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()" title="將已有進度記錄匯出成 XLSX 檔案">📤 生成記錄</button>
+        <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="預覽項目進度概覽">👁️ 預覽</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Card: 項目進度（自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取） -->
   <div class="card" id="projectProgressCard">
     <div class="card-header">
@@ -917,10 +936,6 @@ body {
           <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 進度記錄</span>
           <span style="flex:1"></span>
           <button class="btn btn-sm btn-primary" onclick="openProgressEntryModal()">➕ 新增記錄</button>
-          <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
-            <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
-          </label>
-          <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()">📥 匯出 XLSX</button>
         </div>
         <div id="progressEvalBody">
           <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄 — 撳「➕ 新增記錄」開始</div>
