@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.13</title>
+<title>工作日誌 — 輸入事項工具 v3.8</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.13</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.8</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -872,25 +872,6 @@ body {
 
   <!-- Tab: 資訊 -->
   <div class="tab-content" id="tab-info">
-  <!-- Card: 項目數據（導入／生成記錄／預覽） -->
-  <div class="card" id="projectDataCard">
-    <div class="card-header">
-      <h2>📁 項目數據</h2>
-    </div>
-    <div class="card-body">
-      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        項目數據獨立儲存（唔跟行程重置／換日）。「導入」讀取項目舊記錄，「生成記錄」將已有進度匯出檔案，「預覽」睇項目進度概覽。
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📥 導入
-          <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
-        </label>
-        <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()" title="將已有進度記錄匯出成 XLSX 檔案">📤 生成記錄</button>
-        <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="預覽項目進度概覽">👁️ 預覽</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Card: 項目進度（自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取） -->
   <div class="card" id="projectProgressCard">
     <div class="card-header">
@@ -936,6 +917,10 @@ body {
           <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 進度記錄</span>
           <span style="flex:1"></span>
           <button class="btn btn-sm btn-primary" onclick="openProgressEntryModal()">➕ 新增記錄</button>
+          <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📁 讀取 XLSX
+            <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
+          </label>
+          <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()">📥 匯出 XLSX</button>
         </div>
         <div id="progressEvalBody">
           <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄 — 撳「➕ 新增記錄」開始</div>
@@ -1300,7 +1285,7 @@ body {
 
 <div class="modal-overlay" id="modalAssignDlg">
   <div class="modal" style="max-width:560px">
-    <div class="modal-header"><h3 id="assignDlgTitle">✏️ 編輯負責人</h3><button class="modal-close" onclick="closeModal('modalAssignDlg')">✕</button></div>
+    <div class="modal-header"><h3>✏️ 編輯負責人</h3><button class="modal-close" onclick="closeModal('modalAssignDlg')">✕</button></div>
     <div class="modal-body" id="assignDlgBody"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalAssignDlg')">取消</button>
@@ -2133,7 +2118,6 @@ function renderProjectProgressArea(){
         <div class="pv-card-head">
           <div class="pv-card-title-row">
             <span class="pv-card-name">🏷️ ${escHtml(pk)}</span>
-            <button class="btn btn-sm btn-secondary" style="padding:2px 8px;font-size:0.68rem;min-height:24px;flex-shrink:0" data-lk="${escHtml(lk)}" data-pk="${escHtml(pk)}" onclick="openAssignDelegatorForProject(this)" title="更改此項目嘅負責人（可多名）">✏️ 負責人</button>
             <span class="pv-card-count">${hasTasks ? ptasks.length+' 項' : '記錄 '+g.records.length}</span>
           </div>
           <div class="pv-card-eval">
@@ -2193,67 +2177,44 @@ function renderProjectProgressArea(){
   }
 }
 
-// ── 編輯負責人（置頂鍵）：按「地點＋項目」分組列出進度，每組統一改負責人（v3.11 改）──
-var adlgGroups = [], adlgSnap = null, adlgEntries = [];
+// ── 編輯負責人：列出全部記錄（行程事項＋項目記錄），每行 chips 可多名（v3.8 改）──
+var adlgRows = [], adlgSnap = null, adlgEntries = [];
 function openAssignDelegator(){
-  // footer 儲存鍵還原（避免項目卡批量模式殘留）
-  const saveBtn0 = document.querySelector('#modalAssignDlg .modal-footer .btn-primary');
-  if(saveBtn0){ saveBtn0.setAttribute('onclick', 'saveAssignDelegator()'); saveBtn0.textContent = '✅ 儲存分配'; }
   const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
   const liveWork = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
   let tasks;
   if(liveWork.length){ tasks = liveWork; adlgSnap = null; }
   else { adlgSnap = getProjProgressSnapshot(); tasks = (adlgSnap && adlgSnap.tasks) ? adlgSnap.tasks : []; }
-  const ref = pvRefProjects();
+  // 地點 → 負責人 對照（項目記錄兜底顯示用）
+  const locDlg = {};
+  tasks.forEach(t => { const lk = locOf(t); const a = toDlgArr(t.delegator); if(!locDlg[lk] && a.length) locDlg[lk] = a.join('、'); });
   adlgEntries = getProgressEntries().filter(e => e && e.desc);
-  // 按「地點＋項目」分組（行程事項 ∪ 項目記錄），每組 union 現有負責人
-  const grpMap = {};
-  const grpKey = (lk, pk) => lk + '|' + pk;
-  const grpOf = (lk, pk) => {
-    const k = grpKey(lk, pk);
-    if(!grpMap[k]) grpMap[k] = { lk, pk, tasks: [], entries: [], arr: [], dirty: false };
-    return grpMap[k];
-  };
+  adlgRows = [];
   tasks.forEach(t => {
-    const lk = locOf(t);
-    const pk = pvTaskProject(t, ref) || '未分類項目';
-    const g = grpOf(lk, pk);
-    g.tasks.push(t);
-    toDlgArr(t.delegator).forEach(n => { if(n && !g.arr.includes(n)) g.arr.push(n); });
+    adlgRows.push({ store: adlgSnap ? 'snap' : 'log', ref: t, dirty: false, arr: toDlgArr(t.delegator),
+      label: `📍 ${escHtml(locOf(t))}｜${t.timeRange?escHtml(t.timeRange):''}｜${escHtml(t.desc)}` });
   });
   adlgEntries.forEach(e => {
     const sp = pvSplitLoc(pvEntryKey(e));
-    const lk = sp.location || '（無地點）';
-    const pk = sp.project || '未分類項目';
-    const g = grpOf(lk, pk);
-    g.entries.push(e);
-    toDlgArr(e.delegator).forEach(n => { if(n && !g.arr.includes(n)) g.arr.push(n); });
+    let hint = '';
+    const a = toDlgArr(e.delegator);
+    if(!a.length && sp.location && locDlg[sp.location]) hint = `（地點推斷：${escHtml(locDlg[sp.location])}）`;
+    adlgRows.push({ store: 'entries', ref: e, dirty: false, arr: a,
+      label: `📊 ${sp.location?escHtml(sp.location):'（無地點）'}｜${escHtml(e.desc||'')}${sp.project?`（${escHtml(sp.project)}）`:''}${hint}` });
   });
-  adlgGroups = Object.keys(grpMap).map(k => grpMap[k]).sort((a,b) => a.lk.localeCompare(b.lk,'zh-Hant') || a.pk.localeCompare(b.pk,'zh-Hant'));
-  if(!adlgGroups.length){ showToast('👍 冇任何記錄可編輯'); return; }
+  if(!adlgRows.length){ showToast('👍 冇任何記錄可編輯'); return; }
   const presets = getPresets().delegators || [];
-  const titleEl = document.getElementById('assignDlgTitle');
-  if(titleEl) titleEl.textContent = '✏️ 編輯負責人 — 按項目';
-  let h = `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">按項目分組 <b>${adlgGroups.length}</b> 組：每組統一設定負責人（可多名），一齊套用該項目所有記錄；<b>未改過嘅組儲存時唔會郁</b>。</div>`;
+  let h = `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">全部記錄 <b>${adlgRows.length}</b> 項：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`;
   h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;background:var(--blue-50);border:1px solid var(--blue-200);border-radius:8px">
     <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">⚡ 全部設為：</span>
     <select class="form-select" id="adlgBulk" onchange="adlgBulkApply()" style="flex:1">
-      <option value="">（逐組設定）</option>
+      <option value="">（逐項設定）</option>
       ${presets.map(d=>`<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('')}
     </select>
   </div>`;
-  adlgGroups.forEach((g,i)=>{
-    const total = g.tasks.length + g.entries.length;
-    const done = g.tasks.filter(t=>t.status==='已完成').length + g.entries.filter(e=>e.status==='已完成').length;
-    const pct = g.tasks.length ? pvGroupPct(g.tasks)
-      : (g.entries.length ? Math.round(g.entries.reduce((s,e)=>s+(Number(e.pct)||0),0)/g.entries.length) : 0);
-    h += `<div style="padding:8px 10px;margin-bottom:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
-        <span style="font-weight:700;font-size:0.8rem;color:#1e293b">🏷️ ${escHtml(g.pk)}</span>
-        <span style="font-size:0.7rem;color:var(--slate-500)">📍 ${escHtml(g.lk)}</span>
-        <span style="flex:1"></span>
-        <span style="font-size:0.68rem;color:var(--slate-500)">${done}/${total} 項｜${pct}%</span>
-      </div>
+  adlgRows.forEach((r,i)=>{
+    h += `<div style="padding:7px 9px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px">
+      <div style="font-size:0.76rem;color:var(--slate-600);margin-bottom:5px">${r.label}</div>
       <div class="person-list-row">
         <input class="form-input" id="adlgInp_${i}" list="adlgDl_${i}" placeholder="輸入負責人" onkeydown="if(event.key==='Enter'){event.preventDefault();adlgAdd(${i});}">
         <datalist id="adlgDl_${i}">${presets.map(d=>`<option value="${escHtml(d)}"></option>`).join('')}</datalist>
@@ -2263,177 +2224,54 @@ function openAssignDelegator(){
     </div>`;
   });
   document.getElementById('assignDlgBody').innerHTML = h;
-  adlgGroups.forEach((g,i)=>adlgRenderChips(i));
+  adlgRows.forEach((r,i)=>adlgRenderChips(i));
   openModal('modalAssignDlg');
 }
 function adlgRenderChips(i){
-  const g = adlgGroups[i], el = document.getElementById('adlgChips_'+i);
-  if(!g || !el) return;
-  if(!g.arr.length){ el.innerHTML = '<span class="person-empty">未分類（冇負責人）</span>'; return; }
-  el.innerHTML = g.arr.map((n,ci) =>
+  const r = adlgRows[i], el = document.getElementById('adlgChips_'+i);
+  if(!r || !el) return;
+  if(!r.arr.length){ el.innerHTML = '<span class="person-empty">未分類（冇負責人）</span>'; return; }
+  el.innerHTML = r.arr.map((n,ci) =>
     `<span class="person-chip">👤 ${escHtml(n)}<span class="del" onclick="adlgRemove(${i},${ci})" title="移除">✕</span></span>`
   ).join('');
 }
 function adlgAdd(i){
-  const g = adlgGroups[i], input = document.getElementById('adlgInp_'+i);
-  if(!g || !input) return;
+  const r = adlgRows[i], input = document.getElementById('adlgInp_'+i);
+  if(!r || !input) return;
   const val = input.value.trim();
   if(!val){ showToast('⚠️ 請輸入負責人'); return; }
-  if(g.arr.includes(val)){ showToast('⚠️ 已存在：' + val); input.value=''; return; }
-  g.arr.push(val); g.dirty = true; input.value='';
+  if(r.arr.includes(val)){ showToast('⚠️ 已存在：' + val); input.value=''; return; }
+  r.arr.push(val); r.dirty = true; input.value='';
   adlgRenderChips(i);
 }
 function adlgRemove(i, ci){
-  const g = adlgGroups[i];
-  if(!g) return;
-  g.arr.splice(ci,1); g.dirty = true;
+  const r = adlgRows[i];
+  if(!r) return;
+  r.arr.splice(ci,1); r.dirty = true;
   adlgRenderChips(i);
 }
 function adlgBulkApply(){
   const b = document.getElementById('adlgBulk').value; if(!b) return;
-  adlgGroups.forEach((g,i)=>{
-    g.arr = [b]; g.dirty = true;
+  adlgRows.forEach((r,i)=>{
+    r.arr = [b]; r.dirty = true;
     const inp = document.getElementById('adlgInp_'+i); if(inp) inp.value='';
     adlgRenderChips(i);
   });
 }
 function saveAssignDelegator(){
   let changed = 0; const stores = {log:false, snap:false, entries:false};
-  const taskStore = adlgSnap ? 'snap' : 'log';
-  adlgGroups.forEach((g)=>{
-    if(!g.dirty) return;           // 未改過嘅組唔郁
-    g.tasks.forEach(t => { t.delegator = g.arr.slice(); changed++; stores[taskStore] = true; });
-    g.entries.forEach(e => { e.delegator = g.arr.slice(); changed++; stores.entries = true; });
+  adlgRows.forEach((r)=>{
+    if(!r.dirty) return;           // 未改過嘅行唔郁
+    r.ref.delegator = r.arr.slice(); // 存陣列（[]＝未分類）；舊單值字串由 toDlgArr 兼容
+    changed++; stores[r.store] = true;
   });
-  if(!changed){ showToast('⚠️ 未修改任何組'); return; }
+  if(!changed){ showToast('⚠️ 未修改任何行'); return; }
   if(stores.log) saveData();
   if(stores.snap && adlgSnap) saveProjProgressSnapshot(adlgSnap.savedAt, adlgSnap.tasks);
   if(stores.entries) saveProgressEntries(adlgEntries);
   closeModal('modalAssignDlg');
   renderProjectProgressArea();
   showToast(`✅ 已更新 ${changed} 項負責人`);
-}
-
-// ── 項目卡獨立編輯負責人：按「地點＋項目」為單位批量設定（v3.10 改）──
-// 一個項目一套負責人，套用晒該項目所有記錄（行程事項＋項目記錄），唔使逐條分開設
-var adlgProj = null; // {tasks, entries, arr, snap}
-function openAssignDelegatorForProject(btn){
-  if(!btn) return;
-  const lk = btn.getAttribute('data-lk') || '';
-  const pk = btn.getAttribute('data-pk') || '';
-  const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
-  // 收集該項目嘅記錄（行程事項 ＋ 項目記錄）
-  const liveWork = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
-  let tasks, snap = null;
-  if(liveWork.length){ tasks = liveWork; }
-  else { snap = getProjProgressSnapshot(); tasks = (snap && snap.tasks) ? snap.tasks : []; }
-  const ref = pvRefProjects();
-  const projTasks = tasks.filter(t => {
-    if(lk && locOf(t) !== lk) return false;
-    if(pk && (pvTaskProject(t, ref) || '未分類項目') !== pk) return false;
-    return true;
-  });
-  const projEntries = getProgressEntries().filter(e => {
-    if(!e || !e.desc) return false;
-    const sp = pvSplitLoc(pvEntryKey(e));
-    if(lk && sp.location !== lk) return false;
-    if(pk && (sp.project || '未分類項目') !== pk) return false;
-    return true;
-  });
-  if(!projTasks.length && !projEntries.length){ showToast('👍 此項目冇任何記錄'); return; }
-  // 現有負責人 union（去重）
-  const seen = new Set(); const arr = [];
-  [...projTasks, ...projEntries].forEach(x => {
-    toDlgArr(x.delegator).forEach(n => { if(n && !seen.has(n)){ seen.add(n); arr.push(n); } });
-  });
-  adlgProj = { tasks: projTasks, entries: projEntries, arr, snap };
-  const titleEl = document.getElementById('assignDlgTitle');
-  if(titleEl) titleEl.textContent = `✏️ 編輯負責人 — ${pk||''}${lk?`（${lk}）`:''}`;
-  // footer 儲存鍵改為批量儲存
-  const saveBtn = document.querySelector('#modalAssignDlg .modal-footer .btn-primary');
-  if(saveBtn){ saveBtn.setAttribute('onclick', 'saveProjectDelegator()'); saveBtn.textContent = '✅ 儲存負責人'; }
-  const presets = getPresets().delegators || [];
-  let h = `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">此項目 <b>${projTasks.length+projEntries.length}</b> 項記錄（行程事項＋項目記錄）會<b>一齊套用</b>同一組負責人，唔使逐條分開設。</div>`;
-  h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;background:var(--blue-50);border:1px solid var(--blue-200);border-radius:8px">
-    <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">⚡ 全部設為：</span>
-    <select class="form-select" id="adlgBulk" onchange="adlgProjBulk()" style="flex:1">
-      <option value="">（逐個添加）</option>
-      ${presets.map(d=>`<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('')}
-    </select>
-    <button type="button" class="btn btn-sm btn-danger" onclick="adlgProjClear()" title="清空負責人（變未分類）">🗑️ 清空</button>
-  </div>`;
-  h += `<div class="form-group">
-    <label>👤 此項目嘅負責人 <span class="hint">可多名</span></label>
-    <div class="person-list-row">
-      <input class="form-input" id="adlgProjInput" list="adlgProjDatalist" placeholder="輸入負責人" onkeydown="if(event.key==='Enter'){event.preventDefault();adlgProjAdd();}">
-      <datalist id="adlgProjDatalist">${presets.map(d=>`<option value="${escHtml(d)}"></option>`).join('')}</datalist>
-      <button type="button" class="btn btn-sm btn-primary" onclick="adlgProjAdd()" title="添加負責人">➕</button>
-    </div>
-    <div class="person-chips" id="adlgProjChips"></div>
-  </div>`;
-  document.getElementById('assignDlgBody').innerHTML = h;
-  adlgProjRenderChips();
-  openModal('modalAssignDlg');
-}
-function adlgProjRenderChips(){
-  const el = document.getElementById('adlgProjChips');
-  if(!el || !adlgProj) return;
-  if(!adlgProj.arr.length){ el.innerHTML = '<span class="person-empty">未分類（冇負責人）</span>'; return; }
-  el.innerHTML = adlgProj.arr.map((n,i) =>
-    `<span class="person-chip">👤 ${escHtml(n)}<span class="del" onclick="adlgProjRemove(${i})" title="移除">✕</span></span>`
-  ).join('');
-}
-function adlgProjAdd(){
-  const input = document.getElementById('adlgProjInput');
-  if(!adlgProj || !input) return;
-  const val = input.value.trim();
-  if(!val){ showToast('⚠️ 請輸入負責人'); return; }
-  if(adlgProj.arr.includes(val)){ showToast('⚠️ 已存在：' + val); input.value=''; return; }
-  adlgProj.arr.push(val); input.value='';
-  adlgProjRenderChips();
-}
-function adlgProjRemove(i){
-  if(!adlgProj) return;
-  adlgProj.arr.splice(i,1);
-  adlgProjRenderChips();
-}
-function adlgProjBulk(){
-  const b = document.getElementById('adlgBulk').value;
-  if(!adlgProj || !b) return;
-  adlgProj.arr = [b];
-  adlgProjRenderChips();
-}
-function adlgProjClear(){
-  if(!adlgProj) return;
-  adlgProj.arr = [];
-  adlgProjRenderChips();
-}
-function saveProjectDelegator(){
-  if(!adlgProj) return;
-  const arr = adlgProj.arr.slice();
-  const stores = {log:false, snap:false, entries:false};
-  let changed = 0;
-  const taskStore = adlgProj.snap ? 'snap' : 'log';
-  adlgProj.tasks.forEach(t => {
-    if(JSON.stringify(arr) !== JSON.stringify(toDlgArr(t.delegator))){
-      t.delegator = arr.slice(); changed++; stores[taskStore] = true;
-    }
-  });
-  adlgProj.entries.forEach(e => {
-    if(JSON.stringify(arr) !== JSON.stringify(toDlgArr(e.delegator))){
-      e.delegator = arr.slice(); changed++; stores.entries = true;
-    }
-  });
-  if(!changed){ showToast('⚠️ 未有更改'); return; }
-  if(stores.log) saveData();
-  if(stores.snap && adlgProj.snap) saveProjProgressSnapshot(adlgProj.snap.savedAt, adlgProj.snap.tasks);
-  if(stores.entries) saveProgressEntries(adlgProj.entries);
-  // footer 儲存鍵還原（返去逐行模式用）
-  const saveBtn = document.querySelector('#modalAssignDlg .modal-footer .btn-primary');
-  if(saveBtn){ saveBtn.setAttribute('onclick', 'saveAssignDelegator()'); saveBtn.textContent = '✅ 儲存分配'; }
-  closeModal('modalAssignDlg');
-  renderProjectProgressArea();
-  showToast(`✅ 已將負責人套用至 ${changed} 項記錄`);
 }
 
 // ── 更新進度：將今日事項逐條寫入項目記錄（只記 負責人＋地點＋項目＋事項）──
@@ -4089,18 +3927,17 @@ function renderProgressEval(){
   body.innerHTML = html;
 }
 
-// ── 進度記錄匯出 XLSX（項目／地點分列兩欄 + 數量）──
+// ── 進度記錄匯出 XLSX（項目／地點整合欄 + 數量）──
 function exportProgressXLSX(){
   var entries=getProgressEntries().filter(function(e){return e&&e.desc;});
   if(!entries.length){showToast('⚠️ 未有進度資料');return;}
-  var rows=[['項目','地點','事項','狀態','進度','數量','備註']];
+  var rows=[['項目／地點','事項','狀態','進度','數量','備註']];
   entries.forEach(function(e){
     var pct=(e.pct!=null&&e.pct!=='')?Math.round(e.pct)+'%':'—';
-    var sp=pvSplitLoc(pvEntryKey(e)||'');
-    rows.push([sp.project||'—',sp.location||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'']);
+    rows.push([pvEntryKey(e)||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'']);
   });
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:14},{wch:12},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
+  ws['!cols']=[{wch:22},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'進度記錄');
   var ds=(log.dateStr||todayStr()).replace(/-/g,'');
