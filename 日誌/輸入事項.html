@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.8</title>
+<title>工作日誌 — 輸入事項工具 v3.9</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.8</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.9</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -1285,7 +1285,7 @@ body {
 
 <div class="modal-overlay" id="modalAssignDlg">
   <div class="modal" style="max-width:560px">
-    <div class="modal-header"><h3>✏️ 編輯負責人</h3><button class="modal-close" onclick="closeModal('modalAssignDlg')">✕</button></div>
+    <div class="modal-header"><h3 id="assignDlgTitle">✏️ 編輯負責人</h3><button class="modal-close" onclick="closeModal('modalAssignDlg')">✕</button></div>
     <div class="modal-body" id="assignDlgBody"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalAssignDlg')">取消</button>
@@ -2118,6 +2118,7 @@ function renderProjectProgressArea(){
         <div class="pv-card-head">
           <div class="pv-card-title-row">
             <span class="pv-card-name">🏷️ ${escHtml(pk)}</span>
+            <button class="btn btn-sm btn-secondary" style="padding:2px 8px;font-size:0.68rem;min-height:24px;flex-shrink:0" data-lk="${escHtml(lk)}" data-pk="${escHtml(pk)}" onclick="openAssignDelegatorForProject(this)" title="更改此項目嘅負責人（可多名）">✏️ 負責人</button>
             <span class="pv-card-count">${hasTasks ? ptasks.length+' 項' : '記錄 '+g.records.length}</span>
           </div>
           <div class="pv-card-eval">
@@ -2177,20 +2178,37 @@ function renderProjectProgressArea(){
   }
 }
 
-// ── 編輯負責人：列出全部記錄（行程事項＋項目記錄），每行 chips 可多名（v3.8 改）──
+// ── 編輯負責人：列出記錄（行程事項＋項目記錄），每行 chips 可多名（v3.8 改）──
+// filter 可選：{lk, pk} 只列指定地點＋項目（項目卡獨立編輯鍵用，v3.9 加）
 var adlgRows = [], adlgSnap = null, adlgEntries = [];
-function openAssignDelegator(){
+function openAssignDelegator(filter){
   const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
   const liveWork = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
   let tasks;
   if(liveWork.length){ tasks = liveWork; adlgSnap = null; }
   else { adlgSnap = getProjProgressSnapshot(); tasks = (adlgSnap && adlgSnap.tasks) ? adlgSnap.tasks : []; }
+  const ref = pvRefProjects();
+  // 過濾：指定項目（pk）＋地點（lk）時，只收匹配嘅行程事項同項目記錄
+  const taskMatch = t => {
+    if(!filter) return true;
+    if(filter.lk && locOf(t) !== filter.lk) return false;
+    if(filter.pk && (pvTaskProject(t, ref) || '未分類項目') !== filter.pk) return false;
+    return true;
+  };
+  const entryMatch = e => {
+    if(!filter) return true;
+    const sp = pvSplitLoc(pvEntryKey(e));
+    if(filter.lk && sp.location !== filter.lk) return false;
+    if(filter.pk && (sp.project || '未分類項目') !== filter.pk) return false;
+    return true;
+  };
   // 地點 → 負責人 對照（項目記錄兜底顯示用）
   const locDlg = {};
   tasks.forEach(t => { const lk = locOf(t); const a = toDlgArr(t.delegator); if(!locDlg[lk] && a.length) locDlg[lk] = a.join('、'); });
-  adlgEntries = getProgressEntries().filter(e => e && e.desc);
+  adlgEntries = getProgressEntries().filter(e => e && e.desc && entryMatch(e));
   adlgRows = [];
   tasks.forEach(t => {
+    if(!taskMatch(t)) return;
     adlgRows.push({ store: adlgSnap ? 'snap' : 'log', ref: t, dirty: false, arr: toDlgArr(t.delegator),
       label: `📍 ${escHtml(locOf(t))}｜${t.timeRange?escHtml(t.timeRange):''}｜${escHtml(t.desc)}` });
   });
@@ -2204,7 +2222,11 @@ function openAssignDelegator(){
   });
   if(!adlgRows.length){ showToast('👍 冇任何記錄可編輯'); return; }
   const presets = getPresets().delegators || [];
-  let h = `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">全部記錄 <b>${adlgRows.length}</b> 項：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`;
+  const titleEl = document.getElementById('assignDlgTitle');
+  if(titleEl) titleEl.textContent = filter ? `✏️ 編輯負責人 — ${filter.pk||''}${filter.lk?`（${filter.lk}）`:''}` : '✏️ 編輯負責人';
+  let h = filter
+    ? `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">此項目 <b>${adlgRows.length}</b> 項記錄：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`
+    : `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">全部記錄 <b>${adlgRows.length}</b> 項：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`;
   h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;background:var(--blue-50);border:1px solid var(--blue-200);border-radius:8px">
     <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">⚡ 全部設為：</span>
     <select class="form-select" id="adlgBulk" onchange="adlgBulkApply()" style="flex:1">
@@ -2272,6 +2294,14 @@ function saveAssignDelegator(){
   closeModal('modalAssignDlg');
   renderProjectProgressArea();
   showToast(`✅ 已更新 ${changed} 項負責人`);
+}
+
+// ── 項目卡獨立編輯負責人：淨係編輯指定項目（地點＋項目名）嘅記錄（v3.9 加）──
+function openAssignDelegatorForProject(btn){
+  if(!btn) return;
+  const lk = btn.getAttribute('data-lk');
+  const pk = btn.getAttribute('data-pk');
+  openAssignDelegator({ lk: lk || '', pk: pk || '' });
 }
 
 // ── 更新進度：將今日事項逐條寫入項目記錄（只記 負責人＋地點＋項目＋事項）──
