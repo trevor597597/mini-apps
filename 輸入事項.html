@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.12</title>
+<title>工作日誌 — 輸入事項工具 v3.13</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.12</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.13</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -4089,17 +4089,18 @@ function renderProgressEval(){
   body.innerHTML = html;
 }
 
-// ── 進度記錄匯出 XLSX（項目／地點整合欄 + 數量）──
+// ── 進度記錄匯出 XLSX（項目／地點分列兩欄 + 數量）──
 function exportProgressXLSX(){
   var entries=getProgressEntries().filter(function(e){return e&&e.desc;});
   if(!entries.length){showToast('⚠️ 未有進度資料');return;}
-  var rows=[['項目／地點','事項','狀態','進度','數量','備註']];
+  var rows=[['項目','地點','事項','狀態','進度','數量','備註']];
   entries.forEach(function(e){
     var pct=(e.pct!=null&&e.pct!=='')?Math.round(e.pct)+'%':'—';
-    rows.push([pvEntryKey(e)||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'']);
+    var sp=pvSplitLoc(pvEntryKey(e)||'');
+    rows.push([sp.project||'—',sp.location||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'']);
   });
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:22},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
+  ws['!cols']=[{wch:14},{wch:12},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'進度記錄');
   var ds=(log.dateStr||todayStr()).replace(/-/g,'');
