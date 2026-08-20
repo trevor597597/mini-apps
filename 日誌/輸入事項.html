@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.10</title>
+<title>工作日誌 — 輸入事項工具 v3.11</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.10</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.11</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -2178,11 +2178,10 @@ function renderProjectProgressArea(){
   }
 }
 
-// ── 編輯負責人：列出記錄（行程事項＋項目記錄），每行 chips 可多名（v3.8 改）──
-// filter 可選：{lk, pk} 只列指定地點＋項目（項目卡獨立編輯鍵用，v3.9 加）
-var adlgRows = [], adlgSnap = null, adlgEntries = [];
-function openAssignDelegator(filter){
-  // 還原 footer 儲存鍵（避免上次項目批量模式殘留）
+// ── 編輯負責人（置頂鍵）：按「地點＋項目」分組列出進度，每組統一改負責人（v3.11 改）──
+var adlgGroups = [], adlgSnap = null, adlgEntries = [];
+function openAssignDelegator(){
+  // footer 儲存鍵還原（避免項目卡批量模式殘留）
   const saveBtn0 = document.querySelector('#modalAssignDlg .modal-footer .btn-primary');
   if(saveBtn0){ saveBtn0.setAttribute('onclick', 'saveAssignDelegator()'); saveBtn0.textContent = '✅ 儲存分配'; }
   const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
@@ -2191,55 +2190,55 @@ function openAssignDelegator(filter){
   if(liveWork.length){ tasks = liveWork; adlgSnap = null; }
   else { adlgSnap = getProjProgressSnapshot(); tasks = (adlgSnap && adlgSnap.tasks) ? adlgSnap.tasks : []; }
   const ref = pvRefProjects();
-  // 過濾：指定項目（pk）＋地點（lk）時，只收匹配嘅行程事項同項目記錄
-  const taskMatch = t => {
-    if(!filter) return true;
-    if(filter.lk && locOf(t) !== filter.lk) return false;
-    if(filter.pk && (pvTaskProject(t, ref) || '未分類項目') !== filter.pk) return false;
-    return true;
+  adlgEntries = getProgressEntries().filter(e => e && e.desc);
+  // 按「地點＋項目」分組（行程事項 ∪ 項目記錄），每組 union 現有負責人
+  const grpMap = {};
+  const grpKey = (lk, pk) => lk + '|' + pk;
+  const grpOf = (lk, pk) => {
+    const k = grpKey(lk, pk);
+    if(!grpMap[k]) grpMap[k] = { lk, pk, tasks: [], entries: [], arr: [], dirty: false };
+    return grpMap[k];
   };
-  const entryMatch = e => {
-    if(!filter) return true;
-    const sp = pvSplitLoc(pvEntryKey(e));
-    if(filter.lk && sp.location !== filter.lk) return false;
-    if(filter.pk && (sp.project || '未分類項目') !== filter.pk) return false;
-    return true;
-  };
-  // 地點 → 負責人 對照（項目記錄兜底顯示用）
-  const locDlg = {};
-  tasks.forEach(t => { const lk = locOf(t); const a = toDlgArr(t.delegator); if(!locDlg[lk] && a.length) locDlg[lk] = a.join('、'); });
-  adlgEntries = getProgressEntries().filter(e => e && e.desc && entryMatch(e));
-  adlgRows = [];
   tasks.forEach(t => {
-    if(!taskMatch(t)) return;
-    adlgRows.push({ store: adlgSnap ? 'snap' : 'log', ref: t, dirty: false, arr: toDlgArr(t.delegator),
-      label: `📍 ${escHtml(locOf(t))}｜${t.timeRange?escHtml(t.timeRange):''}｜${escHtml(t.desc)}` });
+    const lk = locOf(t);
+    const pk = pvTaskProject(t, ref) || '未分類項目';
+    const g = grpOf(lk, pk);
+    g.tasks.push(t);
+    toDlgArr(t.delegator).forEach(n => { if(n && !g.arr.includes(n)) g.arr.push(n); });
   });
   adlgEntries.forEach(e => {
     const sp = pvSplitLoc(pvEntryKey(e));
-    let hint = '';
-    const a = toDlgArr(e.delegator);
-    if(!a.length && sp.location && locDlg[sp.location]) hint = `（地點推斷：${escHtml(locDlg[sp.location])}）`;
-    adlgRows.push({ store: 'entries', ref: e, dirty: false, arr: a,
-      label: `📊 ${sp.location?escHtml(sp.location):'（無地點）'}｜${escHtml(e.desc||'')}${sp.project?`（${escHtml(sp.project)}）`:''}${hint}` });
+    const lk = sp.location || '（無地點）';
+    const pk = sp.project || '未分類項目';
+    const g = grpOf(lk, pk);
+    g.entries.push(e);
+    toDlgArr(e.delegator).forEach(n => { if(n && !g.arr.includes(n)) g.arr.push(n); });
   });
-  if(!adlgRows.length){ showToast('👍 冇任何記錄可編輯'); return; }
+  adlgGroups = Object.keys(grpMap).map(k => grpMap[k]).sort((a,b) => a.lk.localeCompare(b.lk,'zh-Hant') || a.pk.localeCompare(b.pk,'zh-Hant'));
+  if(!adlgGroups.length){ showToast('👍 冇任何記錄可編輯'); return; }
   const presets = getPresets().delegators || [];
   const titleEl = document.getElementById('assignDlgTitle');
-  if(titleEl) titleEl.textContent = filter ? `✏️ 編輯負責人 — ${filter.pk||''}${filter.lk?`（${filter.lk}）`:''}` : '✏️ 編輯負責人';
-  let h = filter
-    ? `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">此項目 <b>${adlgRows.length}</b> 項記錄：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`
-    : `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">全部記錄 <b>${adlgRows.length}</b> 項：每行可加減負責人（可多名）；<b>未改過嘅行儲存時唔會郁</b>。</div>`;
+  if(titleEl) titleEl.textContent = '✏️ 編輯負責人 — 按項目';
+  let h = `<div style="font-size:0.78rem;color:var(--slate-600);margin-bottom:8px">按項目分組 <b>${adlgGroups.length}</b> 組：每組統一設定負責人（可多名），一齊套用該項目所有記錄；<b>未改過嘅組儲存時唔會郁</b>。</div>`;
   h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;background:var(--blue-50);border:1px solid var(--blue-200);border-radius:8px">
     <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">⚡ 全部設為：</span>
     <select class="form-select" id="adlgBulk" onchange="adlgBulkApply()" style="flex:1">
-      <option value="">（逐項設定）</option>
+      <option value="">（逐組設定）</option>
       ${presets.map(d=>`<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('')}
     </select>
   </div>`;
-  adlgRows.forEach((r,i)=>{
-    h += `<div style="padding:7px 9px;margin-bottom:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px">
-      <div style="font-size:0.76rem;color:var(--slate-600);margin-bottom:5px">${r.label}</div>
+  adlgGroups.forEach((g,i)=>{
+    const total = g.tasks.length + g.entries.length;
+    const done = g.tasks.filter(t=>t.status==='已完成').length + g.entries.filter(e=>e.status==='已完成').length;
+    const pct = g.tasks.length ? pvGroupPct(g.tasks)
+      : (g.entries.length ? Math.round(g.entries.reduce((s,e)=>s+(Number(e.pct)||0),0)/g.entries.length) : 0);
+    h += `<div style="padding:8px 10px;margin-bottom:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
+        <span style="font-weight:700;font-size:0.8rem;color:#1e293b">🏷️ ${escHtml(g.pk)}</span>
+        <span style="font-size:0.7rem;color:var(--slate-500)">📍 ${escHtml(g.lk)}</span>
+        <span style="flex:1"></span>
+        <span style="font-size:0.68rem;color:var(--slate-500)">${done}/${total} 項｜${pct}%</span>
+      </div>
       <div class="person-list-row">
         <input class="form-input" id="adlgInp_${i}" list="adlgDl_${i}" placeholder="輸入負責人" onkeydown="if(event.key==='Enter'){event.preventDefault();adlgAdd(${i});}">
         <datalist id="adlgDl_${i}">${presets.map(d=>`<option value="${escHtml(d)}"></option>`).join('')}</datalist>
@@ -2249,48 +2248,49 @@ function openAssignDelegator(filter){
     </div>`;
   });
   document.getElementById('assignDlgBody').innerHTML = h;
-  adlgRows.forEach((r,i)=>adlgRenderChips(i));
+  adlgGroups.forEach((g,i)=>adlgRenderChips(i));
   openModal('modalAssignDlg');
 }
 function adlgRenderChips(i){
-  const r = adlgRows[i], el = document.getElementById('adlgChips_'+i);
-  if(!r || !el) return;
-  if(!r.arr.length){ el.innerHTML = '<span class="person-empty">未分類（冇負責人）</span>'; return; }
-  el.innerHTML = r.arr.map((n,ci) =>
+  const g = adlgGroups[i], el = document.getElementById('adlgChips_'+i);
+  if(!g || !el) return;
+  if(!g.arr.length){ el.innerHTML = '<span class="person-empty">未分類（冇負責人）</span>'; return; }
+  el.innerHTML = g.arr.map((n,ci) =>
     `<span class="person-chip">👤 ${escHtml(n)}<span class="del" onclick="adlgRemove(${i},${ci})" title="移除">✕</span></span>`
   ).join('');
 }
 function adlgAdd(i){
-  const r = adlgRows[i], input = document.getElementById('adlgInp_'+i);
-  if(!r || !input) return;
+  const g = adlgGroups[i], input = document.getElementById('adlgInp_'+i);
+  if(!g || !input) return;
   const val = input.value.trim();
   if(!val){ showToast('⚠️ 請輸入負責人'); return; }
-  if(r.arr.includes(val)){ showToast('⚠️ 已存在：' + val); input.value=''; return; }
-  r.arr.push(val); r.dirty = true; input.value='';
+  if(g.arr.includes(val)){ showToast('⚠️ 已存在：' + val); input.value=''; return; }
+  g.arr.push(val); g.dirty = true; input.value='';
   adlgRenderChips(i);
 }
 function adlgRemove(i, ci){
-  const r = adlgRows[i];
-  if(!r) return;
-  r.arr.splice(ci,1); r.dirty = true;
+  const g = adlgGroups[i];
+  if(!g) return;
+  g.arr.splice(ci,1); g.dirty = true;
   adlgRenderChips(i);
 }
 function adlgBulkApply(){
   const b = document.getElementById('adlgBulk').value; if(!b) return;
-  adlgRows.forEach((r,i)=>{
-    r.arr = [b]; r.dirty = true;
+  adlgGroups.forEach((g,i)=>{
+    g.arr = [b]; g.dirty = true;
     const inp = document.getElementById('adlgInp_'+i); if(inp) inp.value='';
     adlgRenderChips(i);
   });
 }
 function saveAssignDelegator(){
   let changed = 0; const stores = {log:false, snap:false, entries:false};
-  adlgRows.forEach((r)=>{
-    if(!r.dirty) return;           // 未改過嘅行唔郁
-    r.ref.delegator = r.arr.slice(); // 存陣列（[]＝未分類）；舊單值字串由 toDlgArr 兼容
-    changed++; stores[r.store] = true;
+  const taskStore = adlgSnap ? 'snap' : 'log';
+  adlgGroups.forEach((g)=>{
+    if(!g.dirty) return;           // 未改過嘅組唔郁
+    g.tasks.forEach(t => { t.delegator = g.arr.slice(); changed++; stores[taskStore] = true; });
+    g.entries.forEach(e => { e.delegator = g.arr.slice(); changed++; stores.entries = true; });
   });
-  if(!changed){ showToast('⚠️ 未修改任何行'); return; }
+  if(!changed){ showToast('⚠️ 未修改任何組'); return; }
   if(stores.log) saveData();
   if(stores.snap && adlgSnap) saveProjProgressSnapshot(adlgSnap.savedAt, adlgSnap.tasks);
   if(stores.entries) saveProgressEntries(adlgEntries);
