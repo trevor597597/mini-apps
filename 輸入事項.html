@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.13</title>
+<title>工作日誌 — 輸入事項工具 v3.14</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.13</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.14</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -887,6 +887,24 @@ body {
         </label>
         <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()" title="將已有進度記錄匯出成 XLSX 檔案">📤 生成記錄</button>
         <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="預覽項目進度概覽">👁️ 預覽</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">📅 時間段：</span>
+        <input type="date" id="progressDateFrom" class="form-input" style="max-width:150px" title="開始日期（可留空）">
+        <span style="font-size:0.72rem;color:var(--slate-400)">至</span>
+        <input type="date" id="progressDateTo" class="form-input" style="max-width:150px" title="結束日期（可留空）">
+        <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX(true)" title="只匯出所揀時間段（參考時間 ts）嘅進度記錄">📤 生成日期檔案</button>
+        <span style="font-size:0.68rem;color:var(--slate-400)">唔揀 = 全部記錄</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">🏷️ 項目：</span>
+        <div class="person-list-row" style="flex:1;min-width:170px">
+          <input class="form-input" id="progressProjectInput" list="progressProjectDl" placeholder="輸入項目名（可多個）" onkeydown="if(event.key==='Enter'){event.preventDefault();addProgressProjectFilter();}">
+          <datalist id="progressProjectDl"></datalist>
+          <button type="button" class="btn btn-sm btn-primary" onclick="addProgressProjectFilter()" title="加入項目過濾">➕</button>
+        </div>
+        <span style="font-size:0.68rem;color:var(--slate-400)">揀項目後只出嗰啲項目；唔揀 = 全部</span>
+        <div class="person-chips" id="progressProjectChips" style="width:100%"></div>
       </div>
     </div>
   </div>
@@ -2124,7 +2142,7 @@ function renderProjectProgressArea(){
           <span style="font-size:0.78rem">📊</span>
           <span class="pv-desc" style="font-size:0.78rem">${escHtml(r.desc||'')}${r.note?`（${escHtml(r.note)}）`:''}</span>
           <span class="pv-status ${stCls(r.status||'待辦')}">${escHtml(r.status||'待辦')}</span>
-          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${rp!=null?rp+'%':''}${r.qty?` ×${escHtml(r.qty)}`:''}</span>
+          <span style="font-size:0.68rem;color:var(--slate-400);white-space:nowrap">${pvTsTag(r)?'🕐'+pvTsTag(r)+' ':''}${rp!=null?rp+'%':''}${r.qty?` ×${escHtml(r.qty)}`:''}</span>
         </div>`;
       }).join('');
       const bodyRows = tRows + rRows;
@@ -2460,6 +2478,7 @@ function updateProgressFromTasks(){
       status: t.status || '待辦',
       note: '',
       qty: (t.qtyTotal && Number(t.qtyTotal) > 0) ? String(t.qtyTotal) : '',
+      ts: pvNowTs(),
       auto: true
     };
   });
@@ -3203,6 +3222,7 @@ function showProgressOverview(){
             <span style="min-width:36px;color:var(--slate-400);font-size:0.68rem">${Math.round(p)}%</span>
             <span style="flex:1">${escHtml(e.desc||'')}</span>
             ${q?`<span class="pv-qty">${q}</span>`:''}
+            ${pvTsTag(e)?`<span style="font-size:0.65rem;color:var(--slate-400);white-space:nowrap">🕐${pvTsTag(e)}</span>`:''}
           </div>`;
         }).join('')}
         ${list.length > 6 ? `<div style="font-size:0.7rem;color:var(--slate-400)">…仲有 ${list.length - 6} 項</div>` : ''}
@@ -3731,6 +3751,20 @@ function saveProgressEntries(list){
   // 清走 log 入面嘅舊引用，避免雙重儲存
   if (log && log.progress) delete log.progress;
 }
+// 參考時間 helpers（v3.14 加）：進度記錄帶 ts（YYYY-MM-DD HH:mm），方便同記錄功能對證／按日期出檔
+function pvNowTs(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function pvTsTag(e){
+  if(!e || !e.ts) return '';
+  const s = String(e.ts);
+  let m = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/);
+  if(m) return `${m[1].slice(5)} ${m[2]}`;
+  m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1].slice(5) : '';
+}
 
 // ── 資訊頁「項目進度」四級分組快照（獨立儲存，唔跟 log 重置／換日）— 2026-08-11 改
 const PROJ_PROGRESS_KEY = 'worklog_proj_progress_v1';
@@ -3952,12 +3986,12 @@ function saveProgressEntry(){
   const entries = getProgressEntries();
   if(progressEditId){
     const e = entries.find(x => String(x.id) === String(progressEditId));
-    if(e){ e.loc=loc; delete e.location; delete e.project; e.desc=desc; e.pct=pct; e.status=status; e.note=note; e.qty=qty; }
+    if(e){ e.loc=loc; delete e.location; delete e.project; e.desc=desc; e.pct=pct; e.status=status; e.note=note; e.qty=qty; if(!e.ts) e.ts=pvNowTs(); }
   } else {
-    entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), loc, desc, pct, status, note, qty });
+    entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), loc, desc, pct, status, note, qty, ts: pvNowTs() });
   }
   saveProgressEntries(entries);
-  saveData(); renderProgressEval(); resetProgressForm(); closeModal('modalProgressEntry');
+  saveData(); renderProgressEval(); renderProjectProgressArea(); resetProgressForm(); closeModal('modalProgressEntry');
   showToast('✅ 已儲存進度');
 }
 
@@ -3990,7 +4024,7 @@ function deleteProgressEntryById(id){
   if(!confirm('確定刪除呢條進度記錄？')) return;
   const entries = getProgressEntries().filter(x => String(x.id) !== String(id));
   saveProgressEntries(entries);
-  renderProgressEval();
+  renderProgressEval(); renderProjectProgressArea();
   if(progressEditId && String(progressEditId) === String(id)) resetProgressForm();
   showToast('🗑️ 已刪除進度');
 }
@@ -4046,7 +4080,7 @@ function renderProgressEval(){
           <button class="pv-edit" onclick="editProgressEntry('${idAttr}')" title="編輯">✏️</button>
           <button class="pv-edit danger" onclick="deleteProgressEntryById('${idAttr}')" title="刪除">🗑️</button>
         </span>
-      </div>${e.note?`<div class="pv-note">📝 ${escHtml(e.note)}</div>`:''}`;
+      </div>${(e.note||pvTsTag(e))?`<div class="pv-note">${e.note?`📝 ${escHtml(e.note)}`:''}${e.note&&pvTsTag(e)?'　':''}${pvTsTag(e)?`🕐 ${pvTsTag(e)}`:''}</div>`:''}`;
     }).join('');
     // 動態追蹤今日事項（項目記錄做參考 → 事項歸屬）
     const projTasks = (log && log.tasks || []).filter(t => t.desc!=='開工' && t.desc!=='收工' && pvTaskProject(t, refProjects) === k);
@@ -4089,22 +4123,80 @@ function renderProgressEval(){
   body.innerHTML = html;
 }
 
-// ── 進度記錄匯出 XLSX（項目／地點分列兩欄 + 數量）──
-function exportProgressXLSX(){
+// ── 項目過濾（v3.14 加）：生成檔案時揀特定範圍嘅項目 ──
+var progressProjectFilter = [];
+function refreshProgressProjectDl(){
+  const dl = document.getElementById('progressProjectDl');
+  if(!dl) return;
+  const set = new Set();
+  (getProgressEntries()||[]).forEach(e => {
+    const sp = pvSplitLoc(pvEntryKey(e)||'');
+    if(sp.project) set.add(sp.project);
+  });
+  (getPresets().projects||[]).forEach(p => { if(p) set.add(p); });
+  dl.innerHTML = [...set].sort((a,b)=>a.localeCompare(b,'zh-Hant'))
+    .map(p => `<option value="${escHtml(p)}"></option>`).join('');
+}
+function renderProgressProjectChips(){
+  const el = document.getElementById('progressProjectChips');
+  if(!el) return;
+  if(!progressProjectFilter.length){ el.innerHTML = '<span class="person-empty" style="font-size:0.7rem">未揀項目（全部）</span>'; return; }
+  el.innerHTML = progressProjectFilter.map((n,i) =>
+    `<span class="person-chip">🏷️ ${escHtml(n)}<span class="del" onclick="removeProgressProjectFilter(${i})" title="移除">✕</span></span>`
+  ).join('');
+}
+function addProgressProjectFilter(){
+  const input = document.getElementById('progressProjectInput');
+  if(!input) return;
+  const val = input.value.trim();
+  if(!val){ showToast('⚠️ 請輸入項目名'); return; }
+  if(progressProjectFilter.includes(val)){ showToast('⚠️ 已加入：' + val); input.value=''; return; }
+  progressProjectFilter.push(val); input.value='';
+  renderProgressProjectChips();
+}
+function removeProgressProjectFilter(i){
+  progressProjectFilter.splice(i,1);
+  renderProgressProjectChips();
+}
+
+// ── 進度記錄匯出 XLSX（項目／地點分列兩欄 + 數量 + 時間；filterByDate=true 時只出揀咗嗰日）──
+function exportProgressXLSX(filterByDate){
+  refreshProgressProjectDl();
   var entries=getProgressEntries().filter(function(e){return e&&e.desc;});
-  if(!entries.length){showToast('⚠️ 未有進度資料');return;}
-  var rows=[['項目','地點','事項','狀態','進度','數量','備註']];
+  var dateFrom=document.getElementById('progressDateFrom');
+  var dateTo=document.getElementById('progressDateTo');
+  var fromVal=(filterByDate && dateFrom && dateFrom.value) ? dateFrom.value : '';
+  var toVal=(filterByDate && dateTo && dateTo.value) ? dateTo.value : '';
+  if(fromVal) entries=entries.filter(function(e){return e.ts && String(e.ts).slice(0,10)>=fromVal;});
+  if(toVal) entries=entries.filter(function(e){return e.ts && String(e.ts).slice(0,10)<=toVal;});
+  if(progressProjectFilter.length){
+    entries=entries.filter(function(e){
+      const sp=pvSplitLoc(pvEntryKey(e)||'');
+      return sp.project && progressProjectFilter.indexOf(sp.project)>=0;
+    });
+  }
+  if(!entries.length){ showToast((fromVal||toVal)?'⚠️ 呢段時間冇進度記錄':'⚠️ 未有進度資料'); return; }
+  var rows=[['項目','地點','事項','狀態','進度','數量','備註','日期','時間']];
   entries.forEach(function(e){
     var pct=(e.pct!=null&&e.pct!=='')?Math.round(e.pct)+'%':'—';
     var sp=pvSplitLoc(pvEntryKey(e)||'');
-    rows.push([sp.project||'—',sp.location||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'']);
+    var tsStr=(e.ts)?String(e.ts):'';
+    var dPart='', tPart='';
+    var m=tsStr.match(/^(\d{4}-\d{2}-\d{2})[ T]?(\d{2}:\d{2})?/);
+    if(m){ dPart=m[1]; tPart=m[2]||''; }
+    if(!tsStr) dPart='（未記錄）';
+    rows.push([sp.project||'—',sp.location||'—',e.desc||'',e.status||'待辦',pct,e.qty||'',e.note||'',dPart,tPart]);
   });
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:14},{wch:12},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34}];
+  ws['!cols']=[{wch:14},{wch:12},{wch:30},{wch:10},{wch:8},{wch:6},{wch:34},{wch:12},{wch:8}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'進度記錄');
   var ds=(log.dateStr||todayStr()).replace(/-/g,'');
-  var filename='進度記錄_'+ds;
+  var filename;
+  if(fromVal && toVal) filename='項目資料_'+fromVal.replace(/-/g,'')+'-'+toVal.replace(/-/g,'');
+  else if(fromVal) filename='項目資料_'+fromVal.replace(/-/g,'')+'起';
+  else if(toVal) filename='項目資料_至'+toVal.replace(/-/g,'');
+  else filename='進度記錄_'+ds;
   var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
   var blob=new Blob([wbout],{type:'application/octet-stream'});
   var a=document.createElement('a');
@@ -4112,7 +4204,8 @@ function exportProgressXLSX(){
   a.download=filename+'.xlsx';
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('✅ 已輸出 '+filename+'.xlsx');
+  var missing=entries.filter(function(e){return !e.ts;}).length;
+  showToast('✅ 已輸出 '+filename+'.xlsx（'+entries.length+' 條'+(missing?('，'+missing+' 條冇日期'):'')+'）');
 }
 
 // ── 進度記錄讀取 XLSX（新格式：項目／地點|事項|狀態|進度|數量|備註；兼容舊格式：地點|項目|事項|...）──
@@ -4144,7 +4237,7 @@ function loadProgressXLSX(event){
 
       const hdr = (json[hdrIdx]||[]).map(c => String(c==null?'':c).trim());
       // 欄位定位：合併欄優先，舊格式就 項目 + 地點 各自搵
-      let cLoc = -1, cProj = -1, cDesc = -1, cStatus = -1, cPct = -1, cQty = -1, cNote = -1;
+      let cLoc = -1, cProj = -1, cDesc = -1, cStatus = -1, cPct = -1, cQty = -1, cNote = -1, cTs = -1, cDate = -1;
       for(let i=0; i<hdr.length; i++){
         const h = hdr[i];
         if(h.includes('事項')) cDesc = i;
@@ -4152,6 +4245,8 @@ function loadProgressXLSX(event){
         else if(h.includes('進度') || h.includes('完成度')) cPct = i;
         else if(h.includes('數量')) cQty = i;
         else if(h.includes('備註')) cNote = i;
+        else if(h.includes('日期')) cDate = i;
+        else if(h.includes('時間')) cTs = i;
         else if(h.includes('項目／地點') || h.includes('項目/地點')) cLoc = i;
         else if(h.includes('項目')) cProj = i;
         else if(h.includes('地點')) cLoc = i;
@@ -4183,6 +4278,23 @@ function loadProgressXLSX(event){
         const qtyRaw = cell(cQty);
         const qty = (qtyRaw && qtyRaw!=='—' && /^[1-9]$/.test(qtyRaw)) ? qtyRaw : '';
         const note = cell(cNote);
+        // 日期＋時間 → ts（新格式兩欄；舊格式時間欄直接係完整 ts；冇日期 = 唔寫 ts）
+        const dateRaw = cell(cDate);
+        const timeRaw = cell(cTs);
+        let ts = '';
+        if(dateRaw && dateRaw!=='—' && dateRaw!=='（未記錄）'){
+          if(/^\d{4}-\d{2}-\d{2}/.test(dateRaw)){
+            ts = dateRaw;
+            if(timeRaw && timeRaw!=='—'){
+              if(/^\d{4}-\d{2}-\d{2}/.test(timeRaw)) ts = timeRaw;
+              else ts = dateRaw + ' ' + timeRaw;
+            }
+          } else if(timeRaw && timeRaw!=='—' && /^\d{4}-\d{2}-\d{2}/.test(timeRaw)){
+            ts = timeRaw;
+          }
+        } else if(timeRaw && timeRaw!=='—'){
+          ts = /^\d{4}-\d{2}-\d{2}/.test(timeRaw) ? timeRaw : '';
+        }
         imported.push({
           id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
           loc: (merged && merged!=='—') ? merged : '',
@@ -4190,7 +4302,8 @@ function loadProgressXLSX(event){
           pct: pct,
           status: status,
           qty: qty,
-          note: (note && note!=='—') ? note : ''
+          note: (note && note!=='—') ? note : '',
+          ts: ts
         });
       }
       if(!imported.length){ showToast('⚠️ 冇讀到任何進度記錄'); return; }
@@ -4924,6 +5037,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadData();
   renderTemplates();
   renderTplHint();
+  refreshProgressProjectDl();
+  renderProgressProjectChips();
   // Restore last active tab
   try {
     const savedTab = localStorage.getItem('worklog_active_tab');
