@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.14</title>
+<title>工作日誌 — 輸入事項工具 v3.15</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -706,7 +706,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.14</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.15</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -932,7 +932,7 @@ body {
     </div>
     <div class="card-body">
       <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        撳「➕ 新增記錄」開彈窗記錄進度；將重複項目嘅工序存成模板（自動或手動），喺項目卡片撳「📊 評估」一鍵對照實際進度。
+        撳「➕ 新增記錄」一鍵從項目進度提取地點/項目/事項/日期存入項目卡片；要自訂就撳「✍️ 手動」。將重複項目嘅工序存成模板（自動或手動），喺項目卡片撳「📊 評估」一鍵對照實際進度。
       </div>
       <!-- 模板區 -->
       <div style="margin-bottom:14px">
@@ -952,7 +952,8 @@ body {
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 進度記錄</span>
           <span style="flex:1"></span>
-          <button class="btn btn-sm btn-primary" onclick="openProgressEntryModal()">➕ 新增記錄</button>
+          <button class="btn btn-sm btn-primary" onclick="quickAddProgress()" title="一鍵從項目進度提取錄入">➕ 新增記錄</button>
+          <button class="btn btn-sm btn-secondary" onclick="openProgressEntryModal()" title="手動輸入（自訂項目/備註）">✍️ 手動</button>
         </div>
         <div id="progressEvalBody">
           <div style="font-size:0.8rem;color:var(--slate-400)">尚未有進度記錄 — 撳「➕ 新增記錄」開始</div>
@@ -3990,6 +3991,39 @@ function openProgressEntryModal(){
 function closeProgressEntryModal(){
   closeModal('modalProgressEntry');
   resetProgressForm();
+}
+
+// ── 快速錄入（2026-08-24 加）：撳「➕ 新增記錄」→ 從項目進度提取地點/項目/事項/日期，直接存入同名項目卡片 ──
+// 每次撳錄入「下一個未有相同記錄」嘅事項（唔重複）；全部錄完會提示
+function quickAddProgress(){
+  if(!log){ showToast('⚠️ 未開工'); return; }
+  const ref = pvRefProjects();
+  const tasks = (log.tasks||[]).filter(t => t && t.desc && t.desc!=='開工' && t.desc!=='收工');
+  if(!tasks.length){ showToast('⚠️ 今日未有事項 — 先去「📋 記錄」開工入事項'); return; }
+  const entries = getProgressEntries();
+  const exists = {};
+  entries.forEach(e => { if(e && e.desc) exists[`${e.loc}||${e.desc}`] = true; });
+  const next = tasks.find(t => {
+    const pk = pvTaskProject(t, ref) || '';
+    const loc = pvMergeLoc(t.location, pk);
+    return !exists[`${loc}||${t.desc}`];
+  });
+  if(!next){ showToast('✅ 今日事項已全部錄入（更新／自訂用「✍️ 手動」）'); return; }
+  const pk = pvTaskProject(next, ref) || '';
+  const loc = pvMergeLoc(next.location, pk);
+  entries.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    loc,
+    desc: next.desc || '',
+    pct: pvTaskPct(next),
+    status: next.status || '待辦',
+    note: '',
+    qty: next.qtyTotal ? String(next.qtyTotal) : '',
+    ts: log.dateStr || pvTodayStr()
+  });
+  saveProgressEntries(entries);
+  saveData(); renderProgressEval(); renderProjectProgressArea(); refreshProgressProjectDl();
+  showToast(`✅ 已錄入：${pk||'未分類'}｜${next.desc}`);
 }
 
 function saveProgressEntry(){
