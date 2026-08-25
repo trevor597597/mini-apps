@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.15</title>
+<title>工作日誌 — 輸入事項工具 v3.17</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -553,8 +553,12 @@ body {
 .pp-wt-head:first-child { padding-top:0; }
 .pp-loc-sec { border:1px solid var(--slate-200); border-radius:12px; padding:10px 12px; margin-bottom:12px; background:var(--slate-50); }
 .pp-loc-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-/* 第一級：負責人 分區 */
-.pp-dlg-sec { border:1px solid var(--slate-300); border-radius:14px; margin-bottom:16px; background:#fff; overflow:hidden; }
+/* 第一級：負責人 分區（2026-08-24 改：負責人橫向延伸＋卡片橫向滾軸；地點/項目繼續向下） */
+.pp-dlg-row { display:flex; gap:12px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
+.pp-dlg-sec { border:1px solid var(--slate-300); border-radius:14px; background:#fff; overflow:hidden; min-width:300px; max-width:380px; flex:0 0 auto; margin:0; }
+/* 項目進度預覽：每組項目橫向延伸＋橫向滾軸（2026-08-24 加） */
+.po-row { display:flex; gap:10px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
+.po-row > div { min-width:300px; max-width:360px; flex:0 0 auto; }
 .pp-dlg-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px 6px; background:linear-gradient(90deg,#eef2ff,#f8fafc); }
 .pp-dlg-body { padding:12px 12px 2px; }
 .pp-dlg-body .pp-loc-sec:last-child { margin-bottom:8px; }
@@ -706,7 +710,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.15</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.17</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -775,6 +779,48 @@ body {
     </div>
   </div>
 
+  <!-- Card: 項目進度（記錄頁）：自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項 -->
+  <div class="card" id="projectProgressCard">
+    <div class="card-header">
+      <h2>📊 項目進度</h2>
+      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（負責人＋地點＋項目＋事項）">🔄 更新進度</button>
+      <button class="btn btn-sm btn-secondary" onclick="openAssignDelegator()" title="更改已有記錄嘅負責人（可多名）">✏️ 編輯負責人</button>
+    </div>
+    <div class="card-body">
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        資料分級 <b>負責人 → 地點 → 項目 → 事項</b> 四級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 負責人＋地點＋項目＋事項。
+      </div>
+      <div id="projectProgressBody">
+        <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: 預覽功能區（輸出預覽 + 項目進度完整預覽） -->
+  <div class="card" id="previewCard">
+    <div class="card-header"><h2>👁️ 預覽</h2></div>
+    <div class="card-body">
+      <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--slate-200)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📄 輸出預覽</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">按輸出模板即時預覽完整工作日誌</span>
+        </div>
+        <div class="preview-box" id="markdownPreview" style="max-height:240px">尚未開工或無數據</div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 項目進度預覽</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">按項目分組＋進度條＋模板評估（顯示全部事項）</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="跳去項目進度預覽">👁️ 查看</button>
+        </div>
+        <div id="progressOverviewBody">
+          <div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄 — 去「📊 進度記錄」輸入</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Card: 檔案（導入 + 輸出） -->
   <div class="card" id="fileCard">
     <div class="card-header"><h2>📁 檔案</h2>
@@ -805,7 +851,6 @@ body {
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="openSaveModal()">💾 儲存</button>
         </div>
-        <div class="preview-box" id="markdownPreview" style="max-height:220px;margin-top:10px">尚未開工或無數據</div>
       </div>
     </div>
   </div>
@@ -904,23 +949,6 @@ body {
         </div>
         <span style="font-size:0.68rem;color:var(--slate-400)">選項從項目進度提取（進度記錄＋今日事項嘅項目）；揀咗只出嗰啲；唔揀 = 全部</span>
         <div class="person-chips" id="progressProjectChips" style="width:100%"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Card: 項目進度（自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取） -->
-  <div class="card" id="projectProgressCard">
-    <div class="card-header">
-      <h2>📊 項目進度</h2>
-      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（負責人＋地點＋項目＋事項）">🔄 更新進度</button>
-      <button class="btn btn-sm btn-secondary" onclick="openAssignDelegator()" title="更改已有記錄嘅負責人（可多名）">✏️ 編輯負責人</button>
-    </div>
-    <div class="card-body">
-      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        資料分級 <b>負責人 → 地點 → 項目 → 事項</b> 四級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 負責人＋地點＋項目＋事項。
-      </div>
-      <div id="projectProgressBody">
-        <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
       </div>
     </div>
   </div>
@@ -1305,14 +1333,6 @@ body {
       <button class="btn btn-secondary" onclick="closeModal('modalPDFPreview')">關閉</button>
       <button class="btn btn-pdf" onclick="printPDF()">🖨️ 列印／另存為 PDF</button>
     </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modalProgressOverview">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header"><h3>📊 項目進度概覽</h3><button class="modal-close" onclick="closeModal('modalProgressOverview')">✕</button></div>
-    <div class="modal-body" id="progressOverviewBody"></div>
-    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalProgressOverview')">關閉</button></div>
   </div>
 </div>
 
@@ -1771,7 +1791,8 @@ function render() {
   if (!log) {
     document.getElementById('emptyState').style.display='block';
     document.getElementById('activeStatus').style.display='none';
-    document.getElementById('markdownPreview').textContent='尚未開工或無數據';
+    renderProgressOverview();
+    refreshPreview();
     return;
   }
   document.getElementById('emptyState').style.display='none';
@@ -1781,7 +1802,7 @@ function render() {
   document.getElementById('statTasks').textContent=log.tasks.length;
   document.getElementById('statPhotos').textContent=log.tasks.reduce((s,t)=>s+(t.photos?t.photos.length:0),0);
   document.getElementById('statStatus').textContent=log.tasks.some(t=>t.desc==='收工')?'✅ 已收工':'🔄 進行中';
-  renderProgressSummary(); renderActiveView(); renderNotes(); refreshPreview(); refreshSettingsInputs(); renderProgressEval(); renderProjectProgressArea(); refreshProgressProjectDl();
+  renderProgressSummary(); renderActiveView(); renderNotes(); refreshPreview(); refreshSettingsInputs(); renderProgressEval(); renderProjectProgressArea(); renderProgressOverview(); refreshProgressProjectDl();
 }
 
 // ── 視圖分派：0=數軸 1=列表 2=3×2表格 ──
@@ -2211,8 +2232,9 @@ function renderProjectProgressArea(){
     </div>`;
   });
   const totalPct = pvGroupPct(workTasks);
-  let out = html;
-  if(out){
+  let out = '';
+  if(html){
+    out = `<div class="pp-dlg-row">${html}</div>`;
     out += `<div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid var(--slate-200);border-radius:10px;padding:8px 12px;font-size:0.75rem">
       <span style="color:var(--slate-600)">共 <b>${dlgSet.size}</b> 個負責人 ｜ <b>${allLocSet.size}</b> 個地點 ｜ <b>${totalProj}</b> 個項目 ｜ <b>${totalT}</b> 項事項</span>
       <span style="font-weight:700;color:${pctColor(totalPct)}">合計 ${totalD}/${totalT}（${totalPct}%）</span>
@@ -2666,6 +2688,7 @@ function generateMarkdown() {
 }
 function refreshPreview(){
   const el=document.getElementById('markdownPreview');
+  if(!el) return;
   if(!log||!log.tasks||!log.tasks.length){el.textContent='尚未開工或無數據';return;}
   const tpl=getOutTemplate();
   if(!tpl.length){el.textContent='（未揀任何輸出欄位 — 去 ⚙️ 輸出模板 揀返）';return;}
@@ -3175,15 +3198,14 @@ function finishDay(){
 }
 function confirmFinish(){ finishDay(); }
 
-// ── FEATURE: 項目進度概覽（設置頁按鍵 → 睇現有項目進度；2026-08-22 加時間段篩選）──
-function showProgressOverview(){
+// ── 完整預覽：按項目分組＋進度條＋模板評估（記錄頁常駐區域，顯示全部事項；2026-08-24 由 modal 改常駐）──
+function renderProgressOverview(){
   const body = document.getElementById('progressOverviewBody');
   if(!body) return;
   const entries = getProgressEntries().filter(e => e && e.desc).filter(pvRangeFilter);
   if(!entries.length){
     const hasRange = progressDateRange.from || progressDateRange.to;
-    body.innerHTML = `<div style="font-size:0.85rem;color:var(--slate-500);text-align:center;padding:28px 0">${hasRange?'呢段時間未有進度記錄':'未有進度記錄'}<br><span style="font-size:0.75rem">去「📋 記錄」→「📊 進度記錄」輸入</span></div>`;
-    openModal('modalProgressOverview');
+    body.innerHTML = `<div style="font-size:0.85rem;color:var(--slate-500);text-align:center;padding:28px 0">${hasRange?'呢段時間未有進度記錄':'未有進度記錄'}<br><span style="font-size:0.75rem">去「📊 進度記錄」輸入</span></div>`;
     return;
   }
   // 按項目分組
@@ -3237,7 +3259,7 @@ function showProgressOverview(){
         ${pending?`<span class="pv-status st-待辦">⏳ 待辦 ${pending}</span>`:''}
       </div>
       <div style="margin-top:6px;border-top:1px dashed var(--slate-200);padding-top:6px;display:flex;flex-direction:column;gap:4px">
-        ${list.slice(0,6).map(e => {
+        ${list.map(e => {
           const p = (e.pct!=null && e.pct!=='') ? Number(e.pct) : 0;
           const q = e.qty ? `🔢×${escHtml(e.qty)}` : '';
           return `<div style="display:flex;gap:6px;align-items:center;font-size:0.75rem;color:var(--slate-600)">
@@ -3247,7 +3269,6 @@ function showProgressOverview(){
             ${pvTsTag(e)?`<span style="font-size:0.65rem;color:var(--slate-400);white-space:nowrap">🕐${pvTsTag(e)}</span>`:''}
           </div>`;
         }).join('')}
-        ${list.length > 6 ? `<div style="font-size:0.7rem;color:var(--slate-400)">…仲有 ${list.length - 6} 項</div>` : ''}
       </div>
       ${tplBadge}
     </div>`;
@@ -3256,12 +3277,19 @@ function showProgressOverview(){
   const rangeTxt = (progressDateRange.from || progressDateRange.to)
     ? ` ｜ 📅 ${escHtml(progressDateRange.from||'…')} 至 ${escHtml(progressDateRange.to||'…')}`
     : '';
-  html = `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.8rem">
+  const summaryHtml = `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.8rem">
     <span style="color:var(--slate-600)">共 <b>${groupKeys.length}</b> 個項目 ｜ <b>${allCount}</b> 條記錄${rangeTxt}</span>
     <span style="font-weight:700;color:${allAvg>=100?'var(--green-600)':'var(--blue-700)'}">整體 ${allAvg}%</span>
-  </div>` + html;
-  body.innerHTML = html;
-  openModal('modalProgressOverview');
+  </div>`;
+  body.innerHTML = summaryHtml + (html ? `<div class="po-row">${html}</div>` : '');
+}
+
+// ── 項目進度完整預覽入口：跳去記錄頁完整預覽區域（2026-08-24 由 modal 改跳轉；資訊頁＋設置頁按鍵都用佢）──
+function showProgressOverview(){
+  renderProgressOverview();
+  switchTab('schedule');
+  const el = document.getElementById('progressOverviewBody');
+  if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // ── FEATURE: Show Template（默認彈窗版）──
