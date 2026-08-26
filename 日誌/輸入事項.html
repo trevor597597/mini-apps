@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>工作日誌 — 輸入事項工具 v3.17</title>
+<title>工作日誌 — 輸入事項工具 v3.18</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -546,7 +546,7 @@ body {
 .pv-card-tasks { border-top:1px dashed var(--slate-200); }
 .pv-card-tasks-head { display:flex; justify-content:space-between; align-items:center; padding:8px 12px 4px; font-size:0.75rem; font-weight:700; color:var(--slate-600); }
 .pv-card-tasks-head span { font-weight:400; color:var(--slate-400); font-size:0.7rem; }
-/* ── 項目進度（資訊頁）：四級分級 負責人 → 地點 → 項目 → 事項 ── */
+/* ── 行程記錄（記錄頁，2026-08-26 由「項目進度」改名）：四級分級 負責人 → 地點 → 項目 → 事項 ── */
 .pp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; }
 .pp-loc { font-size:0.68rem; font-weight:600; color:var(--slate-600); background:var(--slate-100); padding:1px 7px; border-radius:10px; white-space:nowrap; }
 .pp-wt-head { display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--slate-600); padding:6px 0 2px; }
@@ -556,7 +556,7 @@ body {
 /* 第一級：負責人 分區（2026-08-24 改：負責人橫向延伸＋卡片橫向滾軸；地點/項目繼續向下） */
 .pp-dlg-row { display:flex; gap:12px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
 .pp-dlg-sec { border:1px solid var(--slate-300); border-radius:14px; background:#fff; overflow:hidden; min-width:300px; max-width:380px; flex:0 0 auto; margin:0; }
-/* 項目進度預覽：每組項目橫向延伸＋橫向滾軸（2026-08-24 加） */
+/* 今日項目預覽：每組項目橫向延伸＋橫向滾軸（2026-08-24 加） */
 .po-row { display:flex; gap:10px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
 .po-row > div { min-width:300px; max-width:360px; flex:0 0 auto; }
 .pp-dlg-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px 6px; background:linear-gradient(90deg,#eef2ff,#f8fafc); }
@@ -710,7 +710,7 @@ body {
 <body>
 
 <div class="header">
-  <h1>📋 工作日誌 — 輸入事項工具 v3.17</h1>
+  <h1>📋 工作日誌 — 輸入事項工具 v3.18</h1>
   <div class="sub">分頁設計 | 數軸時間軸（整點單位）| 雙色滑動條＋手動時間輸入 | 人員分配 | 項目/地點獨立儲存 | 流程模板評估 | PDF 輸出</div>
 </div>
 
@@ -743,31 +743,83 @@ body {
         </div>
         <!-- 分類圖例 -->
         <div id="catLegend" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:0.7rem;color:var(--slate-500);padding:6px 0"></div>
-        <!-- 日期/人員設定（新增事項上方） -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:4px">
-          <div><label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">日期</label><input class="form-input" id="sDate" type="date" style="width:160px;margin-top:4px"></div>
-          <div><label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">人員</label><input class="form-input" id="sPerson" value="傑" style="width:120px;margin-top:4px"></div>
-          <button class="btn btn-primary btn-sm" onclick="confirmSettings()">✅ 儲存</button>
+        <!-- ══ 功能區：日期・人員（2026-08-26 同「行程」分割） ══ -->
+        <div style="margin-top:10px;padding:10px 12px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--slate-600);margin-bottom:8px">📅 日期・人員</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+            <div><label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">日期</label><input class="form-input" id="sDate" type="date" style="width:160px;margin-top:4px"></div>
+            <div><label style="font-size:0.78rem;font-weight:600;color:var(--slate-600)">人員</label><input class="form-input" id="sPerson" value="傑" style="width:120px;margin-top:4px"></div>
+            <button class="btn btn-primary btn-sm" onclick="confirmSettings()">✅ 儲存</button>
+          </div>
         </div>
-        <!-- 時間軸操作按鈕（直接整合喺時間軸區域） -->
-        <div class="inline-actions" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--slate-200)">
-          <button class="btn btn-sm btn-primary" onclick="addTask()">➕ 新增事項</button>
-          <button class="btn btn-sm btn-secondary" onclick="viewEditTasks()">📝 編輯</button>
-          <button class="btn btn-sm btn-success" onclick="finishDay()">🏁 收工</button>
-          <button class="btn btn-sm" id="viewToggleBtn" style="border:1.5px solid var(--slate-300);background:var(--slate-50)" onclick="toggleMatrixView()">📋 列表</button>
-        </div>
-        <!-- 工程進度小卡片 -->
-        <div id="progressSummary" style="display:none;margin-top:12px"></div>
-        <!-- 時間軸事項列表 -->
-        <div id="taskListBody" style="margin-top:12px">
-          <div class="task-empty" id="taskEmpty">尚無事項，點擊「新增事項」開始記錄</div>
+        <!-- ══ 功能區：行程（新增事項所在，2026-08-26 同日期・人員分割） ══ -->
+        <div style="margin-top:10px;padding:10px 12px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--slate-600);margin-bottom:8px">📋 行程</div>
+          <div class="inline-actions" style="margin-top:0;padding-top:0;border-top:none">
+            <button class="btn btn-sm btn-primary" onclick="addTask()">➕ 新增事項</button>
+            <button class="btn btn-sm btn-secondary" onclick="viewEditTasks()">📝 編輯</button>
+            <button class="btn btn-sm btn-success" onclick="finishDay()">🏁 收工</button>
+            <button class="btn btn-sm" id="viewToggleBtn" style="border:1.5px solid var(--slate-300);background:var(--slate-50)" onclick="toggleMatrixView()">📋 列表</button>
+          </div>
+          <!-- 簡略行程（原工程進度小卡，2026-08-26 轉換） -->
+          <div id="progressSummary" style="display:none;margin-top:12px"></div>
+          <!-- 時間軸事項列表 -->
+          <div id="taskListBody" style="margin-top:12px">
+            <div class="task-empty" id="taskEmpty">尚無事項，點擊「新增事項」開始記錄</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Card: 備註（時間軸下方） -->
-  <div class="card" id="notesCard">
+  <!-- Card: 行程記錄（記錄頁，2026-08-26 由「項目進度」改名）：記錄行程事項及時間，分級 負責人 → 地點 → 項目 → 事項 -->
+  <div class="card" id="projectProgressCard">
+    <div class="card-header">
+      <h2>📋 行程記錄</h2>
+      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日行程事項逐條寫入行程記錄（負責人＋地點＋項目＋事項＋時間）">🔄 記入行程</button>
+      <button class="btn btn-sm btn-secondary" onclick="openAssignDelegator()" title="更改已有記錄嘅負責人（可多名）">✏️ 編輯負責人</button>
+    </div>
+    <div class="card-body">
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
+        用於記錄<b>行程事項及時間</b>；資料分級 <b>負責人 → 地點 → 項目 → 事項</b> 四級；項目由<b>項目記錄</b>讀取，「🔄 記入行程」將今日事項逐條寫入（負責人＋地點＋項目＋事項＋時間）。
+      </div>
+      <div id="projectProgressBody">
+        <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動記錄行程</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: 預覽功能區（日誌預覽 + 今日項目預覽；⚙️ 輸出模板 2026-08-26 由檔案卡移入） -->
+  <div class="card" id="previewCard">
+    <div class="card-header"><h2>👁️ 預覽</h2>
+      <button class="btn btn-sm btn-secondary" onclick="openOutTemplate()" title="設定輸出欄位／格式">⚙️ 輸出模板</button>
+    </div>
+    <div class="card-body">
+      <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--slate-200)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📄 日誌預覽</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">按輸出模板即時預覽完整工作日誌</span>
+        </div>
+        <div class="preview-box" id="markdownPreview" style="max-height:240px">尚未開工或無數據</div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📋 今日項目預覽</span>
+          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">按項目分組＋進度條＋模板評估（顯示全部事項）</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="跳去今日項目預覽">👁️ 查看</button>
+        </div>
+        <div id="progressOverviewBody">
+          <div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄 — 去「📊 進度記錄」輸入</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備註 ＋ 檔案（2026-08-26 並排；⚙️ 輸出模板已移去預覽卡首行） -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+  <!-- Card: 備註 -->
+  <div class="card" id="notesCard" style="flex:1;min-width:280px">
     <div class="card-header">
       <h2>📋 備註</h2>
       <button class="btn btn-sm btn-secondary" onclick="fillNotes()">✏️ 編輯備註</button>
@@ -779,53 +831,9 @@ body {
     </div>
   </div>
 
-  <!-- Card: 項目進度（記錄頁）：自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項 -->
-  <div class="card" id="projectProgressCard">
-    <div class="card-header">
-      <h2>📊 項目進度</h2>
-      <button class="btn btn-sm btn-primary" onclick="updateProgressFromTasks()" title="將今日事項逐條寫入項目記錄（負責人＋地點＋項目＋事項）">🔄 更新進度</button>
-      <button class="btn btn-sm btn-secondary" onclick="openAssignDelegator()" title="更改已有記錄嘅負責人（可多名）">✏️ 編輯負責人</button>
-    </div>
-    <div class="card-body">
-      <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        資料分級 <b>負責人 → 地點 → 項目 → 事項</b> 四級；項目由<b>項目記錄</b>讀取，「🔄 更新進度」追蹤只記 負責人＋地點＋項目＋事項。
-      </div>
-      <div id="projectProgressBody">
-        <div style="font-size:0.8rem;color:var(--slate-400)">未有行程事項 — 開工後自動跟蹤進度</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Card: 預覽功能區（輸出預覽 + 項目進度完整預覽） -->
-  <div class="card" id="previewCard">
-    <div class="card-header"><h2>👁️ 預覽</h2></div>
-    <div class="card-body">
-      <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--slate-200)">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📄 輸出預覽</span>
-          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">按輸出模板即時預覽完整工作日誌</span>
-        </div>
-        <div class="preview-box" id="markdownPreview" style="max-height:240px">尚未開工或無數據</div>
-      </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 項目進度預覽</span>
-          <span style="font-weight:400;color:var(--slate-400);font-size:0.7rem">按項目分組＋進度條＋模板評估（顯示全部事項）</span>
-          <span style="flex:1"></span>
-          <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="跳去項目進度預覽">👁️ 查看</button>
-        </div>
-        <div id="progressOverviewBody">
-          <div style="font-size:0.8rem;color:var(--slate-400)">未有進度記錄 — 去「📊 進度記錄」輸入</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Card: 檔案（導入 + 輸出） -->
-  <div class="card" id="fileCard">
-    <div class="card-header"><h2>📁 檔案</h2>
-      <button class="btn btn-sm btn-secondary" onclick="openOutTemplate()">⚙️ 輸出模板</button>
-    </div>
+  <div class="card" id="fileCard" style="flex:1;min-width:280px">
+    <div class="card-header"><h2>📁 檔案</h2></div>
     <div class="card-body">
       <!-- 導入區 -->
       <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--slate-200)">
@@ -854,6 +862,7 @@ body {
       </div>
     </div>
   </div>
+  </div><!-- /備註＋檔案 並排 row -->
   </div><!-- /tab-schedule -->
 
   <!-- Tab: 設置 -->
@@ -864,7 +873,7 @@ body {
     <div class="card-body">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-warning btn-sm" onclick="resetSchedule()">🔄 重置資料</button>
-        <button class="btn btn-secondary btn-sm" onclick="showProgressOverview()">📊 項目進度概覽</button>
+        <button class="btn btn-secondary btn-sm" onclick="showProgressOverview()">📋 行程記錄概覽</button>
       </div>
       <hr style="border:none;border-top:1px solid var(--slate-200);margin:14px 0">
       <!-- 統一常用資料輸入 -->
@@ -924,14 +933,14 @@ body {
     </div>
     <div class="card-body">
       <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        項目數據獨立儲存（唔跟行程重置／換日）。「導入」讀取項目舊記錄，「生成記錄」將已有進度匯出檔案，「預覽」睇項目進度概覽。
+        項目數據獨立儲存（唔跟行程重置／換日）。「導入」讀取項目舊記錄，「生成記錄」將已有進度匯出檔案，「預覽」睇行程記錄概覽。
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <label class="btn btn-sm btn-xlsx" style="cursor:pointer;margin:0">📥 導入
           <input type="file" accept=".xlsx" id="progressXlsxInput" onchange="loadProgressXLSX(event)" style="display:none">
         </label>
         <button class="btn btn-sm btn-xlsx" onclick="exportProgressXLSX()" title="將已有進度記錄匯出成 XLSX 檔案">📤 生成記錄</button>
-        <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="預覽項目進度概覽">👁️ 預覽</button>
+        <button class="btn btn-sm btn-secondary" onclick="showProgressOverview()" title="預覽行程記錄概覽">👁️ 預覽</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
         <span style="font-size:0.75rem;color:var(--slate-600);white-space:nowrap">📅 時間段：</span>
@@ -947,7 +956,7 @@ body {
           <datalist id="progressProjectDl"></datalist>
           <button type="button" class="btn btn-sm btn-primary" onclick="addProgressProjectFilter()" title="加入項目過濾">➕</button>
         </div>
-        <span style="font-size:0.68rem;color:var(--slate-400)">選項從項目進度提取（進度記錄＋今日事項嘅項目）；揀咗只出嗰啲；唔揀 = 全部</span>
+        <span style="font-size:0.68rem;color:var(--slate-400)">選項從行程記錄提取（進度記錄＋今日事項嘅項目）；揀咗只出嗰啲；唔揀 = 全部</span>
         <div class="person-chips" id="progressProjectChips" style="width:100%"></div>
       </div>
     </div>
@@ -960,7 +969,7 @@ body {
     </div>
     <div class="card-body">
       <div style="font-size:0.72rem;color:var(--slate-400);margin-bottom:10px;line-height:1.5">
-        撳「➕ 新增記錄」一鍵從項目進度提取地點/項目/事項/日期存入項目卡片；要自訂就撳「✍️ 手動」。將重複項目嘅工序存成模板（自動或手動），喺項目卡片撳「📊 評估」一鍵對照實際進度。
+        撳「➕ 新增記錄」一鍵從行程記錄提取地點/項目/事項/日期存入項目卡片；要自訂就撳「✍️ 手動」。將重複項目嘅工序存成模板（自動或手動），喺項目卡片撳「📊 評估」一鍵對照實際進度。
       </div>
       <!-- 模板區 -->
       <div style="margin-bottom:14px">
@@ -980,7 +989,7 @@ body {
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           <span style="font-size:0.78rem;font-weight:700;color:var(--blue-800)">📊 進度記錄</span>
           <span style="flex:1"></span>
-          <button class="btn btn-sm btn-primary" onclick="quickAddProgress()" title="一鍵從項目進度提取錄入">➕ 新增記錄</button>
+          <button class="btn btn-sm btn-primary" onclick="quickAddProgress()" title="一鍵從行程記錄提取錄入">➕ 新增記錄</button>
           <button class="btn btn-sm btn-secondary" onclick="openProgressEntryModal()" title="手動輸入（自訂項目/備註）">✍️ 手動</button>
         </div>
         <div id="progressEvalBody">
@@ -1113,7 +1122,7 @@ body {
         <select class="form-select" id="fCategory"></select>
       </div>
       <div class="form-group">
-        <label>階段 <span class="hint">項目進度分類</span></label>
+        <label>階段 <span class="hint">工程階段分類</span></label>
         <select class="form-select" id="fStage">
           <option value="準備">準備</option>
           <option value="施工">施工</option>
@@ -2002,7 +2011,7 @@ function loadTaskThumbnails(ti,ids) {
   }).catch(()=>{c.innerHTML='<span style="color:var(--slate-400);font-size:0.7rem">載入失敗</span>';});
 }
 
-// ── 工程進度小卡片（項目記錄做參考，動態追蹤；分級：地點 → 項目 → 工種）──
+// ── 簡略行程（2026-08-26 v3.18 改：維持「工程進度」功能不變，展示方式參考行程記錄三級資料：📍地點 → 🏷️項目 → 狀態）──
 function renderProgressSummary() {
   const el=document.getElementById('progressSummary');
   if(!log||!log.tasks||!log.tasks.length){el.style.display='none';return;}
@@ -2012,54 +2021,74 @@ function renderProgressSummary() {
   const ref = pvRefProjects();
   const icon = {'已完成':'✅','進行中':'🔄','待辦':'⏳','已取消':'❌'};
   const pctColor = p => p>=100 ? 'var(--green-600)' : p>0 ? 'var(--orange-500)' : 'var(--slate-400)';
-  // 第一級：項目 — 每個項目一張小卡（動態歸屬，冇匹配落「未分類」）
-  const projGroups = {};
+  const STATUS_ORDER = ['已完成','進行中','待辦','已取消'];
+  const locOf = t => (t.location && t.location!=='—') ? t.location : '其他';
+  // 第一級：地點
+  const locMap = {};
   workTasks.forEach(t => {
-    const pk = pvTaskProject(t, ref) || '未分類';
-    (projGroups[pk] = projGroups[pk] || []).push(t);
+    const lk = locOf(t);
+    (locMap[lk] = locMap[lk] || []).push(t);
   });
+  const locKeys = Object.keys(locMap).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
   let totalT=0, totalD=0;
-  const projKeys = Object.keys(projGroups).sort((a,b)=>{
-    if(a==='未分類') return 1;
-    if(b==='未分類') return -1;
-    return a.localeCompare(b,'zh-Hant');
-  });
-  const blocks = projKeys.map(pk => {
-    const ptasks = projGroups[pk];
-    const pDone = ptasks.filter(t=>t.status==='已完成').length;
-    const pPct = pvGroupPct(ptasks);
-    totalT+=ptasks.length; totalD+=pDone;
-    const locs = [...new Set(ptasks.map(t => (t.location && t.location!=='—') ? t.location : '').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
-    const chipsOf = list => list.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${icon[t.status]||'❓'} ${escHtml(t.desc)}${pvTaskNumTag(t)}</span>`).join('');
-    const stgMap = {準備:[],施工:[],調試:[]};
-    ptasks.forEach(t=>stgMap[pvTaskStage(t)].push(t));
-    const stageBlocks = STAGE_ORDER.filter(s=>stgMap[s].length).map(s=>{
-      const list=stgMap[s], sDone=list.filter(t=>t.status==='已完成').length, sPct=pvGroupPct(list);
-      return `<div style="margin-top:4px">
-        <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;margin-bottom:1px">
-          <span class="stage-badge stage-${s}">${s}</span>
-          <span style="color:var(--slate-400)">${sDone}/${list.length}</span>
-          <span style="font-weight:700;color:${pctColor(sPct)}">${sPct}%</span>
+  const blocks = locKeys.map(lk => {
+    const ltasks = locMap[lk];
+    const lDone = ltasks.filter(t=>t.status==='已完成').length;
+    const lPct = pvGroupPct(ltasks);
+    totalT+=ltasks.length; totalD+=lDone;
+    // 第二級：項目（pvTaskProject 動態歸屬，冇匹配落「未分類項目」）
+    const projMap = {};
+    ltasks.forEach(t => {
+      const pk = pvTaskProject(t, ref) || '未分類項目';
+      (projMap[pk] = projMap[pk] || []).push(t);
+    });
+    const projKeys = Object.keys(projMap).sort((a,b)=>{
+      if(a==='未分類項目') return 1;
+      if(b==='未分類項目') return -1;
+      return a.localeCompare(b,'zh-Hant');
+    });
+    const projBlocks = projKeys.map(pk => {
+      const ptasks = projMap[pk];
+      const pDone = ptasks.filter(t=>t.status==='已完成').length;
+      const pPct = pvGroupPct(ptasks);
+      // 第三級：狀態（已完成/進行中/待辦/已取消）
+      const stBlocks = STATUS_ORDER.filter(s => ptasks.some(t=>t.status===s)).map(s => {
+        const list = ptasks.filter(t=>t.status===s);
+        return `<div style="margin-top:3px">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <span style="font-size:0.68rem;color:var(--slate-500)">${icon[s]} ${s}（${list.length}）</span>
+            ${list.map(t=>`<span style="display:inline-block;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0;font-size:0.68rem;color:var(--slate-600)">${escHtml(t.desc)}${t.timeRange?' <span style="color:var(--slate-400)">'+escHtml(t.timeRange)+'</span>':''}${pvTaskNumTag(t)}</span>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
+      const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+      return `<div style="border:1px solid var(--slate-200);border-radius:8px;background:#fff;padding:6px 10px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-weight:600;color:var(--blue-800);font-size:0.74rem">🏷️ ${escHtml(pk)}</span>
+          <span style="flex:1"></span>
+          <span style="font-size:0.68rem;color:var(--slate-400)">${pDone}/${ptasks.length}</span>
+          <span style="font-size:0.72rem;font-weight:700;color:${pctColor(pPct)}">${pPct}%</span>
         </div>
-        <div>${chipsOf(list)}</div>
+        <div style="margin-top:3px"><div style="height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${pPct}%;height:100%;background:${barColor};border-radius:3px"></div></div></div>
+        <div>${stBlocks}</div>
       </div>`;
     }).join('');
-    const barColor = pPct>=100 ? 'var(--green-500)' : pPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
-    return `<div style="border:1px solid var(--slate-200);border-radius:8px;background:#fff;padding:6px 10px;margin-bottom:6px">
+    const lBarColor = lPct>=100 ? 'var(--green-500)' : lPct>0 ? 'var(--orange-500)' : 'var(--slate-300)';
+    return `<div style="margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <span style="font-weight:600;color:var(--blue-800);font-size:0.74rem">🏷️ ${escHtml(pk)}</span>
-        ${locs.map(l=>`<span class="pp-loc">📍 ${escHtml(l)}</span>`).join('')}
+        <span style="font-weight:700;color:#1e293b;font-size:0.78rem">📍 ${escHtml(lk)}</span>
+        <span style="font-size:0.68rem;color:var(--slate-400)">${ltasks.length} 項</span>
         <span style="flex:1"></span>
-        <span style="font-size:0.68rem;color:var(--slate-400)">${pDone}/${ptasks.length}</span>
-        <span style="font-size:0.72rem;font-weight:700;color:${pctColor(pPct)}">${pPct}%</span>
+        <span style="font-size:0.7rem;font-weight:600;color:var(--slate-500)">${lDone}/${ltasks.length}</span>
+        <span style="font-size:0.74rem;font-weight:700;color:${pctColor(lPct)}">${lPct}%</span>
       </div>
-      <div style="margin-top:3px"><div style="height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${pPct}%;height:100%;background:${barColor};border-radius:3px"></div></div></div>
-      <div>${stageBlocks}</div>
+      <div style="margin:3px 0 6px"><div style="height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden"><div style="width:${lPct}%;height:100%;background:${lBarColor};border-radius:3px"></div></div></div>
+      ${projBlocks}
     </div>`;
   }).join('');
   const totalPct = pvGroupPct(workTasks);
   let card = `<div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:10px 14px;font-size:0.78rem">
-    <div style="font-weight:600;color:var(--slate-600);margin-bottom:8px">📍 工程進度</div>
+    <div style="font-weight:600;color:var(--slate-600);margin-bottom:8px">🕐 簡略行程 <span style="font-weight:400;color:var(--slate-400);font-size:0.68rem">（工程進度・地點→項目→狀態）</span></div>
     ${blocks}
     <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;font-size:0.72rem;color:var(--slate-500)">
       <span>合計：${totalD}/${totalT} 項完成</span>
@@ -2069,11 +2098,11 @@ function renderProgressSummary() {
   el.innerHTML = card;
 }
 
-// ── 項目進度區域（資訊頁）：自動跟蹤行程事項，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取 ──
+// ── 行程記錄卡（記錄頁，2026-08-26 由「項目進度」改名）：自動記錄行程事項及時間，分級 負責人 → 地點 → 項目 → 事項，項目由項目記錄讀取 ──
 function renderProjectProgressArea(){
   const body = document.getElementById('projectProgressBody');
   if(!body) return;
-  // 未揀地點嘅事項（無關地點）唔列入項目進度清單
+  // 未揀地點嘅事項（無關地點）唔列入行程記錄清單
   const hasLoc = t => t && t.location && t.location !== '—';
   // 優先即時資料；換日／重置後 log.tasks 冇嘢 → fallback 上次獨立快照
   const liveWorkTasks = (log && log.tasks) ? log.tasks.filter(t => t.desc!=='開工' && t.desc!=='收工') : [];
@@ -2242,9 +2271,9 @@ function renderProjectProgressArea(){
   }
   if(fromSnapshot){
     const savedAt = snap && snap.savedAt ? snap.savedAt : '';
-    out = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅項目進度；開工後會自動更新</div>` + out;
+    out = `<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日未有行程事項 — 顯示上次記錄（${escHtml(savedAt)}）嘅行程記錄；開工後會自動更新</div>` + out;
   } else if(!out && liveWorkTasks.length){
-    out = '<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日事項未揀地點 — 唔列入項目進度清單</div>';
+    out = '<div style="font-size:0.7rem;color:var(--slate-400);background:var(--slate-50);border:1px dashed var(--slate-300);border-radius:8px;padding:5px 9px;margin-bottom:8px">📌 今日事項未揀地點 — 唔列入行程記錄清單</div>';
   }
   body.innerHTML = out;
   // 即時資料 → 更新獨立快照（換日／重置後仍可睇返；冇地點事項唔覆蓋快照）
@@ -3284,7 +3313,7 @@ function renderProgressOverview(){
   body.innerHTML = summaryHtml + (html ? `<div class="po-row">${html}</div>` : '');
 }
 
-// ── 項目進度完整預覽入口：跳去記錄頁完整預覽區域（2026-08-24 由 modal 改跳轉；資訊頁＋設置頁按鍵都用佢）──
+// ── 行程記錄完整預覽入口：跳去記錄頁完整預覽區域（2026-08-24 由 modal 改跳轉；資訊頁＋設置頁按鍵都用佢）──
 function showProgressOverview(){
   renderProgressOverview();
   switchTab('schedule');
@@ -3819,7 +3848,7 @@ function pvTsTag(e){
   return m ? m[1].slice(5) : '';
 }
 
-// ── 資訊頁「項目進度」四級分組快照（獨立儲存，唔跟 log 重置／換日）— 2026-08-11 改
+// ── 「行程記錄」四級分組快照（獨立儲存，唔跟 log 重置／換日）— 2026-08-11 改
 const PROJ_PROGRESS_KEY = 'worklog_proj_progress_v1';
 function getProjProgressSnapshot(){
   const raw = lsGet(PROJ_PROGRESS_KEY);
@@ -4021,7 +4050,7 @@ function closeProgressEntryModal(){
   resetProgressForm();
 }
 
-// ── 快速錄入（2026-08-24 加）：撳「➕ 新增記錄」→ 從項目進度提取地點/項目/事項/日期，直接存入同名項目卡片 ──
+// ── 快速錄入（2026-08-24 加）：撳「➕ 新增記錄」→ 從行程記錄提取地點/項目/事項/日期，直接存入同名項目卡片 ──
 // 每次撳錄入「下一個未有相同記錄」嘅事項（唔重複）；全部錄完會提示
 function quickAddProgress(){
   if(!log){ showToast('⚠️ 未開工'); return; }
@@ -4209,7 +4238,7 @@ function renderProgressEval(){
   body.innerHTML = html;
 }
 
-// ── 項目過濾（v3.14 加；2026-08-22 改：選項從項目進度提取 = 進度記錄 ∪ 行程事項動態歸屬）──
+// ── 項目過濾（v3.14 加；2026-08-22 改：選項從行程記錄提取 = 進度記錄 ∪ 行程事項動態歸屬）──
 var progressProjectFilter = [];
 function refreshProgressProjectDl(){
   const dl = document.getElementById('progressProjectDl');
@@ -4220,7 +4249,7 @@ function refreshProgressProjectDl(){
     const sp = pvSplitLoc(pvEntryKey(e)||'');
     if(sp.project) set.add(sp.project);
   });
-  // 2) 行程事項動態歸屬嘅項目（同 📊 項目進度 卡一致；開工／收工／冇項目唔列入）
+  // 2) 行程事項動態歸屬嘅項目（同 📋 行程記錄 卡一致；開工／收工／冇項目唔列入）
   const ref = pvRefProjects();
   (log && log.tasks || []).forEach(t => {
     if(!t || !t.desc || t.desc==='開工' || t.desc==='收工') return;
